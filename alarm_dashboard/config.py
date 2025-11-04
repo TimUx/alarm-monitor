@@ -9,6 +9,7 @@ without committing them to the repository.
 from __future__ import annotations
 
 import os
+import logging
 from dataclasses import dataclass, field
 from typing import List, Optional, cast
 
@@ -30,7 +31,7 @@ class MailConfig:
 class AppConfig:
     """Top level configuration container."""
 
-    mail: MailConfig
+    mail: Optional[MailConfig]
     poll_interval: int = 60
     activation_groups: List[str] = field(default_factory=list)
     display_duration_minutes: int = 30
@@ -47,6 +48,8 @@ class MissingConfiguration(RuntimeError):
 
 
 ENV_PREFIX = "ALARM_DASHBOARD_"
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _get_env(name: str, default: Optional[str] = None, required: bool = False) -> Optional[str]:
@@ -65,18 +68,40 @@ def _get_env(name: str, default: Optional[str] = None, required: bool = False) -
 def load_config() -> AppConfig:
     """Load application configuration from environment variables."""
 
-    mail = MailConfig(
-        host=cast(str, _get_env("IMAP_HOST", required=True)),
-        username=cast(str, _get_env("IMAP_USERNAME", required=True)),
-        password=cast(str, _get_env("IMAP_PASSWORD", required=True)),
-        mailbox=_get_env("IMAP_MAILBOX", default="INBOX") or "INBOX",
-        port=int(_get_env("IMAP_PORT", default="993") or "993"),
-        use_ssl=(
-            _get_env("IMAP_USE_SSL", default="true") or "true"
-        ).lower()
-        != "false",
-        search_criteria=_get_env("IMAP_SEARCH", default="UNSEEN") or "UNSEEN",
-    )
+    host = _get_env("IMAP_HOST")
+    username = _get_env("IMAP_USERNAME")
+    password = _get_env("IMAP_PASSWORD")
+
+    mail: Optional[MailConfig]
+    if host and username and password:
+        mail = MailConfig(
+            host=cast(str, host),
+            username=cast(str, username),
+            password=cast(str, password),
+            mailbox=_get_env("IMAP_MAILBOX", default="INBOX") or "INBOX",
+            port=int(_get_env("IMAP_PORT", default="993") or "993"),
+            use_ssl=(
+                _get_env("IMAP_USE_SSL", default="true") or "true"
+            ).lower()
+            != "false",
+            search_criteria=_get_env("IMAP_SEARCH", default="UNSEEN") or "UNSEEN",
+        )
+    else:
+        missing = [
+            name
+            for name, value in (
+                ("IMAP_HOST", host),
+                ("IMAP_USERNAME", username),
+                ("IMAP_PASSWORD", password),
+            )
+            if not value
+        ]
+        LOGGER.warning(
+            "IMAP configuration incomplete (missing: %s). "
+            "Mail fetching will be disabled.",
+            ", ".join(missing) or "unknown",
+        )
+        mail = None
 
     poll_interval = int(_get_env("POLL_INTERVAL", default="60") or "60")
     activation_raw = _get_env("GRUPPEN")

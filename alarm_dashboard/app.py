@@ -102,26 +102,33 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         store.update(alarm_payload)
 
-    fetcher = AlarmMailFetcher(
-        config=config.mail, callback=process_email, poll_interval=config.poll_interval
-    )
+    fetcher: Optional[AlarmMailFetcher] = None
 
-    fetcher_started = False
+    if config.mail is not None:
+        fetcher = AlarmMailFetcher(
+            config=config.mail,
+            callback=process_email,
+            poll_interval=config.poll_interval,
+        )
 
-    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - background thread
-        nonlocal fetcher_started
-        if fetcher_started:
-            return
-        fetcher_started = True
-        fetcher.start()
+        try:
+            fetcher.start()
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.error("Failed to start mail fetcher: %s", exc)
+            fetcher = None
+        else:
 
-    # Flask 3.0 removed ``before_first_request`` entirely, which previously triggered
-    # the background mail fetcher lazily. To avoid depending on framework lifecycle
-    # hooks that may no longer exist, start the fetcher immediately after the app
-    # factory runs. The fetcher itself is idempotent thanks to the ``fetcher_started``
-    # guard above, so repeated calls remain safe when ``create_app`` is invoked more
-    # than once (such as during tests).
-    _ensure_background_fetcher_started()
+            def _stop_background_fetcher(_: Optional[BaseException]) -> None:
+                if fetcher is not None:
+                    fetcher.stop()
+
+            app.teardown_appcontext(_stop_background_fetcher)
+    else:
+        LOGGER.warning(
+            "Mail fetching disabled - starting without IMAP configuration."
+        )
+
+    app.config["MAIL_FETCHER"] = fetcher
 
     @app.route("/")
     def dashboard() -> str:
