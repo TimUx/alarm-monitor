@@ -103,7 +103,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         store.update(alarm_payload)
 
     fetcher: Optional[AlarmMailFetcher] = None
-    fetcher_started = False
 
     if config.mail is not None:
         fetcher = AlarmMailFetcher(
@@ -112,50 +111,18 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             poll_interval=config.poll_interval,
         )
 
-        def _ensure_background_fetcher_started() -> None:  # pragma: no cover - background thread
-            nonlocal fetcher_started
-            if fetcher_started or fetcher is None:
-                return
-            fetcher_started = True
+        try:
             fetcher.start()
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.error("Failed to start mail fetcher: %s", exc)
+            fetcher = None
+        else:
 
-        def _register_background_fetcher_hooks() -> bool:
-            """Attach the fetcher start callback to any available lifecycle hook."""
+            def _stop_background_fetcher(_: Optional[BaseException]) -> None:
+                if fetcher is not None:
+                    fetcher.stop()
 
-            hook_names = (
-                "before_serving",
-                "before_app_serving",
-                "before_first_request",
-                "before_app_first_request",
-                "before_request",
-            )
-
-            for hook_name in hook_names:
-                lifecycle_hook = getattr(app, hook_name, None)
-                if not callable(lifecycle_hook):
-                    continue
-                try:
-                    lifecycle_hook(_ensure_background_fetcher_started)
-                except AttributeError:
-                    # Some Flask versions expose placeholders that raise when used.
-                    continue
-                except TypeError:
-                    # Hooks that expect different signatures should be skipped as well.
-                    continue
-                else:
-                    return True
-            return False
-
-        if not _register_background_fetcher_hooks():
-            # Flask 3 removed several lifecycle hooks, so fall back to starting the
-            # background worker immediately when none are available.
-            _ensure_background_fetcher_started()
-
-        def _stop_background_fetcher(_: Optional[BaseException]) -> None:
-            if fetcher is not None:
-                fetcher.stop()
-
-        app.teardown_appcontext(_stop_background_fetcher)
+            app.teardown_appcontext(_stop_background_fetcher)
     else:
         LOGGER.warning(
             "Mail fetching disabled - starting without IMAP configuration."
