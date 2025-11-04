@@ -128,6 +128,14 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 lifecycle_hook(_ensure_background_fetcher_started)
             else:  # Fallback if Flask does not expose lifecycle hooks
                 _ensure_background_fetcher_started()
+    if hasattr(app, "before_serving"):
+        app.before_serving(_ensure_background_fetcher_started)
+    elif hasattr(app, "before_first_request"):
+        app.before_first_request(_ensure_background_fetcher_started)
+    elif hasattr(app, "before_request"):
+        app.before_request(_ensure_background_fetcher_started)
+    else:  # Fallback if Flask does not expose lifecycle hooks
+        _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:
