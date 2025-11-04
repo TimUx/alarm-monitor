@@ -106,13 +106,35 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         config=config.mail, callback=process_email, poll_interval=config.poll_interval
     )
 
-    def _start_background_fetcher() -> None:  # pragma: no cover - webserver hook
+    fetcher_started = False
+
+    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - webserver hook
+        nonlocal fetcher_started
+        if fetcher_started:
+            return
+        fetcher_started = True
         fetcher.start()
 
-    if hasattr(app, "before_serving"):
-        app.before_serving(_start_background_fetcher)
-    else:  # Flask < 2.2 compatibility fallback
-        _start_background_fetcher()
+    def _register_background_fetcher() -> bool:
+        hook_names = ("before_serving", "before_first_request", "before_request")
+        for hook_name in hook_names:
+            try:
+                lifecycle_hook = getattr(app, hook_name)
+            except AttributeError:
+                continue
+            if not callable(lifecycle_hook):
+                continue
+            try:
+                lifecycle_hook(_ensure_background_fetcher_started)
+            except AttributeError:
+                # Some legacy Flask versions expose placeholders that raise when used
+                continue
+            else:
+                return True
+        return False
+
+    if not _register_background_fetcher():
+        _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:
