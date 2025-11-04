@@ -115,6 +115,25 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         fetcher_started = True
         fetcher.start()
 
+    def _register_background_fetcher() -> bool:
+        hook_names = ("before_serving", "before_first_request", "before_request")
+        for hook_name in hook_names:
+            try:
+                lifecycle_hook = getattr(app, hook_name)
+            except AttributeError:
+                continue
+            if not callable(lifecycle_hook):
+                continue
+            try:
+                lifecycle_hook(_ensure_background_fetcher_started)
+            except AttributeError:
+                # Some legacy Flask versions expose placeholders that raise when used
+                continue
+            else:
+                return True
+        return False
+
+    if not _register_background_fetcher():
     lifecycle_hook = getattr(app, "before_serving", None)
     if callable(lifecycle_hook):
         lifecycle_hook(_ensure_background_fetcher_started)
