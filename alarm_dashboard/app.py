@@ -115,6 +115,19 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         fetcher_started = True
         fetcher.start()
 
+    lifecycle_hook = getattr(app, "before_serving", None)
+    if callable(lifecycle_hook):
+        lifecycle_hook(_ensure_background_fetcher_started)
+    else:
+        lifecycle_hook = getattr(app, "before_first_request", None)
+        if callable(lifecycle_hook):
+            lifecycle_hook(_ensure_background_fetcher_started)
+        else:
+            lifecycle_hook = getattr(app, "before_request", None)
+            if callable(lifecycle_hook):
+                lifecycle_hook(_ensure_background_fetcher_started)
+            else:  # Fallback if Flask does not expose lifecycle hooks
+                _ensure_background_fetcher_started()
     if hasattr(app, "before_serving"):
         app.before_serving(_ensure_background_fetcher_started)
     elif hasattr(app, "before_first_request"):
