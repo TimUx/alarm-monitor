@@ -106,13 +106,22 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         config=config.mail, callback=process_email, poll_interval=config.poll_interval
     )
 
-    def _start_background_fetcher() -> None:  # pragma: no cover - webserver hook
+    fetcher_started = False
+
+    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - background thread
+        nonlocal fetcher_started
+        if fetcher_started:
+            return
+        fetcher_started = True
         fetcher.start()
 
-    if hasattr(app, "before_serving"):
-        app.before_serving(_start_background_fetcher)
-    else:  # Flask < 2.2 compatibility fallback
-        _start_background_fetcher()
+    # Flask 3.0 removed ``before_first_request`` entirely, which previously triggered
+    # the background mail fetcher lazily. To avoid depending on framework lifecycle
+    # hooks that may no longer exist, start the fetcher immediately after the app
+    # factory runs. The fetcher itself is idempotent thanks to the ``fetcher_started``
+    # guard above, so repeated calls remain safe when ``create_app`` is invoked more
+    # than once (such as during tests).
+    _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:
