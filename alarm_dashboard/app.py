@@ -108,53 +108,20 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     fetcher_started = False
 
-    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - webserver hook
+    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - background thread
         nonlocal fetcher_started
         if fetcher_started:
             return
         fetcher_started = True
         fetcher.start()
 
-    def _register_background_fetcher() -> bool:
-        hook_names = ("before_serving", "before_first_request", "before_request")
-        for hook_name in hook_names:
-            try:
-                lifecycle_hook = getattr(app, hook_name)
-            except AttributeError:
-                continue
-            if not callable(lifecycle_hook):
-                continue
-            try:
-                lifecycle_hook(_ensure_background_fetcher_started)
-            except AttributeError:
-                # Some legacy Flask versions expose placeholders that raise when used
-                continue
-            else:
-                return True
-        return False
-
-    if not _register_background_fetcher():
-    lifecycle_hook = getattr(app, "before_serving", None)
-    if callable(lifecycle_hook):
-        lifecycle_hook(_ensure_background_fetcher_started)
-    else:
-        lifecycle_hook = getattr(app, "before_first_request", None)
-        if callable(lifecycle_hook):
-            lifecycle_hook(_ensure_background_fetcher_started)
-        else:
-            lifecycle_hook = getattr(app, "before_request", None)
-            if callable(lifecycle_hook):
-                lifecycle_hook(_ensure_background_fetcher_started)
-            else:  # Fallback if Flask does not expose lifecycle hooks
-                _ensure_background_fetcher_started()
-    if hasattr(app, "before_serving"):
-        app.before_serving(_ensure_background_fetcher_started)
-    elif hasattr(app, "before_first_request"):
-        app.before_first_request(_ensure_background_fetcher_started)
-    elif hasattr(app, "before_request"):
-        app.before_request(_ensure_background_fetcher_started)
-    else:  # Fallback if Flask does not expose lifecycle hooks
-        _ensure_background_fetcher_started()
+    # Flask 3.0 removed ``before_first_request`` entirely, which previously triggered
+    # the background mail fetcher lazily. To avoid depending on framework lifecycle
+    # hooks that may no longer exist, start the fetcher immediately after the app
+    # factory runs. The fetcher itself is idempotent thanks to the ``fetcher_started``
+    # guard above, so repeated calls remain safe when ``create_app`` is invoked more
+    # than once (such as during tests).
+    _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:
