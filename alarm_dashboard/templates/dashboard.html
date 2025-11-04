@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatz Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4wISdJHCIaH0p0tWc0pL8uKXuX2G9gCdTfp1LFWA=" crossorigin="" />
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div id="app">
+        <header class="app-header">
+            <div class="crest-wrap">
+                <img src="/static/img/crest.svg" alt="Gemeindewappen" class="crest">
+            </div>
+            <div class="header-text">
+                <h1>Einsatzdashboard</h1>
+                <div class="timestamp" id="timestamp">Keine aktuellen Einsätze</div>
+            </div>
+        </header>
+        <main>
+            <section class="view alarm-view hidden" id="alarm-view">
+                <div class="alarm-header">
+                    <h2 id="keyword">-</h2>
+                    <p class="alarm-subtitle" id="keyword-secondary"></p>
+                    <p class="alarm-diagnosis" id="diagnosis"></p>
+                    <p class="alarm-remark" id="remark"></p>
+                    <p class="alarm-time" id="alarm-time">-</p>
+                </div>
+                <div class="meta-grid">
+                    <div class="meta-card">
+                        <h3>Alarmierte Fahrzeuge</h3>
+                        <ul id="groups" class="meta-list">
+                            <li>-</li>
+                        </ul>
+                    </div>
+                    <div class="meta-card meta-card--location">
+                        <h3>Einsatzort</h3>
+                        <p id="location" class="location-full">-</p>
+                        <dl class="location-details">
+                            <div>
+                                <dt>Ort</dt>
+                                <dd id="location-town">-</dd>
+                            </div>
+                            <div>
+                                <dt>Ortsteil</dt>
+                                <dd id="location-village">-</dd>
+                            </div>
+                            <div>
+                                <dt>Straße</dt>
+                                <dd id="location-street">-</dd>
+                            </div>
+                            <div>
+                                <dt>Zusatz</dt>
+                                <dd id="location-additional">-</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+                <div class="weather" id="weather">
+                    <h3>Wetter am Einsatzort</h3>
+                    <p>Keine Daten verfügbar</p>
+                </div>
+            </section>
+            <section class="map hidden" id="map-section">
+                <div id="map"></div>
+            </section>
+            <section class="view idle-view" id="idle-view">
+                <div class="idle-content">
+                    <div class="idle-crest">
+                        <img src="/static/img/crest.svg" alt="Gemeindewappen" class="crest">
+                    </div>
+                    <div class="idle-clock">
+                        <div class="idle-time" id="idle-time">--:--</div>
+                        <div class="idle-date" id="idle-date">Warte auf Zeitdaten...</div>
+                    </div>
+                    <div class="idle-weather" id="idle-weather">
+                        <h3>Aktuelles Wetter</h3>
+                        <p>Keine Daten verfügbar</p>
+                    </div>
+                </div>
+                <div class="idle-last-container">
+                    <div class="idle-last-alarm" id="idle-last-alarm">
+                        <h3>Letzter Einsatz</h3>
+                        <p>Keine Einsätze vorhanden</p>
+                    </div>
+                    <a href="/history" class="history-button">Historie ansehen</a>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

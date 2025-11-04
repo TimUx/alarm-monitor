@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatz Mobile</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4wISdJHCIaH0p0tWc0pL8uKuX2G9gCdTfp1LFWA=" crossorigin="" />
+    <link rel="stylesheet" href="/static/css/mobile.css">
+</head>
+<body>
+    <div class="mobile-app">
+        <header class="mobile-header">
+            <img src="/static/img/crest.svg" alt="Gemeindewappen" class="mobile-crest">
+            <h1>Einsatzdashboard</h1>
+            <p class="mobile-timestamp" id="mobile-timestamp">Keine aktuellen Einsätze</p>
+        </header>
+        <main class="mobile-main">
+            <section class="mobile-card mobile-card--alarm hidden" id="mobile-alarm-view">
+                <h2 id="mobile-keyword">-</h2>
+                <p class="mobile-subtitle" id="mobile-keyword-secondary"></p>
+                <p class="mobile-description" id="mobile-diagnosis">Warte auf Einsatzdaten...</p>
+                <p class="mobile-remark" id="mobile-remark"></p>
+                <dl class="mobile-meta">
+                    <div>
+                        <dt>Eingang</dt>
+                        <dd id="mobile-alarm-time">-</dd>
+                    </div>
+                </dl>
+                <div class="mobile-meta-list">
+                    <h3>Alarmierte Fahrzeuge</h3>
+                    <ul id="mobile-groups" class="mobile-groups">
+                        <li>-</li>
+                    </ul>
+                </div>
+                <div class="mobile-location">
+                    <h3>Einsatzort</h3>
+                    <p id="mobile-location">-</p>
+                    <dl class="mobile-location-details">
+                        <div>
+                            <dt>Ort</dt>
+                            <dd id="mobile-location-town">-</dd>
+                        </div>
+                        <div>
+                            <dt>Ortsteil</dt>
+                            <dd id="mobile-location-village">-</dd>
+                        </div>
+                        <div>
+                            <dt>Straße</dt>
+                            <dd id="mobile-location-street">-</dd>
+                        </div>
+                        <div>
+                            <dt>Zusatz</dt>
+                            <dd id="mobile-location-additional">-</dd>
+                        </div>
+                    </dl>
+                    <a href="#" id="mobile-navigation-button" class="mobile-navigation-button hidden" target="_blank" rel="noopener noreferrer">Navigation starten</a>
+                </div>
+            </section>
+            <section class="mobile-card mobile-card--weather hidden" id="mobile-weather-card">
+                <h3>Wetter am Einsatzort</h3>
+                <div id="mobile-weather">
+                    <p>Keine Daten verfügbar</p>
+                </div>
+            </section>
+            <section class="mobile-map hidden" id="mobile-map-section">
+                <div id="mobile-map"></div>
+            </section>
+            <section class="mobile-card mobile-idle" id="mobile-idle-view">
+                <div class="mobile-idle-crest">
+                    <img src="/static/img/crest.svg" alt="Gemeindewappen" class="mobile-crest">
+                </div>
+                <div class="mobile-idle-clock">
+                    <div class="mobile-idle-time" id="mobile-idle-time">--:--</div>
+                    <div class="mobile-idle-date" id="mobile-idle-date">Warte auf Zeitdaten...</div>
+                </div>
+                <div class="mobile-idle-weather" id="mobile-idle-weather">
+                    <h3>Aktuelles Wetter</h3>
+                    <p>Keine Daten verfügbar</p>
+                </div>
+                <div class="mobile-last-alarm" id="mobile-last-alarm">
+                    <h3>Letzter Einsatz</h3>
+                    <p>Keine Einsätze vorhanden</p>
+                </div>
+                <a href="/history" class="mobile-history-button">Historie ansehen</a>
+            </section>
+        </main>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>
+    <script src="/static/js/mobile.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatzhistorie</title>
+    <link rel="stylesheet" href="/static/css/history.css">
+</head>
+<body>
+    <div class="history-app">
+        <header class="history-header">
+            <a href="/" class="history-back">&larr; Zurück zum Dashboard</a>
+            <div class="history-title-wrap">
+                <img src="/static/img/crest.svg" alt="Gemeindewappen" class="history-crest">
+                <div>
+                    <h1>Einsatzhistorie</h1>
+                    <p class="history-subtitle">Letzte Einsätze der Leitstelle</p>
+                </div>
+            </div>
+        </header>
+        <main>
+            {% if entries %}
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Datum</th>
+                            <th scope="col">Uhrzeit</th>
+                            <th scope="col">Stichwort</th>
+                            <th scope="col">Ort</th>
+                            <th scope="col">Beschreibung</th>
+                            <th scope="col">Alarmierte Gruppen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td data-label="Datum">{{ entry.display_date }}</td>
+                            <td data-label="Uhrzeit">{{ entry.display_time }}</td>
+                            <td data-label="Stichwort">{{ entry.keyword or "-" }}</td>
+                            <td data-label="Ort">{{ entry.location or "-" }}</td>
+                            <td data-label="Beschreibung">
+                                {% if entry.description %}
+                                <div class="history-description">{{ entry.description }}</div>
+                                {% else %}
+                                <div class="history-description">-</div>
+                                {% endif %}
+                                {% if entry.remark %}
+                                <div class="history-remark">{{ entry.remark }}</div>
+                                {% endif %}
+                            </td>
+                            <td data-label="Alarmierte Gruppen">
+                                {% if entry.groups %}
+                                    {% if entry.groups is string %}
+                                        {{ entry.groups }}
+                                    {% else %}
+                                        {{ entry.groups | join(', ') }}
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="history-empty">Keine Einsätze vorhanden.</p>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>
