@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -102,18 +103,30 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         store.update(alarm_payload)
 
-    fetcher = AlarmMailFetcher(
-        config=config.mail, callback=process_email, poll_interval=config.poll_interval
-    )
+    fetcher: Optional[AlarmMailFetcher] = None
 
-    fetcher_started = False
+    if config.mail is not None:
+        fetcher = AlarmMailFetcher(
+            config=config.mail,
+            callback=process_email,
+            poll_interval=config.poll_interval,
+        )
 
-    def _ensure_background_fetcher_started() -> None:  # pragma: no cover - webserver hook
-        nonlocal fetcher_started
-        if fetcher_started:
-            return
-        fetcher_started = True
-        fetcher.start()
+        try:
+            fetcher.start()
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.error("Failed to start mail fetcher: %s", exc)
+            fetcher = None
+        else:
+
+            def _stop_background_fetcher() -> None:
+                nonlocal fetcher
+                if fetcher is not None:
+                    fetcher.stop()
+                    fetcher = None
+                    app.config["MAIL_FETCHER"] = None
+
+            app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
 
     for hook_name in ("before_serving", "before_first_request", "before_request"):
         hook = getattr(app, hook_name, None)
