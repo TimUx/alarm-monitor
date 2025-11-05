@@ -1,6 +1,218 @@
 let map = null;
 let marker = null;
 
+const WIND_DIRECTIONS = [
+    { abbr: 'N', label: 'Nord' },
+    { abbr: 'NNO', label: 'Nord-Nordost' },
+    { abbr: 'NO', label: 'Nordost' },
+    { abbr: 'ONO', label: 'Ost-Nordost' },
+    { abbr: 'O', label: 'Ost' },
+    { abbr: 'OSO', label: 'Ost-Südost' },
+    { abbr: 'SO', label: 'Südost' },
+    { abbr: 'SSO', label: 'Süd-Südost' },
+    { abbr: 'S', label: 'Süd' },
+    { abbr: 'SSW', label: 'Süd-Südwest' },
+    { abbr: 'SW', label: 'Südwest' },
+    { abbr: 'WSW', label: 'West-Südwest' },
+    { abbr: 'W', label: 'West' },
+    { abbr: 'WNW', label: 'West-Nordwest' },
+    { abbr: 'NW', label: 'Nordwest' },
+    { abbr: 'NNW', label: 'Nord-Nordwest' },
+];
+
+const WEATHER_CODE_MAP = [
+    { codes: [0], icon: '☀️', label: 'Klarer Himmel' },
+    { codes: [1, 2], icon: '🌤️', label: 'Überwiegend sonnig' },
+    { codes: [3], icon: '☁️', label: 'Bedeckt' },
+    { codes: [45, 48], icon: '🌫️', label: 'Nebel' },
+    { codes: [51, 53, 55], icon: '🌦️', label: 'Nieselregen' },
+    { codes: [56, 57], icon: '🌧️', label: 'Gefrierender Nieselregen' },
+    { codes: [61, 63, 65], icon: '🌧️', label: 'Regen' },
+    { codes: [66, 67], icon: '🌨️', label: 'Gefrierender Regen' },
+    { codes: [71, 73, 75, 77], icon: '❄️', label: 'Schneefall' },
+    { codes: [80, 81, 82], icon: '🌦️', label: 'Regenschauer' },
+    { codes: [85, 86], icon: '❄️', label: 'Schneeschauer' },
+    { codes: [95], icon: '⛈️', label: 'Gewitter' },
+    { codes: [96, 99], icon: '⛈️', label: 'Gewitter mit Hagel' },
+];
+
+function isValidNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value);
+}
+
+function formatMeasurement(value, unit, options = {}) {
+    if (!isValidNumber(value)) {
+        return null;
+    }
+    const appendUnit = (formattedValue) => {
+        if (!unit) {
+            return formattedValue;
+        }
+        if (unit === '%') {
+            return `${formattedValue}\u00A0%`;
+        }
+        if (unit === '°') {
+            return `${formattedValue}°`;
+        }
+        return `${formattedValue}\u00A0${unit}`;
+    };
+    if (value === 0) {
+        const zeroText = '0';
+        return appendUnit(zeroText);
+    }
+
+    const formatOptions = {
+        maximumFractionDigits: options.maximumFractionDigits,
+        minimumFractionDigits: options.minimumFractionDigits,
+    };
+
+    if (formatOptions.maximumFractionDigits === undefined) {
+        formatOptions.maximumFractionDigits = value < 1 ? 2 : 1;
+    }
+
+    if (formatOptions.minimumFractionDigits === undefined) {
+        formatOptions.minimumFractionDigits = value < 1 ? 1 : 0;
+    }
+
+    const formatted = value.toLocaleString('de-DE', formatOptions);
+    return appendUnit(formatted);
+}
+
+function formatTemperature(value) {
+    return formatMeasurement(value, '°C', {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 1,
+    });
+}
+
+function formatWindSpeed(value) {
+    return formatMeasurement(value, 'km/h', {
+        maximumFractionDigits: 1,
+        minimumFractionDigits: 0,
+    });
+}
+
+function formatPrecipitationAmount(value, unit) {
+    const normalizedUnit = unit || 'mm';
+    const options = value < 1
+        ? { maximumFractionDigits: 2, minimumFractionDigits: 1 }
+        : { maximumFractionDigits: 1, minimumFractionDigits: 0 };
+    return formatMeasurement(value, normalizedUnit, options);
+}
+
+function formatProbability(value, unit) {
+    const normalizedUnit = unit || '%';
+    return formatMeasurement(value, normalizedUnit, {
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+    });
+}
+
+function formatDegrees(value) {
+    if (!isValidNumber(value)) {
+        return null;
+    }
+    const normalized = ((value % 360) + 360) % 360;
+    return `${Math.round(normalized)}°`;
+}
+
+function describeWindDirection(value) {
+    if (!isValidNumber(value)) {
+        return null;
+    }
+    const normalized = ((value % 360) + 360) % 360;
+    const index = Math.round(normalized / 22.5) % WIND_DIRECTIONS.length;
+    const direction = WIND_DIRECTIONS[index];
+    return {
+        ...direction,
+        degrees: normalized,
+    };
+}
+
+function describeWeatherCode(code) {
+    if (!isValidNumber(code)) {
+        return null;
+    }
+    const rounded = Math.round(code);
+    const entry = WEATHER_CODE_MAP.find((item) => item.codes.includes(rounded));
+    if (entry) {
+        return {
+            icon: entry.icon,
+            label: entry.label,
+        };
+    }
+    return {
+        icon: '🌡️',
+        label: 'Aktuelle Wetterlage',
+    };
+}
+
+function createWeatherSummaryElement(weather) {
+    const info = describeWeatherCode(Number(weather?.weathercode));
+    if (!info) {
+        return null;
+    }
+    const summary = document.createElement('div');
+    summary.classList.add('weather-summary');
+    if (info.icon) {
+        const icon = document.createElement('span');
+        icon.classList.add('weather-icon');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = info.icon;
+        summary.appendChild(icon);
+    }
+    const text = document.createElement('span');
+    text.textContent = info.label;
+    summary.appendChild(text);
+    return summary;
+}
+
+function createLabeledValueElement(tagName, label, value, fallback = '–') {
+    const element = document.createElement(tagName);
+    const strong = document.createElement('strong');
+    strong.textContent = `${label}:`;
+    element.appendChild(strong);
+    const text = document.createTextNode(` ${value ?? fallback}`);
+    element.appendChild(text);
+    return element;
+}
+
+function collectPrecipitationDetails(weather) {
+    if (!weather || typeof weather !== 'object') {
+        return [];
+    }
+    const details = [];
+    const precipitationAmount = Number(weather.precipitation);
+    if (isValidNumber(precipitationAmount)) {
+        const precipitationUnit = typeof weather.precipitation_unit === 'string'
+            ? weather.precipitation_unit
+            : 'mm';
+        const formattedPrecipitation = formatPrecipitationAmount(precipitationAmount, precipitationUnit);
+        if (formattedPrecipitation) {
+            details.push({
+                label: 'Niederschlag',
+                value: formattedPrecipitation,
+            });
+        }
+    }
+
+    const probability = Number(weather.precipitation_probability);
+    if (isValidNumber(probability)) {
+        const unit = typeof weather.precipitation_probability_unit === 'string'
+            ? weather.precipitation_probability_unit
+            : '%';
+        const formattedProbability = formatProbability(probability, unit);
+        if (formattedProbability) {
+            details.push({
+                label: 'Niederschlagswahrscheinlichkeit',
+                value: formattedProbability,
+            });
+        }
+    }
+
+    return details;
+}
+
 if (typeof window.L !== 'undefined') {
     map = window.L.map('map', {
         zoomControl: false
@@ -54,33 +266,61 @@ function setMode(mode) {
 
 function updateWeather(weather) {
     const container = document.getElementById('weather');
-    container.innerHTML = '<h3>Wetter am Einsatzort</h3>';
+    container.innerHTML = '';
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Wetter am Einsatzort';
+    container.appendChild(heading);
+
     if (!weather) {
-        container.innerHTML += '<p>Keine Daten verfügbar</p>';
+        const empty = document.createElement('p');
+        empty.textContent = 'Keine Daten verfügbar';
+        container.appendChild(empty);
         return;
     }
+
+    const summary = createWeatherSummaryElement(weather);
+    if (summary) {
+        container.appendChild(summary);
+    }
+
+    const temperatureText = formatTemperature(Number(weather.temperature)) ?? '–';
+    const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
+    const windInfo = describeWindDirection(Number(weather.winddirection));
+    const directionText = windInfo
+        ? windInfo.abbr
+        : formatMeasurement(Number(weather.winddirection), '°');
+
     const details = document.createElement('div');
     details.classList.add('weather-details');
-    details.innerHTML = `
-        <p><strong>Temperatur:</strong> ${weather.temperature}&nbsp;°C</p>
-        <p><strong>Wind:</strong> ${weather.windspeed}&nbsp;km/h</p>
-        <p><strong>Richtung:</strong> ${weather.winddirection}&nbsp;°</p>
-    `;
+
+    const temperature = createLabeledValueElement('p', 'Temperatur', temperatureText);
+    const wind = createLabeledValueElement('p', 'Wind', windSpeedText);
+    const direction = createLabeledValueElement('p', 'Richtung', directionText);
+    if (windInfo) {
+        const degreesText = formatDegrees(windInfo.degrees);
+        if (degreesText) {
+            direction.title = `≈ ${degreesText}`;
+        }
+    }
+
+    details.appendChild(temperature);
+    details.appendChild(wind);
+    details.appendChild(direction);
+
+    collectPrecipitationDetails(weather).forEach((entry) => {
+        const element = createLabeledValueElement('p', entry.label, entry.value);
+        details.appendChild(element);
+    });
+
     container.appendChild(details);
 }
 
-function updateIdleWeather(weather, locationName) {
+function updateIdleWeather(weather) {
     idleWeatherEl.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Aktuelles Wetter';
     idleWeatherEl.appendChild(title);
-
-    if (locationName) {
-        const place = document.createElement('div');
-        place.classList.add('idle-weather-location');
-        place.textContent = locationName;
-        idleWeatherEl.appendChild(place);
-    }
 
     if (!weather) {
         const empty = document.createElement('p');
@@ -89,19 +329,40 @@ function updateIdleWeather(weather, locationName) {
         return;
     }
 
+    const summary = createWeatherSummaryElement(weather);
+    if (summary) {
+        idleWeatherEl.appendChild(summary);
+    }
+
     const list = document.createElement('div');
     list.classList.add('idle-weather-details');
 
-    const temperature = document.createElement('div');
-    temperature.innerHTML = `<strong>Temperatur:</strong> ${weather.temperature}&nbsp;°C`;
-    const wind = document.createElement('div');
-    wind.innerHTML = `<strong>Wind:</strong> ${weather.windspeed}&nbsp;km/h`;
-    const direction = document.createElement('div');
-    direction.innerHTML = `<strong>Richtung:</strong> ${weather.winddirection}&nbsp;°`;
+    const temperatureText = formatTemperature(Number(weather.temperature)) ?? '–';
+    const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
+    const windInfo = describeWindDirection(Number(weather.winddirection));
+    const directionText = windInfo
+        ? windInfo.abbr
+        : formatMeasurement(Number(weather.winddirection), '°');
+
+    const temperature = createLabeledValueElement('div', 'Temperatur', temperatureText);
+    const wind = createLabeledValueElement('div', 'Wind', windSpeedText);
+    const direction = createLabeledValueElement('div', 'Richtung', directionText);
+    if (windInfo) {
+        const degreesText = formatDegrees(windInfo.degrees);
+        if (degreesText) {
+            direction.title = `≈ ${degreesText}`;
+        }
+    }
 
     list.appendChild(temperature);
     list.appendChild(wind);
     list.appendChild(direction);
+
+    collectPrecipitationDetails(weather).forEach((entry) => {
+        const element = createLabeledValueElement('div', entry.label, entry.value);
+        list.appendChild(element);
+    });
+
     idleWeatherEl.appendChild(list);
 }
 
@@ -287,7 +548,7 @@ function updateDashboard(data) {
     } else {
         setMode('idle');
         timestampEl.textContent = 'Keine aktuellen Einsätze';
-        updateIdleWeather(data.weather, data.location);
+        updateIdleWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = '';

@@ -257,6 +257,31 @@ body {
     color: var(--text-primary);
 }
 
+.weather-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.25rem 0 1rem;
+    font-size: 1.45rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.weather-summary .weather-icon {
+    font-size: clamp(2.2rem, 1.8rem + 0.6vw, 2.6rem);
+    line-height: 1;
+}
+
+.idle-weather .weather-summary {
+    font-size: clamp(1.8rem, 1.4rem + 0.8vw, 2.3rem);
+    margin-top: -0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.idle-weather .weather-summary .weather-icon {
+    font-size: clamp(2.4rem, 2rem + 0.8vw, 3.1rem);
+}
+
 .weather-details {
     display: grid;
     gap: 0.75rem;
@@ -308,7 +333,7 @@ body {
 }
 
 .idle-time {
-    font-size: clamp(4.5rem, 3rem + 3vw, 6.5rem);
+    font-size: clamp(5.5rem, 3.5rem + 4vw, 7.5rem);
     font-weight: 700;
     color: var(--accent);
     margin: 0;
@@ -316,7 +341,7 @@ body {
 
 .idle-date {
     margin: 0;
-    font-size: clamp(1.4rem, 1rem + 1vw, 2.1rem);
+    font-size: clamp(1.8rem, 1.2rem + 1.2vw, 2.6rem);
     color: var(--text-secondary);
 }
 
@@ -340,22 +365,16 @@ body {
 .idle-weather h3,
 .idle-last-alarm h3 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: clamp(2rem, 1.6rem + 0.8vw, 2.6rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
 }
 
-.idle-weather-location {
-    font-size: 1.4rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
 .idle-weather-details {
     display: grid;
     gap: 0.75rem;
-    font-size: 1.4rem;
+    font-size: clamp(1.6rem, 1.3rem + 0.6vw, 2.1rem);
     color: var(--text-primary);
 }
 
@@ -365,28 +384,7 @@ body {
 
 .idle-weather p {
     margin: 0;
-    font-size: 1.3rem;
-}
-
-.history-button {
-    align-self: flex-start;
-    background: var(--accent);
-    color: #fff;
-    text-decoration: none;
-    padding: 0.75rem 1.75rem;
-    border-radius: 999px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    box-shadow: 0 12px 28px rgba(193, 18, 31, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.history-button:hover,
-.history-button:focus {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 36px rgba(193, 18, 31, 0.4);
-    outline: none;
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
 }
 
 .bottom-nav {
