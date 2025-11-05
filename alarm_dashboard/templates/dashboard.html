@@ -14,10 +14,8 @@
         <header class="app-header">
             <div class="header-brand">
                 <h1>
-                    Feuerwehr
-                    <span>Willingshausen</span>
+                    Feuerwehr <span>Willingshausen</span>
                 </h1>
-                <div class="timestamp" id="timestamp">Keine aktuellen Einsätze</div>
             </div>
             <div class="header-meta">
                 <img src="{{ crest_url }}" alt="Gemeindewappen" class="crest">
@@ -26,49 +24,58 @@
         <main class="app-main">
             <section class="panel view alarm-view hidden" id="alarm-view">
                 <div class="alarm-header">
-                    <h2 id="keyword">-</h2>
-                    <p class="alarm-subtitle" id="keyword-secondary"></p>
-                    <p class="alarm-diagnosis" id="diagnosis"></p>
-                    <p class="alarm-remark" id="remark"></p>
-                    <p class="alarm-time" id="alarm-time">-</p>
-                </div>
-                <div class="meta-grid">
-                    <div class="meta-card">
-                        <h3>Alarmierte Fahrzeuge</h3>
-                        <ul id="groups" class="meta-list">
-                            <li>-</li>
-                        </ul>
+                    <div class="alarm-header-text">
+                        <h2 id="keyword">-</h2>
+                        <div class="alarm-header-meta">
+                            <p class="alarm-subtitle" id="keyword-secondary"></p>
+                            <p class="alarm-remark" id="remark"></p>
+                        </div>
                     </div>
-                    <div class="meta-card meta-card--location">
-                        <h3>Einsatzort</h3>
-                        <p id="location" class="location-full">-</p>
-                        <dl class="location-details">
-                            <div>
-                                <dt>Ort</dt>
-                                <dd id="location-town">-</dd>
+                    <time class="alarm-time" id="alarm-time">-</time>
+                </div>
+                <div class="alarm-layout" id="alarm-layout">
+                    <div class="alarm-column alarm-column--info">
+                        <div class="meta-grid">
+                            <div class="meta-card meta-card--location">
+                                <h3>Einsatzort</h3>
+                                <p id="location" class="location-full">-</p>
+                                <dl class="location-details">
+                                    <div>
+                                        <dt>Ort</dt>
+                                        <dd id="location-town">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Ortsteil</dt>
+                                        <dd id="location-village">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Straße</dt>
+                                        <dd id="location-street">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Zusatz</dt>
+                                        <dd id="location-additional">-</dd>
+                                    </div>
+                                </dl>
                             </div>
-                            <div>
-                                <dt>Ortsteil</dt>
-                                <dd id="location-village">-</dd>
+                            <div class="meta-card meta-card--vehicles">
+                                <h3>Alarmierte Fahrzeuge</h3>
+                                <ul id="groups" class="meta-list">
+                                    <li>-</li>
+                                </ul>
                             </div>
-                            <div>
-                                <dt>Straße</dt>
-                                <dd id="location-street">-</dd>
+                            <div class="meta-card meta-card--weather" id="weather">
+                                <h3>Wetter am Einsatzort</h3>
+                                <p>Keine Daten verfügbar</p>
                             </div>
-                            <div>
-                                <dt>Zusatz</dt>
-                                <dd id="location-additional">-</dd>
-                            </div>
-                        </dl>
+                        </div>
+                    </div>
+                    <div class="alarm-column alarm-column--map hidden" id="map-column">
+                        <div class="panel-section map-panel" id="map-panel">
+                            <div id="map"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="panel-section weather" id="weather">
-                    <h3>Wetter am Einsatzort</h3>
-                    <p>Keine Daten verfügbar</p>
-                </div>
-            </section>
-            <section class="panel map-panel hidden" id="map-section">
-                <div id="map"></div>
             </section>
             <section class="panel view idle-view" id="idle-view">
                 <div class="idle-header">
@@ -117,7 +124,7 @@
                 </span>
                 <span class="bottom-nav__label">Teams</span>
             </a>
-            <a href="#map-section" class="bottom-nav__item">
+            <a href="#map-panel" class="bottom-nav__item">
                 <span class="bottom-nav__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
                         <path d="M9.5 3 3 5.5v15l6.5-2.5L15 21l6-2.25V3.75L15 6zM9 6.29V17.7l-4 1.54V7.82zm2 11.99V6.4l4-1.54v11.42zm6-.03V5.85l2-.75v11.46z" />
