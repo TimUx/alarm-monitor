@@ -228,7 +228,9 @@ if (typeof window.L !== 'undefined') {
 
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
-const mapSection = document.getElementById('map-section');
+const mapPanel = document.getElementById('map-panel');
+const mapColumn = document.getElementById('map-column');
+const alarmLayout = document.getElementById('alarm-layout');
 const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
 const idleDateEl = document.getElementById('idle-date');
@@ -236,21 +238,13 @@ const idleWeatherEl = document.getElementById('idle-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
-const diagnosisEl = document.getElementById('diagnosis');
 const remarkEl = document.getElementById('remark');
-const locationTownEl = document.getElementById('location-town');
-const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
 
 function setMode(mode) {
     if (mode === 'alarm') {
         alarmView.classList.remove('hidden');
-        if (map) {
-            mapSection.classList.remove('hidden');
-        } else {
-            mapSection.classList.add('hidden');
-        }
         idleView.classList.add('hidden');
         if (map) {
             setTimeout(() => {
@@ -259,8 +253,16 @@ function setMode(mode) {
         }
     } else {
         alarmView.classList.add('hidden');
-        mapSection.classList.add('hidden');
         idleView.classList.remove('hidden');
+        if (mapPanel) {
+            mapPanel.classList.add('hidden');
+        }
+        if (mapColumn) {
+            mapColumn.classList.add('hidden');
+        }
+        if (alarmLayout) {
+            alarmLayout.classList.remove('has-map');
+        }
     }
 }
 
@@ -436,8 +438,6 @@ function updateGroups(groups) {
 
 function updateLocationDetails(details) {
     const mapping = [
-        [locationTownEl, details?.town],
-        [locationVillageEl, details?.village],
         [locationStreetEl, details?.street],
         [locationAdditionalEl, details?.additional || details?.object],
     ];
@@ -489,20 +489,69 @@ function updateIdleLastAlarm(info) {
     }
 }
 
+function resolveCoordinates(primary, fallbackLat, fallbackLon) {
+    if (primary && primary.lat !== undefined && primary.lon !== undefined) {
+        return primary;
+    }
+
+    if (fallbackLat != null && fallbackLon != null) {
+        return {
+            lat: fallbackLat,
+            lon: fallbackLon,
+        };
+    }
+
+    return null;
+}
+
 function updateMap(coordinates, location) {
+    if (!mapPanel) {
+        return;
+    }
     if (!coordinates || !map) {
+        mapPanel.classList.add('hidden');
+        if (mapColumn) {
+            mapColumn.classList.add('hidden');
+        }
+        if (alarmLayout) {
+            alarmLayout.classList.remove('has-map');
+        }
         return;
     }
     const { lat, lon } = coordinates;
     const latNum = Number(lat);
     const lonNum = Number(lon);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
+        mapPanel.classList.add('hidden');
+        if (mapColumn) {
+            mapColumn.classList.add('hidden');
+        }
+        if (alarmLayout) {
+            alarmLayout.classList.remove('has-map');
+        }
+        return;
+    }
+
+    mapPanel.classList.remove('hidden');
+    if (mapColumn) {
+        mapColumn.classList.remove('hidden');
+    }
+    if (alarmLayout) {
+        alarmLayout.classList.add('has-map');
+    }
     map.setView([latNum, lonNum], 15);
     if (marker) {
         marker.setLatLng([latNum, lonNum]);
-    } else {
-        marker = L.marker([latNum, lonNum]).addTo(map);
+    } else if (window.L) {
+        marker = window.L.marker([latNum, lonNum]).addTo(map);
+    }
+    if (!marker) {
+        return;
     }
     marker.bindPopup(location || 'Einsatzort').openPopup();
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 150);
 }
 
 async function fetchAlarm() {
@@ -522,45 +571,59 @@ function updateDashboard(data) {
         setMode('alarm');
         const entryTime = alarm.timestamp_display || alarm.timestamp || data.received_at;
         const formattedTime = formatTimestamp(alarm.timestamp || data.received_at) || entryTime;
-        timestampEl.textContent = formattedTime
-            ? `Alarm eingegangen: ${formattedTime}`
-            : 'Aktive Alarmierung';
-        keywordEl.textContent = alarm.keyword || alarm.subject || '-';
+        if (timestampEl) {
+            timestampEl.textContent = formattedTime
+                ? `Alarm eingegangen: ${formattedTime}`
+                : 'Aktive Alarmierung';
+            timestampEl.classList.remove('hidden');
+        }
+        const village = alarm.location_details?.village;
+        const keywordText = alarm.keyword || alarm.subject || '-';
+        keywordEl.textContent = village ? `${keywordText} - ${village}` : keywordText;
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
             keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
-        }
-        if (diagnosisEl) {
-            diagnosisEl.textContent = alarm.diagnosis || '';
-            diagnosisEl.classList.toggle('hidden', !alarm.diagnosis);
         }
         if (remarkEl) {
             remarkEl.textContent = alarm.remark || '';
             remarkEl.classList.toggle('hidden', !alarm.remark);
         }
-        updateGroups(alarm.groups);
+        updateGroups(alarm.aao_groups || alarm.groups);
         locationEl.textContent = alarm.location || '-';
         updateLocationDetails(alarm.location_details || {});
         alarmTimeEl.textContent = formattedTime || '-';
 
         updateWeather(data.weather);
-        updateMap(data.coordinates, alarm.location);
+        const coordinates = resolveCoordinates(
+            data.coordinates,
+            alarm.latitude,
+            alarm.longitude,
+        );
+        updateMap(coordinates, alarm.location);
     } else {
         setMode('idle');
-        timestampEl.textContent = 'Keine aktuellen Einsätze';
+        if (timestampEl) {
+            timestampEl.textContent = 'Keine aktuellen Einsätze';
+            timestampEl.classList.remove('hidden');
+        }
         updateIdleWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = '';
             keywordSecondaryEl.classList.add('hidden');
         }
-        if (diagnosisEl) {
-            diagnosisEl.textContent = '';
-            diagnosisEl.classList.add('hidden');
-        }
         if (remarkEl) {
             remarkEl.textContent = '';
             remarkEl.classList.add('hidden');
+        }
+        if (mapPanel) {
+            mapPanel.classList.add('hidden');
+        }
+        if (mapColumn) {
+            mapColumn.classList.add('hidden');
+        }
+        if (alarmLayout) {
+            alarmLayout.classList.remove('has-map');
         }
         updateGroups(null);
         updateLocationDetails({});
