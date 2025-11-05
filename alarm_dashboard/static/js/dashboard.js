@@ -493,6 +493,21 @@ function updateIdleLastAlarm(info) {
     }
 }
 
+function resolveCoordinates(primary, fallbackLat, fallbackLon) {
+    if (primary && primary.lat !== undefined && primary.lon !== undefined) {
+        return primary;
+    }
+
+    if (fallbackLat != null && fallbackLon != null) {
+        return {
+            lat: fallbackLat,
+            lon: fallbackLon,
+        };
+    }
+
+    return null;
+}
+
 function updateMap(coordinates, location) {
     if (!mapPanel) {
         return;
@@ -557,9 +572,12 @@ function updateDashboard(data) {
         setMode('alarm');
         const entryTime = alarm.timestamp_display || alarm.timestamp || data.received_at;
         const formattedTime = formatTimestamp(alarm.timestamp || data.received_at) || entryTime;
-        timestampEl.textContent = formattedTime
-            ? `Alarm eingegangen: ${formattedTime}`
-            : 'Aktive Alarmierung';
+        if (timestampEl) {
+            timestampEl.textContent = formattedTime
+                ? `Alarm eingegangen: ${formattedTime}`
+                : 'Aktive Alarmierung';
+            timestampEl.classList.remove('hidden');
+        }
         keywordEl.textContent = alarm.keyword || alarm.subject || '-';
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
@@ -575,10 +593,18 @@ function updateDashboard(data) {
         alarmTimeEl.textContent = formattedTime || '-';
 
         updateWeather(data.weather);
-        updateMap(data.coordinates, alarm.location);
+        const coordinates = resolveCoordinates(
+            data.coordinates,
+            alarm.latitude,
+            alarm.longitude,
+        );
+        updateMap(coordinates, alarm.location);
     } else {
         setMode('idle');
-        timestampEl.textContent = 'Keine aktuellen Einsätze';
+        if (timestampEl) {
+            timestampEl.textContent = 'Keine aktuellen Einsätze';
+            timestampEl.classList.remove('hidden');
+        }
         updateIdleWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
         if (keywordSecondaryEl) {
