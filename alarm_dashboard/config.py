@@ -139,8 +139,14 @@ def load_config() -> AppConfig:
         or "https://api.open-meteo.com/v1/forecast"
     )
     weather_params = (
-        _get_env("WEATHER_PARAMS", default="current_weather=true")
-        or "current_weather=true"
+        _get_env(
+            "WEATHER_PARAMS",
+            default=(
+                "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall"
+                "&forecast_days=1"
+            ),
+        )
+        or "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall&forecast_days=1"
     )
 
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
