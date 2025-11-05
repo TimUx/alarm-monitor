@@ -145,8 +145,14 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
             app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
 
-    for hook_name in ("before_serving", "before_first_request", "before_request"):
-        hook = getattr(app, hook_name, None)
+    # ``before_first_request`` was removed in Flask 3.0.  Older releases, however,
+    # still rely on it, so we probe the available lifecycle hooks in a
+    # compatibility-friendly way without assuming the attribute exists.
+    for hook_name in ("before_serving", "before_request"):
+        try:
+            hook = getattr(app, hook_name)
+        except AttributeError:
+            continue
         if not callable(hook):
             continue
 
