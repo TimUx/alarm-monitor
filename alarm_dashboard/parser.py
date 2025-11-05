@@ -150,6 +150,7 @@ def _parse_incident_xml(body: str) -> Optional[Dict[str, Any]]:
         "diagnosis": diagnosis,
         "remark": remark,
         "description": diagnosis,
+        "aao_groups": aao_groups or None,
         "groups": groups,
         "dispatch_groups": dispatch_groups or None,
         "dispatch_group_codes": dispatch_codes or None,
@@ -185,6 +186,7 @@ def parse_alarm(raw_email: bytes) -> Dict[str, Any]:
         "keyword": None,
         "description": None,
         "groups": None,
+        "aao_groups": None,
         "location": None,
     }
 
