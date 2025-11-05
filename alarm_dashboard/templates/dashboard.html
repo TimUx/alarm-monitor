@@ -9,18 +9,23 @@
     <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
-    <div id="app">
+    <div id="app" class="app-shell">
+        <div class="app-topline" aria-hidden="true"></div>
         <header class="app-header">
-            <div class="crest-wrap">
-                <img src="/static/img/crest.svg" alt="Gemeindewappen" class="crest">
-            </div>
-            <div class="header-text">
-                <h1>Einsatzdashboard</h1>
+            <div class="header-brand">
+                <h1>
+                    Feuerwehr
+                    <span>Willingshausen</span>
+                </h1>
                 <div class="timestamp" id="timestamp">Keine aktuellen Einsätze</div>
             </div>
+            <div class="header-meta">
+                <span class="header-welcome">Willkommen</span>
+                <img src="/static/img/crest.svg" alt="Gemeindewappen" class="crest">
+            </div>
         </header>
-        <main>
-            <section class="view alarm-view hidden" id="alarm-view">
+        <main class="app-main">
+            <section class="panel view alarm-view hidden" id="alarm-view">
                 <div class="alarm-header">
                     <h2 id="keyword">-</h2>
                     <p class="alarm-subtitle" id="keyword-secondary"></p>
@@ -58,37 +63,79 @@
                         </dl>
                     </div>
                 </div>
-                <div class="weather" id="weather">
+                <div class="panel-section weather" id="weather">
                     <h3>Wetter am Einsatzort</h3>
                     <p>Keine Daten verfügbar</p>
                 </div>
             </section>
-            <section class="map hidden" id="map-section">
+            <section class="panel map-panel hidden" id="map-section">
                 <div id="map"></div>
             </section>
-            <section class="view idle-view" id="idle-view">
-                <div class="idle-content">
-                    <div class="idle-crest">
+            <section class="panel view idle-view" id="idle-view">
+                <div class="idle-header">
+                    <div class="idle-badge">
                         <img src="/static/img/crest.svg" alt="Gemeindewappen" class="crest">
                     </div>
-                    <div class="idle-clock">
+                    <div class="idle-timebox">
                         <div class="idle-time" id="idle-time">--:--</div>
                         <div class="idle-date" id="idle-date">Warte auf Zeitdaten...</div>
                     </div>
+                </div>
+                <div class="idle-content">
                     <div class="idle-weather" id="idle-weather">
                         <h3>Aktuelles Wetter</h3>
                         <p>Keine Daten verfügbar</p>
                     </div>
-                </div>
-                <div class="idle-last-container">
                     <div class="idle-last-alarm" id="idle-last-alarm">
                         <h3>Letzter Einsatz</h3>
                         <p>Keine Einsätze vorhanden</p>
                     </div>
-                    <a href="/history" class="history-button">Historie ansehen</a>
                 </div>
+                <a href="/history" class="history-button">Historie ansehen</a>
             </section>
         </main>
+        <nav class="bottom-nav" aria-label="Hauptnavigation">
+            <a href="/" class="bottom-nav__item bottom-nav__item--active">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5h-4v5H5a1 1 0 0 1-1-1z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Home</span>
+            </a>
+            <a href="#alarm-view" class="bottom-nav__item">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M12 3a9 9 0 0 0-9 9h2a7 7 0 1 1 7 7v-3l-4 4 4 4v-3a9 9 0 0 0 0-18z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Einsatz</span>
+            </a>
+            <a href="#groups" class="bottom-nav__item">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 8 11zm0 2c-2.67 0-8 1.34-8 4v2h9v-2.5a5.5 5.5 0 0 1 3-4.91A10.24 10.24 0 0 0 8 13zm8 0c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Teams</span>
+            </a>
+            <a href="#map-section" class="bottom-nav__item">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M9.5 3 3 5.5v15l6.5-2.5L15 21l6-2.25V3.75L15 6zM9 6.29V17.7l-4 1.54V7.82zm2 11.99V6.4l4-1.54v11.42zm6-.03V5.85l2-.75v11.46z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Karte</span>
+            </a>
+            <a href="/history" class="bottom-nav__item">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14zm-9-7h2v2h-2zm4 0h2v2h-2zm-8 0h2v2H6z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Historie</span>
+            </a>
+        </nav>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>
     <script src="/static/js/dashboard.js"></script>

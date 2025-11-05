@@ -1,9 +1,12 @@
 :root {
-    --green: #093d15;
-    --dark-green: #05240d;
-    --red: #b71c1c;
-    --cream: #f7f3e3;
-    --yellow: #f4c542;
+    --background: #f3f5f9;
+    --surface: #ffffff;
+    --surface-muted: #f9fafc;
+    --accent: #c1121f;
+    --text-primary: #1f2933;
+    --text-secondary: #6b7280;
+    --divider: #e1e6ef;
+    --shadow-soft: 0 18px 42px rgba(18, 32, 60, 0.08);
 }
 
 * {
@@ -12,77 +15,101 @@
 
 body {
     margin: 0;
-    font-family: 'Montserrat', 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top, rgba(15, 70, 25, 0.95), var(--dark-green));
-    color: var(--cream);
-    min-height: 100vh;
+    font-family: 'Inter', 'Segoe UI', 'Montserrat', sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
 }
 
 .history-app {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 3rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-topline {
+    height: 10px;
+    background: var(--accent);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.75rem clamp(1.5rem, 4vw, 3rem);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+}
+
+.history-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.history-back {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    border: 1px solid var(--divider);
+    background: var(--surface-muted);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.history-back:hover,
+.history-back:focus {
+    background: rgba(193, 18, 31, 0.1);
+    border-color: rgba(193, 18, 31, 0.35);
+    transform: translateY(-2px);
+    outline: none;
+}
+
+.history-brand-text h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    line-height: 1.2;
+}
+
+.history-brand-text h1 span {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.history-subtitle {
+    margin: 0.6rem 0 0;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.history-crest {
+    width: 88px;
+    height: auto;
+}
+
+main {
+    flex: 1;
+    padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 5rem;
     display: flex;
     flex-direction: column;
     gap: 2rem;
 }
 
-.history-header {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.history-back {
-    align-self: flex-start;
-    color: var(--cream);
-    text-decoration: none;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    background: rgba(0, 0, 0, 0.35);
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.history-back:hover,
-.history-back:focus {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
-    outline: none;
-}
-
-.history-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-.history-crest {
-    width: 96px;
-    height: 96px;
-}
-
-.history-title-wrap h1 {
-    margin: 0;
-    font-size: 2.2rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--yellow);
-}
-
-.history-subtitle {
-    margin: 0.35rem 0 0;
-    font-size: 1rem;
-    opacity: 0.85;
-}
-
 .history-table-wrap {
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--surface);
     border-radius: 24px;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--divider);
+    box-shadow: var(--shadow-soft);
     overflow: hidden;
 }
 
@@ -93,85 +120,159 @@ body {
 }
 
 .history-table thead {
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--surface-muted);
 }
 
 .history-table th,
 .history-table td {
-    padding: 1rem 1.25rem;
+    padding: 1.1rem 1.5rem;
     text-align: left;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--divider);
 }
 
 .history-table th {
-    font-size: 0.95rem;
-    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--yellow);
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
 }
 
 .history-table tbody tr:nth-child(odd) {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-muted);
 }
 
 .history-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.history-table td {
-    font-size: 0.95rem;
-    vertical-align: top;
+    background: rgba(193, 18, 31, 0.05);
 }
 
 .history-description {
     font-weight: 600;
-    margin-bottom: 0.3rem;
+    color: var(--text-primary);
 }
 
 .history-remark {
+    margin-top: 0.35rem;
     font-size: 0.85rem;
-    color: var(--yellow);
-    letter-spacing: 0.04em;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .history-empty {
     text-align: center;
-    font-size: 1.2rem;
-    opacity: 0.85;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
 }
 
-@media (max-width: 900px) {
-    .history-table {
-        display: block;
-        overflow-x: auto;
-        width: 100%;
-    }
+.history-bottom-nav {
+    background: var(--surface);
+    border-top: 1px solid var(--divider);
+    box-shadow: 0 -12px 32px rgba(18, 32, 60, 0.08);
+    padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
 }
 
-@media (max-width: 640px) {
-    .history-app {
-        padding: 1.5rem 1rem 2rem;
-    }
+.history-bottom-nav__item {
+    text-decoration: none;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    transition: color 0.2s ease;
+}
 
-    .history-title-wrap {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
+.history-bottom-nav__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--surface-muted);
+    border: 1px solid transparent;
+    display: grid;
+    place-items: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
 
-    .history-crest {
-        width: 72px;
-        height: 72px;
+.history-bottom-nav__item svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.history-bottom-nav__item:hover,
+.history-bottom-nav__item:focus {
+    color: var(--accent);
+    outline: none;
+}
+
+.history-bottom-nav__item:hover .history-bottom-nav__icon,
+.history-bottom-nav__item:focus .history-bottom-nav__icon {
+    background: rgba(193, 18, 31, 0.08);
+    border-color: rgba(193, 18, 31, 0.3);
+}
+
+.history-bottom-nav__item--active {
+    color: var(--accent);
+}
+
+.history-bottom-nav__item--active .history-bottom-nav__icon {
+    background: rgba(193, 18, 31, 0.12);
+    border-color: rgba(193, 18, 31, 0.35);
+}
+
+.history-bottom-nav__item[aria-disabled="true"] {
+    pointer-events: none;
+    color: rgba(107, 114, 128, 0.6);
+}
+
+.history-bottom-nav__item[aria-disabled="true"] .history-bottom-nav__icon {
+    opacity: 0.5;
+}
+
+@media (max-width: 960px) {
+    main {
+        padding-bottom: 4rem;
     }
 
     .history-table {
         min-width: 0;
+        display: block;
+        overflow-x: auto;
         border-collapse: separate;
+    }
+}
+
+@media (max-width: 640px) {
+    :root {
+        font-size: 15px;
+    }
+
+    .history-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .history-brand {
+        width: 100%;
+    }
+
+    .history-crest {
+        width: 72px;
     }
 
     .history-table thead {
         display: none;
     }
 
+    .history-table,
     .history-table tbody,
     .history-table tr,
     .history-table td {
@@ -180,12 +281,13 @@ body {
     }
 
     .history-table tr {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        border-bottom: 1px solid var(--divider);
         padding: 1rem 1rem 0.5rem;
     }
 
     .history-table td {
         padding: 0.4rem 0;
+        border: none;
         font-size: 1rem;
     }
 
@@ -195,7 +297,7 @@ body {
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: rgba(255, 255, 255, 0.65);
+        color: var(--text-secondary);
         margin-bottom: 0.25rem;
     }
 }

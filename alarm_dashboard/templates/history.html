@@ -9,15 +9,21 @@
 </head>
 <body>
     <div class="history-app">
+        <div class="history-topline" aria-hidden="true"></div>
         <header class="history-header">
-            <a href="/" class="history-back">&larr; Zurück zum Dashboard</a>
-            <div class="history-title-wrap">
-                <img src="/static/img/crest.svg" alt="Gemeindewappen" class="history-crest">
-                <div>
-                    <h1>Einsatzhistorie</h1>
-                    <p class="history-subtitle">Letzte Einsätze der Leitstelle</p>
+            <div class="history-brand">
+                <a href="/" class="history-back" aria-label="Zurück zum Dashboard">
+                    <span aria-hidden="true">&larr;</span>
+                </a>
+                <div class="history-brand-text">
+                    <h1>
+                        Feuerwehr
+                        <span>Willingshausen</span>
+                    </h1>
+                    <p class="history-subtitle">Einsatzhistorie</p>
                 </div>
             </div>
+            <img src="/static/img/crest.svg" alt="Gemeindewappen" class="history-crest">
         </header>
         <main>
             {% if entries %}
@@ -70,6 +76,48 @@
             <p class="history-empty">Keine Einsätze vorhanden.</p>
             {% endif %}
         </main>
+        <nav class="history-bottom-nav" aria-label="Hauptnavigation">
+            <a href="/" class="history-bottom-nav__item">
+                <span class="history-bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5h-4v5H5a1 1 0 0 1-1-1z" />
+                    </svg>
+                </span>
+                <span class="history-bottom-nav__label">Home</span>
+            </a>
+            <a href="/history" class="history-bottom-nav__item history-bottom-nav__item--active">
+                <span class="history-bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14zm-9-7h2v2h-2zm4 0h2v2h-2zm-8 0h2v2H6z" />
+                    </svg>
+                </span>
+                <span class="history-bottom-nav__label">Historie</span>
+            </a>
+            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
+                <span class="history-bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M7 4h10l1 4H6zm-1 6h12l1 9H5z" />
+                    </svg>
+                </span>
+                <span class="history-bottom-nav__label">Berichte</span>
+            </a>
+            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
+                <span class="history-bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M12 2a5 5 0 1 1-5 5 5 5 0 0 1 5-5zm0 12c-3.31 0-9 1.66-9 5v3h18v-3c0-3.34-5.69-5-9-5z" />
+                    </svg>
+                </span>
+                <span class="history-bottom-nav__label">Team</span>
+            </a>
+            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
+                <span class="history-bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M4 5h16v2H4zm0 6h10v2H4zm0 6h16v2H4z" />
+                    </svg>
+                </span>
+                <span class="history-bottom-nav__label">Listen</span>
+            </a>
+        </nav>
     </div>
 </body>
 </html>
