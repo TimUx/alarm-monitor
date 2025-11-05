@@ -295,7 +295,7 @@ function updateMobileWeather(weather) {
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
     const directionText = windInfo
-        ? `${windInfo.abbr} (${windInfo.label})`
+        ? windInfo.abbr
         : formatMeasurement(Number(weather.winddirection), '°');
 
     const temperatureItem = createMobileWeatherItem('Temperatur', temperatureText);
@@ -320,18 +320,11 @@ function updateMobileWeather(weather) {
     container.appendChild(list);
 }
 
-function updateMobileIdleWeather(weather, locationName) {
+function updateMobileIdleWeather(weather) {
     mobileIdleWeather.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Aktuelles Wetter';
     mobileIdleWeather.appendChild(title);
-
-    if (locationName) {
-        const place = document.createElement('div');
-        place.classList.add('idle-weather-location');
-        place.textContent = locationName;
-        mobileIdleWeather.appendChild(place);
-    }
 
     if (!weather) {
         const empty = document.createElement('p');
@@ -352,7 +345,7 @@ function updateMobileIdleWeather(weather, locationName) {
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
     const directionText = windInfo
-        ? `${windInfo.abbr} (${windInfo.label})`
+        ? windInfo.abbr
         : formatMeasurement(Number(weather.winddirection), '°');
 
     const temperature = createLabeledValueElement('div', 'Temperatur', temperatureText);
@@ -454,7 +447,7 @@ function updateMobileDashboard(data) {
     } else {
         setMobileMode('idle');
         mobileTimestamp.textContent = 'Keine aktuellen Einsätze';
-        updateMobileIdleWeather(data.weather, data.location);
+        updateMobileIdleWeather(data.weather);
         updateMobileLastAlarm(data.last_alarm);
         if (mobileKeywordSecondary) {
             mobileKeywordSecondary.textContent = '';

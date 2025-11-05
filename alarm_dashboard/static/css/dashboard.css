@@ -371,12 +371,6 @@ body {
     color: var(--accent);
 }
 
-.idle-weather-location {
-    font-size: clamp(1.7rem, 1.3rem + 0.8vw, 2.2rem);
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
 .idle-weather-details {
     display: grid;
     gap: 0.75rem;

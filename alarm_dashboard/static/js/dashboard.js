@@ -288,7 +288,7 @@ function updateWeather(weather) {
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
     const directionText = windInfo
-        ? `${windInfo.abbr} (${windInfo.label})`
+        ? windInfo.abbr
         : formatMeasurement(Number(weather.winddirection), '°');
 
     const details = document.createElement('div');
@@ -316,18 +316,11 @@ function updateWeather(weather) {
     container.appendChild(details);
 }
 
-function updateIdleWeather(weather, locationName) {
+function updateIdleWeather(weather) {
     idleWeatherEl.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Aktuelles Wetter';
     idleWeatherEl.appendChild(title);
-
-    if (locationName) {
-        const place = document.createElement('div');
-        place.classList.add('idle-weather-location');
-        place.textContent = locationName;
-        idleWeatherEl.appendChild(place);
-    }
 
     if (!weather) {
         const empty = document.createElement('p');
@@ -348,7 +341,7 @@ function updateIdleWeather(weather, locationName) {
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
     const directionText = windInfo
-        ? `${windInfo.abbr} (${windInfo.label})`
+        ? windInfo.abbr
         : formatMeasurement(Number(weather.winddirection), '°');
 
     const temperature = createLabeledValueElement('div', 'Temperatur', temperatureText);
@@ -555,7 +548,7 @@ function updateDashboard(data) {
     } else {
         setMode('idle');
         timestampEl.textContent = 'Keine aktuellen Einsätze';
-        updateIdleWeather(data.weather, data.location);
+        updateIdleWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = '';
