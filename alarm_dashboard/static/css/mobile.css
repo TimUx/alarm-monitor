@@ -341,29 +341,6 @@ body {
     font-size: clamp(1.1rem, 0.9rem + 0.6vw, 1.4rem);
 }
 
-.mobile-history-button {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0.85rem 1.6rem;
-    border-radius: 999px;
-    text-decoration: none;
-    background: var(--accent);
-    color: #fff;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    box-shadow: 0 12px 32px rgba(193, 18, 31, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.mobile-history-button:hover,
-.mobile-history-button:focus {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 36px rgba(193, 18, 31, 0.4);
-    outline: none;
-}
-
 .mobile-bottom-nav {
     position: sticky;
     bottom: 0;
