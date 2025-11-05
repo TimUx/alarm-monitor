@@ -280,14 +280,14 @@ body {
 
 .mobile-idle-time {
     margin: 0;
-    font-size: 2.8rem;
+    font-size: clamp(3.4rem, 7vw, 4.4rem);
     font-weight: 700;
     color: var(--accent);
 }
 
 .mobile-idle-date {
     margin: 0;
-    font-size: 1rem;
+    font-size: clamp(1.2rem, 3.8vw, 1.6rem);
     color: var(--text-secondary);
 }
 
@@ -310,10 +310,35 @@ body {
 .mobile-idle-weather h3,
 .mobile-last-alarm h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: clamp(1.8rem, 1.4rem + 0.9vw, 2.2rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
+}
+
+.mobile-idle-weather .idle-weather-location {
+    font-size: clamp(1.4rem, 1.1rem + 0.8vw, 1.9rem);
+    font-weight: 600;
+}
+
+.mobile-idle-weather .idle-weather-details {
+    display: grid;
+    gap: 0.5rem;
+    font-size: clamp(1.3rem, 1rem + 0.7vw, 1.7rem);
+}
+
+.mobile-idle-weather .idle-weather-details strong {
+    color: var(--accent);
+}
+
+.mobile-idle-weather p {
+    margin: 0;
+    font-size: clamp(1.2rem, 0.9rem + 0.7vw, 1.5rem);
+}
+
+.mobile-last-alarm p {
+    margin: 0;
+    font-size: clamp(1.1rem, 0.9rem + 0.6vw, 1.4rem);
 }
 
 .mobile-history-button {
