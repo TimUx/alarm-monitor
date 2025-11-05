@@ -91,6 +91,13 @@ def test_create_app_stops_fetcher_on_teardown(dummy_fetcher: List[_DummyFetcher]
     with flask_app.app_context():
         assert dummy_fetcher[0].stopped == 0
 
+    assert dummy_fetcher[0].stopped == 0
+
+    cleanup = flask_app.config.get("MAIL_FETCHER_CLEANUP")
+    assert callable(cleanup)
+
+    cleanup()
+
     assert dummy_fetcher[0].stopped == 1
 
 

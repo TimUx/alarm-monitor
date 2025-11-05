@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -118,11 +119,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             fetcher = None
         else:
 
-            def _stop_background_fetcher(_: Optional[BaseException]) -> None:
+            def _stop_background_fetcher() -> None:
+                nonlocal fetcher
                 if fetcher is not None:
                     fetcher.stop()
+                    fetcher = None
+                    app.config["MAIL_FETCHER"] = None
 
-            app.teardown_appcontext(_stop_background_fetcher)
+            app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
+            atexit.register(_stop_background_fetcher)
     else:
         LOGGER.warning(
             "Mail fetching disabled - starting without IMAP configuration."
