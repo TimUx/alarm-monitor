@@ -178,7 +178,7 @@ body {
 }
 
 .alarm-layout.has-map {
-    grid-template-columns: minmax(0, clamp(380px, 50vw, 680px)) minmax(0, 1fr);
+    grid-template-columns: minmax(0, clamp(420px, 50%, 760px)) minmax(0, 1fr);
 }
 
 .alarm-column {
@@ -190,13 +190,13 @@ body {
 
 @media (min-width: 1201px) {
     .alarm-layout.has-map .alarm-column--info {
-        max-width: clamp(380px, 50vw, 680px);
+        max-width: clamp(420px, 50%, 760px);
     }
 }
 
 .alarm-column--info {
     width: 100%;
-    max-width: clamp(380px, 50vw, 680px);
+    max-width: clamp(420px, 50%, 760px);
 }
 
 .alarm-column--map {
@@ -229,7 +229,7 @@ body {
 
 .meta-card h3 {
     margin: 0;
-    font-size: clamp(1.4rem, 1.2rem + 0.5vw, 1.7rem);
+    font-size: clamp(1.55rem, 1.3rem + 0.65vw, 1.95rem);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
@@ -282,7 +282,7 @@ body {
     flex-direction: column;
     gap: 0.75rem;
     color: var(--text-primary);
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .location-details {
@@ -302,12 +302,14 @@ body {
 .location-details dt {
     margin: 0;
     font-weight: 600;
+    font-size: clamp(1.15rem, 1.05rem + 0.35vw, 1.35rem);
     color: #000;
 }
 
 .location-details dd {
     margin: 0;
     text-align: right;
+    font-weight: 400;
     color: #000;
 }
 

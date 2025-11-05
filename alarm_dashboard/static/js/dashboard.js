@@ -239,8 +239,6 @@ const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const remarkEl = document.getElementById('remark');
-const locationTownEl = document.getElementById('location-town');
-const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
 
@@ -440,8 +438,6 @@ function updateGroups(groups) {
 
 function updateLocationDetails(details) {
     const mapping = [
-        [locationTownEl, details?.town],
-        [locationVillageEl, details?.village],
         [locationStreetEl, details?.street],
         [locationAdditionalEl, details?.additional || details?.object],
     ];
@@ -546,8 +542,11 @@ function updateMap(coordinates, location) {
     map.setView([latNum, lonNum], 15);
     if (marker) {
         marker.setLatLng([latNum, lonNum]);
-    } else {
-        marker = L.marker([latNum, lonNum]).addTo(map);
+    } else if (window.L) {
+        marker = window.L.marker([latNum, lonNum]).addTo(map);
+    }
+    if (!marker) {
+        return;
     }
     marker.bindPopup(location || 'Einsatzort').openPopup();
     setTimeout(() => {
@@ -578,7 +577,9 @@ function updateDashboard(data) {
                 : 'Aktive Alarmierung';
             timestampEl.classList.remove('hidden');
         }
-        keywordEl.textContent = alarm.keyword || alarm.subject || '-';
+        const village = alarm.location_details?.village;
+        const keywordText = alarm.keyword || alarm.subject || '-';
+        keywordEl.textContent = village ? `${keywordText} - ${village}` : keywordText;
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
             keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
