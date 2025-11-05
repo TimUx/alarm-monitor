@@ -1,13 +1,18 @@
-const map = L.map('map', {
-    zoomControl: false
-}).setView([51.1657, 10.4515], 6);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
+let map = null;
 let marker = null;
+
+if (typeof window.L !== 'undefined') {
+    map = window.L.map('map', {
+        zoomControl: false
+    }).setView([51.1657, 10.4515], 6);
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+} else {
+    console.warn('Leaflet library not available, map will be disabled.');
+}
 
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
@@ -29,11 +34,17 @@ const locationAdditionalEl = document.getElementById('location-additional');
 function setMode(mode) {
     if (mode === 'alarm') {
         alarmView.classList.remove('hidden');
-        mapSection.classList.remove('hidden');
+        if (map) {
+            mapSection.classList.remove('hidden');
+        } else {
+            mapSection.classList.add('hidden');
+        }
         idleView.classList.add('hidden');
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 200);
+        if (map) {
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 200);
+        }
     } else {
         alarmView.classList.add('hidden');
         mapSection.classList.add('hidden');
@@ -218,7 +229,7 @@ function updateIdleLastAlarm(info) {
 }
 
 function updateMap(coordinates, location) {
-    if (!coordinates) {
+    if (!coordinates || !map) {
         return;
     }
     const { lat, lon } = coordinates;
