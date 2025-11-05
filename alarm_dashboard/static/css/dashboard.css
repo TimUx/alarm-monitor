@@ -180,16 +180,24 @@ body {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
+    align-items: stretch;
 }
 
 .alarm-layout.has-map {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, min(50%, 44rem)) minmax(0, 1fr);
 }
 
 .alarm-column {
     display: flex;
     flex-direction: column;
     gap: 1.75rem;
+}
+
+
+@media (min-width: 1201px) {
+    .alarm-layout.has-map .alarm-column--info {
+        max-width: min(50%, 44rem);
+    }
 }
 
 .alarm-column--map {
@@ -214,7 +222,7 @@ body {
 
 .meta-card h3 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: clamp(1.1rem, 0.95rem + 0.4vw, 1.2rem);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
