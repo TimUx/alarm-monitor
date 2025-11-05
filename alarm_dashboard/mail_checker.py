@@ -69,7 +69,7 @@ class AlarmMailFetcher:
             server = imaplib.IMAP4(config.host, config.port)
 
         try:
-            server.login(config.username, config.password)
+            self._login_with_fallback(server, config.username, config.password)
             server.select(config.mailbox)
             LOGGER.debug("Searching for messages with criteria: %s", config.search_criteria)
             typ, data = server.uid("SEARCH", None, config.search_criteria)
@@ -97,5 +97,49 @@ class AlarmMailFetcher:
             except imaplib.IMAP4.error:
                 LOGGER.debug("Failed to cleanly log out from IMAP server")
 
+
+    @staticmethod
+    def _set_imap_encoding(server: imaplib.IMAP4, encoding: str) -> None:
+        """Set the IMAP client's preferred encoding if supported."""
+
+        current = getattr(server, "_encoding", None)
+        if isinstance(current, str) and current.lower() == encoding:
+            return
+        try:
+            server._encoding = encoding  # type: ignore[attr-defined]
+        except (AttributeError, TypeError):  # pragma: no cover - depends on stdlib internals
+            LOGGER.debug("Unable to set IMAP encoding to %s", encoding)
+
+    def _login_with_fallback(
+        self, server: imaplib.IMAP4, username: str, password: str
+    ) -> None:
+        """Attempt to authenticate using multiple encodings.
+
+        Some IMAP servers expect credentials to be encoded using legacy
+        single-byte codecs (e.g. ISO-8859-1).  ``imaplib`` defaults to ASCII
+        which breaks non-ASCII passwords, while some servers reject UTF-8
+        outright.  To stay compatible we attempt authentication using UTF-8
+        first and fall back to Latin-1 if the server responds with an
+        authentication error.
+        """
+
+        last_error: Optional[imaplib.IMAP4.error] = None
+        for encoding in ("utf-8", "latin-1"):
+            self._set_imap_encoding(server, encoding)
+            try:
+                server.login(username, password)
+                if last_error is not None:
+                    LOGGER.info(
+                        "IMAP login succeeded after retrying with %s encoding", encoding
+                    )
+                return
+            except imaplib.IMAP4.error as exc:
+                LOGGER.debug(
+                    "IMAP login failed when using %s encoding: %s", encoding, exc
+                )
+                last_error = exc
+
+        if last_error is not None:
+            raise last_error
 
 __all__ = ["AlarmMailFetcher"]
