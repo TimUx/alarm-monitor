@@ -69,6 +69,16 @@ class AlarmMailFetcher:
             server = imaplib.IMAP4(config.host, config.port)
 
         try:
+            # The default encoding of ``imaplib`` is ASCII which breaks
+            # authentication for passwords containing non-ASCII characters
+            # (e.g. "ä" gets converted to "?"). Force UTF-8 to avoid
+            # credentials being mangled before they reach the server.
+            if getattr(server, "_encoding", "").lower() != "utf-8":
+                try:
+                    server._encoding = "utf-8"  # type: ignore[attr-defined]
+                except (AttributeError, TypeError):  # pragma: no cover - safety net
+                    LOGGER.debug("Unable to set IMAP encoding to UTF-8")
+
             server.login(config.username, config.password)
             server.select(config.mailbox)
             LOGGER.debug("Searching for messages with criteria: %s", config.search_criteria)
