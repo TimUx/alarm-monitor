@@ -128,16 +128,19 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
             app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
 
-            cleanup_flag = "MAIL_FETCHER_CLEANUP_REGISTERED"
-            if not app.config.get(cleanup_flag):
-                atexit.register(_stop_background_fetcher)
-                app.config[cleanup_flag] = True
-    else:
-        LOGGER.warning(
-            "Mail fetching disabled - starting without IMAP configuration."
-        )
+    for hook_name in ("before_serving", "before_first_request", "before_request"):
+        hook = getattr(app, hook_name, None)
+        if not callable(hook):
+            continue
 
-    app.config["MAIL_FETCHER"] = fetcher
+        hook(_ensure_background_fetcher_started)
+        if hook_name != "before_serving":
+            # Legacy Flask versions do not provide ``before_serving`` so we start the
+            # fetcher immediately instead of waiting for the first HTTP request.
+            _ensure_background_fetcher_started()
+        break
+    else:  # Fallback if Flask does not expose lifecycle hooks
+        _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:
