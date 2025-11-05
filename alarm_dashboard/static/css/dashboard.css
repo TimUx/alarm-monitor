@@ -257,6 +257,31 @@ body {
     color: var(--text-primary);
 }
 
+.weather-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.25rem 0 1rem;
+    font-size: 1.45rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.weather-summary .weather-icon {
+    font-size: clamp(2.2rem, 1.8rem + 0.6vw, 2.6rem);
+    line-height: 1;
+}
+
+.idle-weather .weather-summary {
+    font-size: clamp(1.8rem, 1.4rem + 0.8vw, 2.3rem);
+    margin-top: -0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.idle-weather .weather-summary .weather-icon {
+    font-size: clamp(2.4rem, 2rem + 0.8vw, 3.1rem);
+}
+
 .weather-details {
     display: grid;
     gap: 0.75rem;

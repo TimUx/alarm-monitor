@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -44,7 +44,58 @@ def fetch_weather(
             f"Weather API request failed with status {response.status_code}: {response.text}"
         )
     data = response.json()
-    return data.get("current_weather")
+
+    current_raw = data.get("current_weather")
+    if isinstance(current_raw, dict):
+        current: Optional[Dict[str, float]] = dict(current_raw)
+    else:
+        current_data = data.get("current")
+        current = dict(current_data) if isinstance(current_data, dict) else None
+
+    if not current:
+        return None
+
+    time_value = current.get("time")
+    hourly: Optional[Dict[str, List[Any]]] = (
+        data.get("hourly") if isinstance(data.get("hourly"), dict) else None
+    )
+    hourly_units: Optional[Dict[str, str]] = (
+        data.get("hourly_units") if isinstance(data.get("hourly_units"), dict) else None
+    )
+
+    if (
+        hourly
+        and isinstance(time_value, str)
+        and isinstance(hourly.get("time"), list)
+    ):
+        try:
+            index = hourly["time"].index(time_value)
+        except ValueError:
+            index = None
+
+        if index is None and hourly.get("time"):
+            index = len(hourly["time"]) - 1
+
+        if index is not None:
+            enrichment_fields = [
+                "precipitation",
+                "rain",
+                "showers",
+                "snowfall",
+                "precipitation_probability",
+            ]
+            for field in enrichment_fields:
+                values = hourly.get(field)
+                if not isinstance(values, list) or index >= len(values):
+                    continue
+                value = values[index]
+                if value is None:
+                    continue
+                current[field] = value
+                if hourly_units and field in hourly_units:
+                    current[f"{field}_unit"] = hourly_units[field]
+
+    return current
 
 
 __all__ = ["fetch_weather", "WeatherServiceError"]
