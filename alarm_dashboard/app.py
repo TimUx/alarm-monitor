@@ -127,7 +127,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                     app.config["MAIL_FETCHER"] = None
 
             app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
-            atexit.register(_stop_background_fetcher)
+
+            cleanup_flag = "MAIL_FETCHER_CLEANUP_REGISTERED"
+            if not app.config.get(cleanup_flag):
+                atexit.register(_stop_background_fetcher)
+                app.config[cleanup_flag] = True
     else:
         LOGGER.warning(
             "Mail fetching disabled - starting without IMAP configuration."

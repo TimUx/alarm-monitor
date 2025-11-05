@@ -101,6 +101,23 @@ def test_create_app_stops_fetcher_on_teardown(dummy_fetcher: List[_DummyFetcher]
     assert dummy_fetcher[0].stopped == 1
 
 
+def test_fetcher_continues_running_after_request(dummy_fetcher: List[_DummyFetcher]) -> None:
+    """Issuing a request should not stop the background mail fetcher."""
+
+    config = AppConfig(
+        mail=MailConfig(host="imap.example", username="user", password="secret"),
+    )
+
+    flask_app = app_module.create_app(config)
+
+    with flask_app.test_client() as client:
+        response = client.get("/health")
+
+    assert response.status_code == 200
+    assert flask_app.config["MAIL_FETCHER"] is dummy_fetcher[0]
+    assert dummy_fetcher[0].stopped == 0
+
+
 def test_create_app_logs_and_discards_fetcher_when_start_fails(
     monkeypatch: pytest.MonkeyPatch, dummy_fetcher: List[_DummyFetcher]
 ) -> None:
