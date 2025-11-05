@@ -50,10 +50,10 @@ body {
 
 .header-brand h1 {
     margin: 0;
-    font-size: 2rem;
+    font-size: clamp(2.75rem, 2rem + 1.5vw, 3.5rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    line-height: 1.2;
+    line-height: 1.1;
     color: var(--accent);
 }
 
@@ -62,26 +62,27 @@ body {
     color: var(--text-primary);
     font-weight: 600;
     letter-spacing: 0.05em;
+    font-size: 0.92em;
 }
 
 .timestamp {
-    margin-top: 0.5rem;
-    font-size: 1rem;
+    margin-top: 0.75rem;
+    font-size: 1.2rem;
     color: var(--text-secondary);
 }
 
 .header-meta {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1.5rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.9rem;
+    font-size: 1rem;
 }
 
 .crest {
-    width: 72px;
+    width: clamp(96px, 72px + 4vw, 140px);
     height: auto;
 }
 
@@ -244,9 +245,28 @@ body {
 
 .weather h3 {
     margin: 0 0 1rem;
-    font-size: 0.95rem;
+    font-size: clamp(1.35rem, 1rem + 0.9vw, 1.8rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    color: var(--accent);
+}
+
+.weather p {
+    margin: 0.5rem 0;
+    font-size: clamp(1.85rem, 1.3rem + 1.1vw, 2.6rem);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.weather-details {
+    display: grid;
+    gap: 0.9rem;
+    font-size: clamp(1.6rem, 1.2rem + 0.8vw, 2.2rem);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.weather-details strong {
     color: var(--accent);
 }
 
@@ -274,13 +294,14 @@ body {
 }
 
 .idle-badge {
-    width: 96px;
-    height: 96px;
-    background: var(--surface-muted);
+    width: clamp(120px, 96px + 4vw, 168px);
+    height: clamp(120px, 96px + 4vw, 168px);
+    background: #ffffff;
     border-radius: 24px;
     border: 1px solid var(--divider);
     display: grid;
     place-items: center;
+    box-shadow: 0 18px 40px rgba(18, 32, 60, 0.12);
 }
 
 .idle-timebox {
@@ -290,7 +311,7 @@ body {
 }
 
 .idle-time {
-    font-size: 3.5rem;
+    font-size: clamp(4.5rem, 3rem + 3vw, 6.5rem);
     font-weight: 700;
     color: var(--accent);
     margin: 0;
@@ -298,7 +319,7 @@ body {
 
 .idle-date {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: clamp(1.4rem, 1rem + 1vw, 2.1rem);
     color: var(--text-secondary);
 }
 
@@ -316,16 +337,40 @@ body {
     border: 1px solid var(--divider);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .idle-weather h3,
 .idle-last-alarm h3 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: clamp(1.2rem, 0.95rem + 0.5vw, 1.6rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
+}
+
+.idle-weather-location {
+    font-size: clamp(1.6rem, 1.2rem + 0.8vw, 2.2rem);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.idle-weather-details {
+    display: grid;
+    gap: 0.85rem;
+    font-size: clamp(1.55rem, 1.15rem + 0.7vw, 2.05rem);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.idle-weather-details strong {
+    color: var(--accent);
+}
+
+.idle-weather p {
+    margin: 0;
+    font-size: clamp(1.55rem, 1.15rem + 0.7vw, 2.05rem);
+    font-weight: 600;
 }
 
 .history-button {
