@@ -1,37 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" role="img" aria-labelledby="title desc">
-  <title id="title">Stilisiertes Gemeindewappen</title>
-  <desc id="desc">Wappen mit grünem Helm, gelber und weiß-roter Schildhälfte sowie roten Verzierungen.</desc>
-  <defs>
-    <linearGradient id="shieldHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
-      <stop offset="100%" stop-color="#fdf4bf" stop-opacity="0.4" />
-    </linearGradient>
-  </defs>
-  <g fill="none" stroke-linejoin="round">
-    <path d="M200 30C138 38 90 88 90 152v118c0 82 56 134 110 176 54-42 110-94 110-176V152c0-64-48-114-110-122Z" fill="url(#shieldHighlight)" stroke="#0b8f2a" stroke-width="12" />
-    <path d="M200 42c-44 8-76 44-76 100v116c0 54 32 94 76 128V42Z" fill="#f4d03f" stroke="#0b8f2a" stroke-width="4" />
-    <path d="M200 42v344c44-34 76-74 76-128V142c0-56-32-92-76-100Z" fill="#ffffff" stroke="#0b8f2a" stroke-width="4" />
-    <path d="M200 86l74 74v40l-74-74Z" fill="#d7263d" stroke="#0b8f2a" stroke-width="3" />
-    <path d="M200 150l74 74v40l-74-74Z" fill="#d7263d" stroke="#0b8f2a" stroke-width="3" />
-    <path d="M200 214l74 74v24c-10 26-27 48-50 70l-24-22Z" fill="#d7263d" stroke="#0b8f2a" stroke-width="3" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" role="img" aria-labelledby="title desc">
+  <title id="title">Originales Feuerwehrwappen</title>
+  <desc id="desc">Wappen mit grünem Helm, gelbem und weiß-rot gestreiftem Schild sowie roten Verzierungen.</desc>
+  <g fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M300 90C210 90 140 150 140 230v150c0 110 80 190 160 250 80-60 160-140 160-250V230C460 150 390 90 300 90Z" fill="#ffffff" stroke="#0b8f2a" stroke-width="16" />
+    <path d="M300 104c-60 10-98 56-98 126v142c0 76 40 132 98 182V104Z" fill="#f5d400" stroke="#0b8f2a" stroke-width="8" />
+    <path d="M300 104v450c58-50 98-106 98-182V230c0-70-38-116-98-126Z" fill="#ffffff" stroke="#0b8f2a" stroke-width="8" />
+    <path d="M300 152 436 16h44L300 196Z" fill="#d91c34" stroke="#0b8f2a" stroke-width="6" />
+    <path d="M300 250 484 66v44L300 294Z" fill="#d91c34" stroke="#0b8f2a" stroke-width="6" />
   </g>
-  <g stroke="#0b8f2a" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M200 30l52 32c8 32 12 66 12 104H136c0-38 4-72 12-104Z" fill="#2ea843" />
-    <path d="M176 76h48c8 24 12 48 12 82h-72c0-34 4-58 12-82Z" fill="#2ea843" />
-    <path d="M168 82c-10 24-15 50-15 76h94c0-26-5-52-15-76Z" fill="#f4d03f" stroke-width="4" />
-    <path d="M182 94c-6 18-9 37-9 64h54c0-27-3-46-9-64Z" fill="#d7263d" stroke-width="3" />
-    <path d="M200 100c-4 12-6 24-6 40h12c0-16-2-28-6-40Z" fill="#fff8d6" stroke-width="2" />
+  <g stroke="#0b8f2a" stroke-width="12" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M300 86 374 132c12 44 18 90 18 142H208c0-52 6-98 18-142Z" fill="#22a043" />
+    <path d="M256 134h88c10 32 16 68 16 110H240c0-42 6-78 16-110Z" fill="#22a043" />
+    <path d="M246 144c-14 34-20 72-20 110h148c0-38-6-76-20-110Z" fill="#ffed4a" stroke-width="6" />
+    <path d="M266 160c-8 26-12 54-12 94h92c0-40-4-68-12-94Z" fill="#d91c34" stroke-width="5" />
+    <path d="M300 170c-6 18-8 36-8 64h16c0-28-2-46-8-64Z" fill="#fff8d8" stroke-width="4" />
   </g>
-  <g fill="#d7263d" stroke="#0b8f2a" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M120 92c-36 14-62 40-76 78 18 8 36 10 56 4-8 22-8 44 2 66 32-10 56-30 72-60-18-24-32-52-40-88Z" />
-    <path d="M280 92c36 14 62 40 76 78-18 8-36 10-56 4 8 22 8 44-2 66-32-10-56-30-72-60 18-24 32-52 40-88Z" />
+  <g fill="#d91c34" stroke="#0b8f2a" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M166 152c-44 16-78 48-96 92 24 10 48 12 74 4-10 28-10 58 4 86 40-12 70-38 90-74-24-30-42-66-52-108Z" />
+    <path d="M434 152c44 16 78 48 96 92-24 10-48 12-74 4 10 28 10 58-4 86-40-12-70-38-90-74 24-30 42-66 52-108Z" />
   </g>
-  <g fill="#f4d03f" stroke="#0b8f2a" stroke-width="8" stroke-linejoin="round">
-    <path d="M152 12c-4 26 2 48 18 66 14-18 32-30 56-36-16-20-40-32-74-30Z" />
-    <path d="M248 12c4 26-2 48-18 66-14-18-32-30-56-36 16-20 40-32 74-30Z" transform="scale(-1,1) translate(-400,0)" />
+  <g fill="#f5d400" stroke="#0b8f2a" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M230 40c-6 34 2 64 24 88 18-24 42-40 72-46-20-26-54-40-96-42Z" />
+    <path d="M370 40c6 34-2 64-24 88-18-24-42-40-72-46 20-26 54-40 96-42Z" transform="scale(-1,1) translate(-600,0)" />
   </g>
-  <g fill="#ffffff" stroke="#0b8f2a" stroke-width="6" stroke-linejoin="round">
-    <path d="M284 12c4 24-2 44-18 60-10-20-24-34-42-42 14-18 34-28 60-18Z" />
-    <path d="M116 12c-4 24 2 44 18 60 10-20 24-34 42-42-14-18-34-28-60-18Z" />
+  <g fill="#ffffff" stroke="#0b8f2a" stroke-width="10" stroke-linejoin="round">
+    <path d="M392 42c6 30-2 56-22 78-12-24-30-42-54-52 18-22 44-34 76-26Z" />
+    <path d="M208 42c-6 30 2 56 22 78 12-24 30-42 54-52-18-22-44-34-76-26Z" />
+  </g>
+  <g fill="#ffffff" stroke="#0b8f2a" stroke-width="10" stroke-linejoin="round">
+    <path d="M388 10c10 42-6 78-38 108-16-32-38-56-70-70 24-32 60-48 108-38Z" fill="#f5d400" />
+    <path d="M212 10c-10 42 6 78 38 108 16-32 38-56 70-70-24-32-60-48-108-38Z" fill="#ffffff" />
+    <path d="M382 10c8 30-4 56-28 78-12-26-30-44-54-56 20-22 46-32 82-22Z" fill="#ffffff" transform="matrix(-1 0 0 1 600 0)" />
   </g>
 </svg>
