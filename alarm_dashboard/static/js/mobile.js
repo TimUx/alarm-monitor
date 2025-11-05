@@ -194,24 +194,19 @@ function collectPrecipitationDetails(weather) {
         return [];
     }
     const details = [];
-    const amountFields = [
-        { key: 'precipitation', label: 'Niederschlag' },
-        { key: 'rain', label: 'Regen' },
-        { key: 'showers', label: 'Schauer' },
-        { key: 'snowfall', label: 'Schneefall' },
-    ];
-
-    amountFields.forEach(({ key, label }) => {
-        const rawValue = Number(weather[key]);
-        if (!isValidNumber(rawValue)) {
-            return;
+    const precipitationAmount = Number(weather.precipitation);
+    if (isValidNumber(precipitationAmount)) {
+        const precipitationUnit = typeof weather.precipitation_unit === 'string'
+            ? weather.precipitation_unit
+            : 'mm';
+        const formattedPrecipitation = formatPrecipitationAmount(precipitationAmount, precipitationUnit);
+        if (formattedPrecipitation) {
+            details.push({
+                label: 'Niederschlag',
+                value: formattedPrecipitation,
+            });
         }
-        const unit = typeof weather[`${key}_unit`] === 'string' ? weather[`${key}_unit`] : 'mm';
-        const formatted = formatPrecipitationAmount(rawValue, unit);
-        if (formatted) {
-            details.push({ label, value: formatted });
-        }
-    });
+    }
 
     const probability = Number(weather.precipitation_probability);
     if (isValidNumber(probability)) {
