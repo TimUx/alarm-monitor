@@ -32,6 +32,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     app = Flask(__name__, template_folder=str(Path(__file__).parent / "templates"))
     app.config["ALARM_STORE"] = store
     app.config["APP_CONFIG"] = config
+    app.config["MAIL_FETCHER"] = None
 
     def process_email(raw_email: bytes) -> None:
         alarm = parse_alarm(raw_email)
@@ -105,6 +106,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     fetcher: Optional[AlarmMailFetcher] = None
 
+    def _ensure_background_fetcher_started() -> None:
+        """Ensure the background mail fetcher reference is registered."""
+
+        return None
+
     if config.mail is not None:
         fetcher = AlarmMailFetcher(
             config=config.mail,
@@ -118,6 +124,17 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             LOGGER.error("Failed to start mail fetcher: %s", exc)
             fetcher = None
         else:
+
+            app.config["MAIL_FETCHER"] = fetcher
+
+            def _ensure_background_fetcher_started() -> None:
+                """Ensure the fetcher remains available to the application."""
+
+                nonlocal fetcher
+                if fetcher is None:
+                    return
+                if app.config.get("MAIL_FETCHER") is not fetcher:
+                    app.config["MAIL_FETCHER"] = fetcher
 
             def _stop_background_fetcher() -> None:
                 nonlocal fetcher
