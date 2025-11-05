@@ -8,13 +8,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, url_for
 
 from .config import AppConfig, load_config
 from .geocode import geocode_location
 from .mail_checker import AlarmMailFetcher
 from .parser import parse_alarm
-from .assets import CREST_DATA_URI
 from .storage import AlarmStore
 from .weather import fetch_weather
 
@@ -168,7 +167,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     @app.route("/")
     def dashboard() -> str:
-        return render_template("dashboard.html", crest_data_uri=CREST_DATA_URI)
+        crest_url = url_for("static", filename="img/crest.png")
+        return render_template("dashboard.html", crest_url=crest_url)
 
     @app.route("/history")
     def history_page() -> str:
@@ -191,11 +191,13 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 "display_date": display_date,
                 "display_time": display_time,
             })
-        return render_template("history.html", entries=decorated, crest_data_uri=CREST_DATA_URI)
+        crest_url = url_for("static", filename="img/crest.png")
+        return render_template("history.html", entries=decorated, crest_url=crest_url)
 
     @app.route("/mobile")
     def mobile_dashboard() -> str:
-        return render_template("mobile.html", crest_data_uri=CREST_DATA_URI)
+        crest_url = url_for("static", filename="img/crest.png")
+        return render_template("mobile.html", crest_url=crest_url)
 
     def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
         alarm = entry.get("alarm") or {}

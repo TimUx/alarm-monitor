@@ -13,6 +13,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional, cast
 
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:  # pragma: no cover - optional dependency fallback
+    def load_dotenv(*_args, **_kwargs):  # type: ignore[override]
+        """Fallback shim if python-dotenv is not installed."""
+
+        return False
+
 
 @dataclass
 class MailConfig:
@@ -50,6 +58,12 @@ class MissingConfiguration(RuntimeError):
 ENV_PREFIX = "ALARM_DASHBOARD_"
 
 LOGGER = logging.getLogger(__name__)
+
+
+# Load environment variables from a local ``.env`` file if present.  This
+# enables deployments to define configuration without exporting every
+# variable in the shell environment.
+load_dotenv()
 
 
 def _get_env(name: str, default: Optional[str] = None, required: bool = False) -> Optional[str]:
