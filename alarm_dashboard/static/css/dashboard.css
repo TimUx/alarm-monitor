@@ -308,7 +308,7 @@ body {
 }
 
 .idle-time {
-    font-size: clamp(4.5rem, 3rem + 3vw, 6.5rem);
+    font-size: clamp(5.5rem, 3.5rem + 4vw, 7.5rem);
     font-weight: 700;
     color: var(--accent);
     margin: 0;
@@ -316,7 +316,7 @@ body {
 
 .idle-date {
     margin: 0;
-    font-size: clamp(1.4rem, 1rem + 1vw, 2.1rem);
+    font-size: clamp(1.8rem, 1.2rem + 1.2vw, 2.6rem);
     color: var(--text-secondary);
 }
 
@@ -340,14 +340,14 @@ body {
 .idle-weather h3,
 .idle-last-alarm h3 {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: clamp(2rem, 1.6rem + 0.8vw, 2.6rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
 }
 
 .idle-weather-location {
-    font-size: 1.4rem;
+    font-size: clamp(1.7rem, 1.3rem + 0.8vw, 2.2rem);
     font-weight: 600;
     color: var(--text-primary);
 }
@@ -355,7 +355,7 @@ body {
 .idle-weather-details {
     display: grid;
     gap: 0.75rem;
-    font-size: 1.4rem;
+    font-size: clamp(1.6rem, 1.3rem + 0.6vw, 2.1rem);
     color: var(--text-primary);
 }
 
@@ -365,7 +365,7 @@ body {
 
 .idle-weather p {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
 }
 
 .history-button {
