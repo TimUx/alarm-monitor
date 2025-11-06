@@ -1,7 +1,3 @@
-let map = null;
-let marker = null;
-let mapWarningLogged = false;
-
 const WIND_DIRECTIONS = [
     { abbr: 'N', label: 'Nord' },
     { abbr: 'NNO', label: 'Nord-Nordost' },
@@ -36,29 +32,6 @@ const WEATHER_CODE_MAP = [
     { codes: [95], icon: '⛈️', label: 'Gewitter' },
     { codes: [96, 99], icon: '⛈️', label: 'Gewitter mit Hagel' },
 ];
-
-function ensureMap() {
-    if (map) {
-        return true;
-    }
-    if (typeof window.L === 'undefined') {
-        if (!mapWarningLogged) {
-            console.warn('Leaflet library not available, map will be disabled. Ensure the Leaflet assets can be loaded (internet connection, CDN access).');
-            mapWarningLogged = true;
-        }
-        return false;
-    }
-    map = window.L.map('map', {
-        zoomControl: false
-    }).setView([51.1657, 10.4515], 6);
-
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    return true;
-}
 
 function isValidNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
@@ -237,13 +210,11 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
-ensureMap();
-
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
 const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
-const mapElement = document.getElementById('map');
+const mapElement = document.getElementById('map-embed');
 const mapPlaceholder = document.getElementById('map-placeholder');
 const alarmLayout = document.getElementById('alarm-layout');
 const timestampEl = document.getElementById('timestamp');
@@ -263,11 +234,6 @@ function setMode(mode) {
     if (mode === 'alarm') {
         alarmView.classList.remove('hidden');
         idleView.classList.add('hidden');
-        if (map) {
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 200);
-        }
     } else {
         alarmView.classList.add('hidden');
         idleView.classList.remove('hidden');
@@ -523,30 +489,70 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
+function clamp(value, min, max) {
+    if (!Number.isFinite(value)) {
+        return value;
+    }
+    return Math.min(Math.max(value, min), max);
+}
+
+function buildOsmEmbedUrl(lat, lon) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return null;
+    }
+
+    const LAT_DELTA = 0.01;
+    const LON_DELTA = 0.015;
+    const south = clamp(lat - LAT_DELTA, -90, 90);
+    const north = clamp(lat + LAT_DELTA, -90, 90);
+    const west = clamp(lon - LON_DELTA, -180, 180);
+    const east = clamp(lon + LON_DELTA, -180, 180);
+
+    const params = new URLSearchParams({
+        bbox: `${west},${south},${east},${north}`,
+        layer: 'mapnik',
+    });
+    params.append('marker', `${lat},${lon}`);
+
+    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+}
+
 function showMapPlaceholder(message) {
     if (!mapPanel) {
         return;
     }
+
     if (mapPlaceholder) {
         mapPlaceholder.textContent = message;
         mapPlaceholder.classList.remove('hidden');
     }
+
     if (mapElement) {
         mapElement.classList.add('hidden');
+        mapElement.removeAttribute('src');
+        mapElement.removeAttribute('aria-label');
+        mapElement.setAttribute('title', 'Karte des Einsatzorts');
     }
-    if (marker && typeof marker.remove === 'function') {
-        marker.remove();
-    }
-    marker = null;
 }
 
-function showMapContent() {
+function showMapContent(embedUrl, locationLabel) {
+    if (!mapPanel || !mapElement) {
+        return;
+    }
+
+    const title = locationLabel
+        ? `Karte: ${locationLabel}`
+        : 'Karte des Einsatzorts';
+
     if (mapPlaceholder) {
-        mapPlaceholder.classList.add('hidden');
+        mapPlaceholder.textContent = 'Kartendaten werden geladen ...';
+        mapPlaceholder.classList.remove('hidden');
     }
-    if (mapElement) {
-        mapElement.classList.remove('hidden');
-    }
+
+    mapElement.classList.add('hidden');
+    mapElement.setAttribute('aria-label', title);
+    mapElement.setAttribute('title', title);
+    mapElement.src = embedUrl;
 }
 
 function updateMap(coordinates, location) {
@@ -575,25 +581,26 @@ function updateMap(coordinates, location) {
         return;
     }
 
-    if (!ensureMap()) {
-        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Internetverbindung sowie Zugriff auf Leaflet- und OpenStreetMap-Ressourcen prüfen.');
+    const embedUrl = buildOsmEmbedUrl(latNum, lonNum);
+    if (!embedUrl) {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar.');
         return;
     }
 
-    showMapContent();
-    map.setView([latNum, lonNum], 15);
-    if (marker) {
-        marker.setLatLng([latNum, lonNum]);
-    } else if (window.L) {
-        marker = window.L.marker([latNum, lonNum]).addTo(map);
-    }
-    if (!marker) {
-        return;
-    }
-    marker.bindPopup(location || 'Einsatzort').openPopup();
-    setTimeout(() => {
-        map.invalidateSize();
-    }, 150);
+    showMapContent(embedUrl, location);
+}
+
+if (mapElement) {
+    mapElement.addEventListener('load', () => {
+        if (mapPlaceholder) {
+            mapPlaceholder.classList.add('hidden');
+        }
+        mapElement.classList.remove('hidden');
+    });
+
+    mapElement.addEventListener('error', () => {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
+    });
 }
 
 async function fetchAlarm() {
