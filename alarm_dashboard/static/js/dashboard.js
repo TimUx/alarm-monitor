@@ -508,13 +508,13 @@ function buildOsmEmbedUrl(lat, lon) {
     const west = clamp(lon - LON_DELTA, -180, 180);
     const east = clamp(lon + LON_DELTA, -180, 180);
 
-    const params = new URLSearchParams({
-        bbox: `${west},${south},${east},${north}`,
-        layer: 'mapnik',
-    });
-    params.append('marker', `${lat},${lon}`);
+    const url = new URL('https://www.openstreetmap.org/export/embed.html');
+    url.searchParams.set('bbox', `${west},${south},${east},${north}`);
+    url.searchParams.set('layer', 'mapnik');
+    url.searchParams.set('marker', `${lat},${lon}`);
+    url.hash = `map=16/${lat}/${lon}`;
 
-    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+    return url.toString();
 }
 
 function showMapPlaceholder(message) {
@@ -525,6 +525,7 @@ function showMapPlaceholder(message) {
     if (mapPlaceholder) {
         mapPlaceholder.textContent = message;
         mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
     }
 
     if (mapElement) {
@@ -547,6 +548,7 @@ function showMapContent(embedUrl, locationLabel) {
     if (mapPlaceholder) {
         mapPlaceholder.textContent = 'Kartendaten werden geladen ...';
         mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
     }
 
     mapElement.classList.remove('map-embed--inactive');
@@ -554,6 +556,11 @@ function showMapContent(embedUrl, locationLabel) {
     mapElement.setAttribute('title', title);
     mapElement.dataset.embedUrl = embedUrl;
     mapElement.src = embedUrl;
+
+    if (mapPlaceholder) {
+        mapPlaceholder.classList.add('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
+    }
 }
 
 function updateMap(coordinates, location) {
@@ -595,6 +602,7 @@ if (mapElement) {
     mapElement.addEventListener('load', () => {
         if (mapPlaceholder) {
             mapPlaceholder.classList.add('hidden');
+            mapPlaceholder.setAttribute('aria-hidden', 'true');
         }
         mapElement.classList.remove('map-embed--inactive');
     });
