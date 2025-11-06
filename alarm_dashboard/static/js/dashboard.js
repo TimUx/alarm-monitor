@@ -43,7 +43,7 @@ function ensureMap() {
     }
     if (typeof window.L === 'undefined') {
         if (!mapWarningLogged) {
-            console.warn('Leaflet library not available, map will be disabled.');
+            console.warn('Leaflet library not available, map will be disabled. Ensure the Leaflet assets can be loaded (internet connection, CDN access).');
             mapWarningLogged = true;
         }
         return false;
@@ -243,6 +243,8 @@ const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
 const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
+const mapElement = document.getElementById('map');
+const mapPlaceholder = document.getElementById('map-placeholder');
 const alarmLayout = document.getElementById('alarm-layout');
 const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
@@ -521,31 +523,34 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
-function updateMap(coordinates, location) {
+function showMapPlaceholder(message) {
     if (!mapPanel) {
         return;
     }
-    if (!coordinates || !ensureMap()) {
-        mapPanel.classList.add('hidden');
-        if (mapColumn) {
-            mapColumn.classList.add('hidden');
-        }
-        if (alarmLayout) {
-            alarmLayout.classList.remove('has-map');
-        }
-        return;
+    if (mapPlaceholder) {
+        mapPlaceholder.textContent = message;
+        mapPlaceholder.classList.remove('hidden');
     }
-    const { lat, lon } = coordinates;
-    const latNum = Number(lat);
-    const lonNum = Number(lon);
-    if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
-        mapPanel.classList.add('hidden');
-        if (mapColumn) {
-            mapColumn.classList.add('hidden');
-        }
-        if (alarmLayout) {
-            alarmLayout.classList.remove('has-map');
-        }
+    if (mapElement) {
+        mapElement.classList.add('hidden');
+    }
+    if (marker && typeof marker.remove === 'function') {
+        marker.remove();
+    }
+    marker = null;
+}
+
+function showMapContent() {
+    if (mapPlaceholder) {
+        mapPlaceholder.classList.add('hidden');
+    }
+    if (mapElement) {
+        mapElement.classList.remove('hidden');
+    }
+}
+
+function updateMap(coordinates, location) {
+    if (!mapPanel) {
         return;
     }
 
@@ -556,6 +561,26 @@ function updateMap(coordinates, location) {
     if (alarmLayout) {
         alarmLayout.classList.add('has-map');
     }
+
+    if (!coordinates) {
+        showMapPlaceholder('Keine Koordinaten verfügbar.');
+        return;
+    }
+
+    const { lat, lon } = coordinates;
+    const latNum = Number(lat);
+    const lonNum = Number(lon);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
+        showMapPlaceholder('Übermittelte Koordinaten sind ungültig.');
+        return;
+    }
+
+    if (!ensureMap()) {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Internetverbindung sowie Zugriff auf Leaflet- und OpenStreetMap-Ressourcen prüfen.');
+        return;
+    }
+
+    showMapContent();
     map.setView([latNum, lonNum], 15);
     if (marker) {
         marker.setLatLng([latNum, lonNum]);
