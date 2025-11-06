@@ -239,8 +239,6 @@ const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const remarkEl = document.getElementById('remark');
-const locationTownEl = document.getElementById('location-town');
-const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
 
@@ -440,8 +438,6 @@ function updateGroups(groups) {
 
 function updateLocationDetails(details) {
     const mapping = [
-        [locationTownEl, details?.town],
-        [locationVillageEl, details?.village],
         [locationStreetEl, details?.street],
         [locationAdditionalEl, details?.additional || details?.object],
     ];
