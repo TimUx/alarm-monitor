@@ -36,7 +36,7 @@
                             <th scope="col">Stichwort</th>
                             <th scope="col">Ort</th>
                             <th scope="col">Beschreibung</th>
-                            <th scope="col">Alarmierte Gruppen</th>
+                            <th scope="col">Alarmierte Fahrzeuge</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,12 +56,13 @@
                                 <div class="history-remark">{{ entry.remark }}</div>
                                 {% endif %}
                             </td>
-                            <td data-label="Alarmierte Gruppen">
-                                {% if entry.groups %}
-                                    {% if entry.groups is string %}
-                                        {{ entry.groups }}
+                            <td data-label="Alarmierte Fahrzeuge">
+                                {% set vehicles = entry.aao_groups %}
+                                {% if vehicles %}
+                                    {% if vehicles is string %}
+                                        {{ vehicles }}
                                     {% else %}
-                                        {{ entry.groups | join(', ') }}
+                                        {{ vehicles | join(', ') }}
                                     {% endif %}
                                 {% else %}
                                     -
@@ -92,30 +93,6 @@
                     </svg>
                 </span>
                 <span class="history-bottom-nav__label">Historie</span>
-            </a>
-            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
-                <span class="history-bottom-nav__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M7 4h10l1 4H6zm-1 6h12l1 9H5z" />
-                    </svg>
-                </span>
-                <span class="history-bottom-nav__label">Berichte</span>
-            </a>
-            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
-                <span class="history-bottom-nav__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M12 2a5 5 0 1 1-5 5 5 5 0 0 1 5-5zm0 12c-3.31 0-9 1.66-9 5v3h18v-3c0-3.34-5.69-5-9-5z" />
-                    </svg>
-                </span>
-                <span class="history-bottom-nav__label">Team</span>
-            </a>
-            <a href="#" class="history-bottom-nav__item" aria-disabled="true">
-                <span class="history-bottom-nav__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M4 5h16v2H4zm0 6h10v2H4zm0 6h16v2H4z" />
-                    </svg>
-                </span>
-                <span class="history-bottom-nav__label">Listen</span>
             </a>
         </nav>
     </div>
