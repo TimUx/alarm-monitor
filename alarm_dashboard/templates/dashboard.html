@@ -74,6 +74,9 @@
                             <h3>Einsatzkarte</h3>
                             <div class="map-frame">
                                 <div id="map"></div>
+                                <div id="map-placeholder" class="map-placeholder" role="status" aria-live="polite">
+                                    Kartendaten werden geladen ...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -144,7 +147,11 @@
             </a>
         </nav>
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM="
+        crossorigin=""
+    ></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
