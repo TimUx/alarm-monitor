@@ -528,7 +528,7 @@ function showMapPlaceholder(message) {
     }
 
     if (mapElement) {
-        mapElement.classList.add('hidden');
+        mapElement.classList.add('map-embed--inactive');
         mapElement.removeAttribute('src');
         mapElement.removeAttribute('aria-label');
         mapElement.setAttribute('title', 'Karte des Einsatzorts');
@@ -549,9 +549,10 @@ function showMapContent(embedUrl, locationLabel) {
         mapPlaceholder.classList.remove('hidden');
     }
 
-    mapElement.classList.add('hidden');
+    mapElement.classList.remove('map-embed--inactive');
     mapElement.setAttribute('aria-label', title);
     mapElement.setAttribute('title', title);
+    mapElement.dataset.embedUrl = embedUrl;
     mapElement.src = embedUrl;
 }
 
@@ -595,10 +596,11 @@ if (mapElement) {
         if (mapPlaceholder) {
             mapPlaceholder.classList.add('hidden');
         }
-        mapElement.classList.remove('hidden');
+        mapElement.classList.remove('map-embed--inactive');
     });
 
     mapElement.addEventListener('error', () => {
+        mapElement.classList.add('map-embed--inactive');
         showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
     });
 }

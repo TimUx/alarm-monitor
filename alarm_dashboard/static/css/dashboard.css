@@ -41,7 +41,7 @@ body {
     justify-content: space-between;
     align-items: center;
     gap: 1.25rem;
-    padding: 1.1rem clamp(1.75rem, 2.5vw, 2.6rem);
+    padding: 0.85rem clamp(1.6rem, 2.3vw, 2.4rem);
     background: var(--surface);
     box-shadow: var(--shadow-soft);
     position: relative;
@@ -80,8 +80,13 @@ body {
 }
 
 .crest {
-    width: clamp(74px, 60px + 2.6vw, 100px);
+    width: clamp(86px, 70px + 3.6vw, 140px);
     height: auto;
+    max-width: 100%;
+}
+
+.app-header .crest {
+    width: clamp(60px, 48px + 1.8vw, 82px);
 }
 
 .app-main {
@@ -355,19 +360,8 @@ body {
     border-radius: 18px;
 }
 
-.map-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-    font-size: clamp(1.1rem, 1rem + 0.35vw, 1.3rem);
-    color: var(--text-secondary);
-    background: linear-gradient(135deg, rgba(243, 245, 249, 0.92), rgba(255, 255, 255, 0.85));
-    border: 1px dashed rgba(107, 114, 128, 0.4);
-    border-radius: 18px;
+.map-embed--inactive {
+    display: none;
 }
 
 .map-placeholder {
@@ -547,13 +541,17 @@ body {
     .app-header {
         flex-direction: column;
         align-items: flex-start;
-        padding: 1.5rem clamp(1.5rem, 6vw, 2.5rem);
+        padding: 1.1rem clamp(1.4rem, 6vw, 2.2rem);
     }
 
     .header-meta {
         align-self: stretch;
         justify-content: space-between;
         width: 100%;
+    }
+
+    .app-header .crest {
+        width: clamp(56px, 46px + 3vw, 78px);
     }
 
     .app-main {
