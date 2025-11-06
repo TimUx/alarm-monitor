@@ -508,13 +508,15 @@ function buildOsmEmbedUrl(lat, lon) {
     const west = clamp(lon - LON_DELTA, -180, 180);
     const east = clamp(lon + LON_DELTA, -180, 180);
 
-    const params = new URLSearchParams({
-        bbox: `${west},${south},${east},${north}`,
-        layer: 'mapnik',
-    });
-    params.append('marker', `${lat},${lon}`);
+    const format = (value) => {
+        const normalized = Math.abs(value) < 1e-6 ? 0 : value;
+        return normalized.toFixed(6);
+    };
+    const bbox = [west, south, east, north].map(format).join(',');
+    const marker = [lat, lon].map(format).join(',');
+    const hashLatLon = [lat, lon].map(format).join('/');
 
-    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}#map=16/${hashLatLon}`;
 }
 
 function showMapPlaceholder(message) {
@@ -525,6 +527,7 @@ function showMapPlaceholder(message) {
     if (mapPlaceholder) {
         mapPlaceholder.textContent = message;
         mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
     }
 
     if (mapElement) {
@@ -547,6 +550,7 @@ function showMapContent(embedUrl, locationLabel) {
     if (mapPlaceholder) {
         mapPlaceholder.textContent = 'Kartendaten werden geladen ...';
         mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
     }
 
     mapElement.classList.remove('map-embed--inactive');
@@ -554,6 +558,11 @@ function showMapContent(embedUrl, locationLabel) {
     mapElement.setAttribute('title', title);
     mapElement.dataset.embedUrl = embedUrl;
     mapElement.src = embedUrl;
+
+    if (mapPlaceholder) {
+        mapPlaceholder.classList.add('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
+    }
 }
 
 function updateMap(coordinates, location) {
@@ -595,6 +604,7 @@ if (mapElement) {
     mapElement.addEventListener('load', () => {
         if (mapPlaceholder) {
             mapPlaceholder.classList.add('hidden');
+            mapPlaceholder.setAttribute('aria-hidden', 'true');
         }
         mapElement.classList.remove('map-embed--inactive');
     });
