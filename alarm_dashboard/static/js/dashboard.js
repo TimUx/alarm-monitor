@@ -498,11 +498,10 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
-function clamp(value, min, max) {
-    if (!Number.isFinite(value)) {
-        return value;
-    }
-    return Math.min(Math.max(value, min), max);
+function isLeafletAvailable() {
+    return typeof window !== 'undefined'
+        && typeof window.L === 'object'
+        && typeof window.L.map === 'function';
 }
 
 function isLeafletAvailable() {
