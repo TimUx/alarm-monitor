@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Einsatz Dashboard</title>
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+    >
 </head>
 <body>
     <div id="app" class="app-shell">
@@ -72,14 +77,12 @@
                         <div class="meta-card meta-card--map hidden" id="map-panel">
                             <h3>Einsatzkarte</h3>
                             <div class="map-frame">
-                                <iframe
-                                    id="map-embed"
-                                    class="map-embed map-embed--inactive"
-                                    title="Karte des Einsatzorts"
-                                    referrerpolicy="no-referrer-when-downgrade"
-                                    allowfullscreen
-                                ></iframe>
-                                <div id="map-placeholder" class="map-placeholder" role="status" aria-live="polite">
+                                <div
+                                    id="map-canvas"
+                                    class="map-canvas map-canvas--message"
+                                    role="region"
+                                    aria-live="polite"
+                                >
                                     Kartendaten werden geladen ...
                                 </div>
                             </div>
@@ -152,6 +155,11 @@
             </a>
         </nav>
     </div>
-    <script src="/static/js/dashboard.js"></script>
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        crossorigin=""
+        defer
+    ></script>
+    <script src="/static/js/dashboard.js" defer></script>
 </body>
 </html>
