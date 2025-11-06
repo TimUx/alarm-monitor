@@ -565,7 +565,6 @@ async function fetchAlarm() {
 function updateDashboard(data) {
     const alarm = data.alarm;
     const keywordEl = document.getElementById('keyword');
-    const locationEl = document.getElementById('location');
 
     if (data.mode === 'alarm' && alarm) {
         setMode('alarm');
@@ -579,7 +578,8 @@ function updateDashboard(data) {
         }
         const village = alarm.location_details?.village;
         const keywordText = alarm.keyword || alarm.subject || '-';
-        keywordEl.textContent = village ? `${keywordText} - ${village}` : keywordText;
+        const separator = keywordText.includes(' – ') ? ' – ' : ' - ';
+        keywordEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
             keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
@@ -589,7 +589,6 @@ function updateDashboard(data) {
             remarkEl.classList.toggle('hidden', !alarm.remark);
         }
         updateGroups(alarm.aao_groups || alarm.groups);
-        locationEl.textContent = alarm.location || '-';
         updateLocationDetails(alarm.location_details || {});
         alarmTimeEl.textContent = formattedTime || '-';
 

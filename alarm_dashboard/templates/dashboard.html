@@ -38,8 +38,15 @@
                         <div class="meta-grid">
                             <div class="meta-card meta-card--location">
                                 <h3>Einsatzort</h3>
-                                <p id="location" class="location-full">-</p>
                                 <dl class="location-details">
+                                    <div>
+                                        <dt>Ort</dt>
+                                        <dd id="location-town">-</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Ortsteil</dt>
+                                        <dd id="location-village">-</dd>
+                                    </div>
                                     <div>
                                         <dt>Straße</dt>
                                         <dd id="location-street">-</dd>
@@ -63,8 +70,11 @@
                         </div>
                     </div>
                     <div class="alarm-column alarm-column--map hidden" id="map-column">
-                        <div class="panel-section map-panel" id="map-panel">
-                            <div id="map"></div>
+                        <div class="meta-card meta-card--map hidden" id="map-panel">
+                            <h3>Einsatzkarte</h3>
+                            <div class="map-frame">
+                                <div id="map"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
