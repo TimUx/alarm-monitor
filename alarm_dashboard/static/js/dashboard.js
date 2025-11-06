@@ -1,5 +1,6 @@
 let map = null;
 let marker = null;
+let mapWarningLogged = false;
 
 const WIND_DIRECTIONS = [
     { abbr: 'N', label: 'Nord' },
@@ -35,6 +36,29 @@ const WEATHER_CODE_MAP = [
     { codes: [95], icon: '⛈️', label: 'Gewitter' },
     { codes: [96, 99], icon: '⛈️', label: 'Gewitter mit Hagel' },
 ];
+
+function ensureMap() {
+    if (map) {
+        return true;
+    }
+    if (typeof window.L === 'undefined') {
+        if (!mapWarningLogged) {
+            console.warn('Leaflet library not available, map will be disabled.');
+            mapWarningLogged = true;
+        }
+        return false;
+    }
+    map = window.L.map('map', {
+        zoomControl: false
+    }).setView([51.1657, 10.4515], 6);
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    return true;
+}
 
 function isValidNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
@@ -213,18 +237,7 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
-if (typeof window.L !== 'undefined') {
-    map = window.L.map('map', {
-        zoomControl: false
-    }).setView([51.1657, 10.4515], 6);
-
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-} else {
-    console.warn('Leaflet library not available, map will be disabled.');
-}
+ensureMap();
 
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
@@ -239,6 +252,8 @@ const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const remarkEl = document.getElementById('remark');
+const locationTownEl = document.getElementById('location-town');
+const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
 
@@ -438,6 +453,8 @@ function updateGroups(groups) {
 
 function updateLocationDetails(details) {
     const mapping = [
+        [locationTownEl, details?.town],
+        [locationVillageEl, details?.village],
         [locationStreetEl, details?.street],
         [locationAdditionalEl, details?.additional || details?.object],
     ];
@@ -508,7 +525,7 @@ function updateMap(coordinates, location) {
     if (!mapPanel) {
         return;
     }
-    if (!coordinates || !map) {
+    if (!coordinates || !ensureMap()) {
         mapPanel.classList.add('hidden');
         if (mapColumn) {
             mapColumn.classList.add('hidden');
