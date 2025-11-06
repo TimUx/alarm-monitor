@@ -10,6 +10,8 @@ services:
     environment:
       # Example override: ensure container timezone if desired
       - TZ=Europe/Berlin
+    volumes:
+      - ./instance:/app/instance
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s

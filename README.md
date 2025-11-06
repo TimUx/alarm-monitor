@@ -54,6 +54,28 @@ Containern betreiben. Die Konfiguration erfolgt in beiden Fällen über
 Environment-Variablen, die bequem in einer `.env` Datei verwaltet werden
 können.
 
+## Speicherung von Alarmen und Historie
+
+Eingehende Einsätze werden in der Klasse `AlarmStore` gespeichert
+(`alarm_dashboard/storage.py`). Die Komponente hält den zuletzt
+eingegangenen Alarm im Speicher bereit, verwaltet eine Historie und
+persistiert die Daten optional als JSON-Datei. Standardmäßig wird der
+Pfad `instance/alarm_history.json` innerhalb des Flask
+`instance`-Verzeichnisses genutzt. Das Verzeichnis liegt außerhalb des
+Repositorys, ist beschreibbar und wird beim Anwendungsstart automatisch
+angelegt.
+
+Der Speicherort lässt sich über die Konfiguration anpassen:
+
+* Setzen Sie die Umgebungsvariable `ALARM_DASHBOARD_HISTORY_FILE` (z. B.
+  in `.env`), um einen absoluten oder relativen Pfad vorzugeben.
+* Alternativ kann `history_file` beim Erstellen einer `AppConfig`
+  übergeben werden.
+
+Sobald ein eigener Pfad gesetzt ist, schreibt `AlarmStore` die Daten
+direkt dorthin. Bei einem Neustart der Anwendung wird die Datei wieder
+eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
+
 ### Native Installation (Python)
 
 1. **System vorbereiten**
@@ -132,9 +154,12 @@ können.
    ```
 
    Beide Varianten greifen auf `compose.yaml` zurück. Die Datei liest die
-   Variablen aus `.env` ein und startet den Container auf Port `8000`. Bei
-   Bedarf können zusätzliche Environment-Variablen direkt in der Compose-
-   Datei oder beim Aufruf (`docker compose run -e ...`) gesetzt werden.
+   Variablen aus `.env` ein und startet den Container auf Port `8000`. Das
+   lokale Verzeichnis `./instance` wird in den Container gemountet, sodass
+   die Datei `instance/alarm_history.json` auch nach dem Neuerstellen des
+   Containers erhalten bleibt. Bei Bedarf können zusätzliche
+   Environment-Variablen direkt in der Compose-Datei oder beim Aufruf
+   (`docker compose run -e ...`) gesetzt werden.
 
 3. **Log- und Health-Prüfung**
 
