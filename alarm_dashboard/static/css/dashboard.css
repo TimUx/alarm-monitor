@@ -178,7 +178,7 @@ body {
 }
 
 .alarm-layout.has-map {
-    grid-template-columns: minmax(0, clamp(560px, 62%, 1040px)) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(420px, 36vw, 620px);
 }
 
 .alarm-column {
@@ -190,13 +190,6 @@ body {
 
 .alarm-column--info {
     width: 100%;
-    max-width: clamp(560px, 62%, 1040px);
-}
-
-@media (min-width: 1201px) {
-    .alarm-layout.has-map .alarm-column--info {
-        max-width: clamp(560px, 62%, 1040px);
-    }
 }
 
 .alarm-column--map {
@@ -229,8 +222,8 @@ body {
 
 .meta-card h3 {
     margin: 0;
-    font-size: clamp(1.15rem, 1.05rem + 0.35vw, 1.45rem);
-    letter-spacing: 0.07em;
+    font-size: clamp(0.95rem, 0.85rem + 0.3vw, 1.2rem);
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--accent);
 }
@@ -276,8 +269,8 @@ body {
 
 .location-details dt {
     margin: 0;
-    font-weight: 700;
-    font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.45rem);
+    font-weight: 600;
+    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
     color: #000;
 }
 
@@ -286,7 +279,7 @@ body {
     text-align: right;
     font-weight: 500;
     color: #000;
-    font-size: clamp(1.15rem, 1.05rem + 0.4vw, 1.45rem);
+    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
 }
 
 .meta-card--weather > p {
@@ -347,7 +340,7 @@ body {
 .map-frame {
     position: relative;
     flex: 1;
-    min-height: clamp(360px, 52vh, 600px);
+    min-height: clamp(300px, 45vh, 520px);
     border-radius: 18px;
     overflow: hidden;
     flex: 1;
