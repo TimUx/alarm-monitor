@@ -178,7 +178,7 @@ body {
 }
 
 .alarm-layout.has-map {
-    grid-template-columns: minmax(0, clamp(420px, 50%, 760px)) minmax(0, 1fr);
+    grid-template-columns: minmax(0, clamp(480px, 55%, 900px)) minmax(0, 1fr);
 }
 
 .alarm-column {
@@ -188,15 +188,15 @@ body {
 }
 
 
-@media (min-width: 1201px) {
-    .alarm-layout.has-map .alarm-column--info {
-        max-width: clamp(420px, 50%, 760px);
-    }
-}
-
 .alarm-column--info {
     width: 100%;
-    max-width: clamp(420px, 50%, 760px);
+    max-width: clamp(480px, 55%, 900px);
+}
+
+@media (min-width: 1201px) {
+    .alarm-layout.has-map .alarm-column--info {
+        max-width: clamp(480px, 55%, 900px);
+    }
 }
 
 .alarm-column--map {
@@ -229,7 +229,7 @@ body {
 
 .meta-card h3 {
     margin: 0;
-    font-size: clamp(1.55rem, 1.3rem + 0.65vw, 1.95rem);
+    font-size: clamp(1.35rem, 1.2rem + 0.45vw, 1.75rem);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
@@ -359,6 +359,21 @@ body {
     inset: 0;
     width: 100%;
     height: 100%;
+}
+
+.map-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    font-size: clamp(1.1rem, 1rem + 0.35vw, 1.3rem);
+    color: var(--text-secondary);
+    background: linear-gradient(135deg, rgba(243, 245, 249, 0.92), rgba(255, 255, 255, 0.85));
+    border: 1px dashed rgba(107, 114, 128, 0.4);
+    border-radius: 18px;
 }
 
 .idle-view {
