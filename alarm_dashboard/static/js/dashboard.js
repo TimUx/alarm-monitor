@@ -216,6 +216,7 @@ const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
 const mapCanvas = document.getElementById('map-canvas');
 const mapPlaceholder = document.getElementById('map-placeholder');
+const mapFrame = document.querySelector('#map-panel .map-frame');
 const alarmLayout = document.getElementById('alarm-layout');
 const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
@@ -233,6 +234,8 @@ const locationAdditionalEl = document.getElementById('location-additional');
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+let mapIframe = null;
+let mapIframeSrc = null;
 
 function setMode(mode) {
     if (mode === 'alarm') {
@@ -516,6 +519,127 @@ function showMapPlaceholder(message) {
     }
 }
 
+function isLeafletAvailable() {
+    return typeof window !== 'undefined'
+        && typeof window.L === 'object'
+        && typeof window.L.map === 'function';
+}
+
+function ensureMapIframe() {
+    if (!mapFrame) {
+        return null;
+    }
+
+    if (!mapIframe) {
+        mapIframe = document.createElement('iframe');
+        mapIframe.id = 'map-iframe';
+        mapIframe.className = 'map-iframe hidden';
+        mapIframe.setAttribute('title', 'Einsatzkarte');
+        mapIframe.setAttribute('loading', 'lazy');
+        mapIframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        mapFrame.insertBefore(mapIframe, mapPlaceholder ?? null);
+    }
+
+    return mapIframe;
+}
+
+function hideMapIframe() {
+    if (!mapIframe) {
+        return;
+    }
+
+    mapIframe.classList.add('hidden');
+    mapIframe.setAttribute('aria-hidden', 'true');
+}
+
+function buildOsmEmbedUrl(lat, lon, locationLabel) {
+    const latDelta = 0.01;
+    const lonDelta = latDelta / Math.max(Math.cos((lat * Math.PI) / 180), 0.2);
+
+    const left = clamp(lon - lonDelta, -180, 180);
+    const right = clamp(lon + lonDelta, -180, 180);
+    const bottom = clamp(lat - latDelta, -90, 90);
+    const top = clamp(lat + latDelta, -90, 90);
+
+    const bbox = [left, bottom, right, top]
+        .map((value) => value.toFixed(6))
+        .join(',');
+
+    const marker = [lat, lon]
+        .map((value) => value.toFixed(6))
+        .join(',');
+
+    const params = new URLSearchParams({
+        bbox,
+        layer: 'mapnik',
+        marker,
+    });
+
+    if (!leafletMarkerInstance) {
+        leafletMarkerInstance = window.L.marker([lat, lon], {
+            keyboard: false,
+        }).addTo(leafletMapInstance);
+    } else {
+        leafletMarkerInstance.setLatLng([lat, lon]);
+    }
+
+    return leafletMapInstance;
+}
+
+function showIframeMap(lat, lon, locationLabel) {
+    const iframe = ensureMapIframe();
+
+    if (!iframe) {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
+        return;
+    }
+
+    const labelText = typeof locationLabel === 'string' ? locationLabel.trim() : '';
+    const url = buildOsmEmbedUrl(lat, lon, labelText);
+
+    if (mapIframeSrc !== url) {
+        iframe.setAttribute('src', url);
+        mapIframeSrc = url;
+    }
+
+    const title = labelText ? `Einsatzkarte: ${labelText}` : 'Einsatzkarte';
+    iframe.setAttribute('title', title);
+    iframe.setAttribute('aria-label', title);
+    iframe.classList.remove('hidden');
+    iframe.removeAttribute('aria-hidden');
+
+    if (mapCanvas) {
+        mapCanvas.classList.add('map-canvas--inactive');
+        mapCanvas.setAttribute('aria-hidden', 'true');
+    }
+
+    if (mapPlaceholder) {
+        mapPlaceholder.classList.add('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function showMapPlaceholder(message) {
+    if (!mapPanel) {
+        return;
+    }
+
+    if (mapPlaceholder) {
+        mapPlaceholder.textContent = message;
+        mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
+    }
+
+    hideMapIframe();
+
+    if (mapCanvas) {
+        mapCanvas.classList.add('map-canvas--inactive');
+        mapCanvas.setAttribute('aria-hidden', 'true');
+    }
+
+    leafletMarkerLabel = text;
+}
+
 function ensureLeafletMap(lat, lon) {
     if (!mapCanvas || !isLeafletAvailable()) {
         return null;
@@ -581,6 +705,8 @@ function showLeafletMap(lat, lon, locationLabel) {
         return;
     }
 
+    hideMapIframe();
+
     updateMarkerLabel(locationLabel);
 
     if (mapPlaceholder) {
@@ -626,7 +752,7 @@ function updateMap(coordinates, location) {
     }
 
     if (!isLeafletAvailable()) {
-        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
+        showIframeMap(latNum, lonNum, location);
         return;
     }
 
