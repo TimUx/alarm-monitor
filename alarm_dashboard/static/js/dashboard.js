@@ -214,7 +214,7 @@ const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
 const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
-const mapElement = document.getElementById('map-embed');
+const mapCanvas = document.getElementById('map-canvas');
 const mapPlaceholder = document.getElementById('map-placeholder');
 const alarmLayout = document.getElementById('alarm-layout');
 const timestampEl = document.getElementById('timestamp');
@@ -229,6 +229,10 @@ const locationTownEl = document.getElementById('location-town');
 const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
+
+let leafletMapInstance = null;
+let leafletMarkerInstance = null;
+let leafletMarkerLabel = null;
 
 function setMode(mode) {
     if (mode === 'alarm') {
@@ -489,32 +493,10 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
-function clamp(value, min, max) {
-    if (!Number.isFinite(value)) {
-        return value;
-    }
-    return Math.min(Math.max(value, min), max);
-}
-
-function buildOsmEmbedUrl(lat, lon) {
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        return null;
-    }
-
-    const LAT_DELTA = 0.01;
-    const LON_DELTA = 0.015;
-    const south = clamp(lat - LAT_DELTA, -90, 90);
-    const north = clamp(lat + LAT_DELTA, -90, 90);
-    const west = clamp(lon - LON_DELTA, -180, 180);
-    const east = clamp(lon + LON_DELTA, -180, 180);
-
-    const params = new URLSearchParams({
-        bbox: `${west},${south},${east},${north}`,
-        layer: 'mapnik',
-    });
-    params.append('marker', `${lat},${lon}`);
-
-    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+function isLeafletAvailable() {
+    return typeof window !== 'undefined'
+        && typeof window.L === 'object'
+        && typeof window.L.map === 'function';
 }
 
 function showMapPlaceholder(message) {
@@ -525,35 +507,96 @@ function showMapPlaceholder(message) {
     if (mapPlaceholder) {
         mapPlaceholder.textContent = message;
         mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
     }
 
-    if (mapElement) {
-        mapElement.classList.add('map-embed--inactive');
-        mapElement.removeAttribute('src');
-        mapElement.removeAttribute('aria-label');
-        mapElement.setAttribute('title', 'Karte des Einsatzorts');
+    if (mapCanvas) {
+        mapCanvas.classList.add('map-canvas--inactive');
+        mapCanvas.setAttribute('aria-hidden', 'true');
     }
 }
 
-function showMapContent(embedUrl, locationLabel) {
-    if (!mapPanel || !mapElement) {
+function ensureLeafletMap(lat, lon) {
+    if (!mapCanvas || !isLeafletAvailable()) {
+        return null;
+    }
+
+    if (!leafletMapInstance) {
+        leafletMapInstance = window.L.map(mapCanvas, {
+            zoomControl: false,
+            attributionControl: true,
+        });
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+            maxZoom: 19,
+        }).addTo(leafletMapInstance);
+    }
+
+    leafletMapInstance.setView([lat, lon], 15);
+
+    if (!leafletMarkerInstance) {
+        leafletMarkerInstance = window.L.marker([lat, lon], {
+            keyboard: false,
+        }).addTo(leafletMapInstance);
+    } else {
+        leafletMarkerInstance.setLatLng([lat, lon]);
+    }
+
+    return leafletMapInstance;
+}
+
+function updateMarkerLabel(label) {
+    if (!leafletMarkerInstance) {
+        leafletMarkerLabel = null;
         return;
     }
 
-    const title = locationLabel
-        ? `Karte: ${locationLabel}`
-        : 'Karte des Einsatzorts';
+    const text = typeof label === 'string' ? label.trim() : '';
+
+    if (!text) {
+        if (leafletMarkerInstance.getPopup()) {
+            leafletMarkerInstance.unbindPopup();
+        }
+        leafletMarkerLabel = null;
+        return;
+    }
+
+    if (!leafletMarkerInstance.getPopup()) {
+        leafletMarkerInstance.bindPopup(text, {
+            closeButton: false,
+        });
+    } else if (leafletMarkerLabel !== text) {
+        leafletMarkerInstance.getPopup().setContent(text);
+    }
+
+    leafletMarkerLabel = text;
+}
+
+function showLeafletMap(lat, lon, locationLabel) {
+    const mapInstance = ensureLeafletMap(lat, lon);
+
+    if (!mapInstance) {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
+        return;
+    }
+
+    updateMarkerLabel(locationLabel);
 
     if (mapPlaceholder) {
         mapPlaceholder.textContent = 'Kartendaten werden geladen ...';
-        mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.classList.add('hidden');
+        mapPlaceholder.setAttribute('aria-hidden', 'true');
     }
 
-    mapElement.classList.remove('map-embed--inactive');
-    mapElement.setAttribute('aria-label', title);
-    mapElement.setAttribute('title', title);
-    mapElement.dataset.embedUrl = embedUrl;
-    mapElement.src = embedUrl;
+    if (mapCanvas) {
+        mapCanvas.classList.remove('map-canvas--inactive');
+        mapCanvas.removeAttribute('aria-hidden');
+    }
+
+    requestAnimationFrame(() => {
+        mapInstance.invalidateSize();
+    });
 }
 
 function updateMap(coordinates, location) {
@@ -582,27 +625,12 @@ function updateMap(coordinates, location) {
         return;
     }
 
-    const embedUrl = buildOsmEmbedUrl(latNum, lonNum);
-    if (!embedUrl) {
-        showMapPlaceholder('Kartendienst derzeit nicht verfügbar.');
+    if (!isLeafletAvailable()) {
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
         return;
     }
 
-    showMapContent(embedUrl, location);
-}
-
-if (mapElement) {
-    mapElement.addEventListener('load', () => {
-        if (mapPlaceholder) {
-            mapPlaceholder.classList.add('hidden');
-        }
-        mapElement.classList.remove('map-embed--inactive');
-    });
-
-    mapElement.addEventListener('error', () => {
-        mapElement.classList.add('map-embed--inactive');
-        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
-    });
+    showLeafletMap(latNum, lonNum, location);
 }
 
 async function fetchAlarm() {
