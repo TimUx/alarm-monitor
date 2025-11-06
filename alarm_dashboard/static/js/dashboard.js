@@ -33,6 +33,8 @@ const WEATHER_CODE_MAP = [
     { codes: [96, 99], icon: '⛈️', label: 'Gewitter mit Hagel' },
 ];
 
+const MAP_DEFAULT_ZOOM = 17;
+
 function isValidNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
 }
@@ -249,6 +251,10 @@ function setMode(mode) {
         if (alarmLayout) {
             alarmLayout.classList.remove('has-map');
         }
+    }
+
+    if (document.body) {
+        document.body.classList.toggle('mode-alarm', mode === 'alarm');
     }
 }
 
@@ -498,23 +504,6 @@ function isLeafletAvailable() {
         && typeof window.L.map === 'function';
 }
 
-function showMapPlaceholder(message) {
-    if (!mapPanel) {
-        return;
-    }
-
-    if (mapPlaceholder) {
-        mapPlaceholder.textContent = message;
-        mapPlaceholder.classList.remove('hidden');
-        mapPlaceholder.removeAttribute('aria-hidden');
-    }
-
-    if (mapCanvas) {
-        mapCanvas.classList.add('map-canvas--inactive');
-        mapCanvas.setAttribute('aria-hidden', 'true');
-    }
-}
-
 function isLeafletAvailable() {
     return typeof window !== 'undefined'
         && typeof window.L === 'object'
@@ -565,9 +554,13 @@ function ensureLeafletMap(lat, lon) {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
             maxZoom: 19,
         }).addTo(leafletMapInstance);
-    }
 
-    leafletMapInstance.setView([lat, lon], 15);
+        leafletMapInstance.setView([lat, lon], MAP_DEFAULT_ZOOM);
+    } else {
+        const currentZoom = leafletMapInstance.getZoom();
+        const targetZoom = Number.isFinite(currentZoom) ? currentZoom : MAP_DEFAULT_ZOOM;
+        leafletMapInstance.setView([lat, lon], targetZoom);
+    }
 
     if (!leafletMarkerInstance) {
         leafletMarkerInstance = window.L.marker([lat, lon], {

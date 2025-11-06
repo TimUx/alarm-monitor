@@ -121,6 +121,7 @@ body {
 
 .alarm-view {
     border-top: 8px solid var(--accent);
+    flex: 1;
 }
 
 .alarm-header {
@@ -180,6 +181,7 @@ body {
     grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
     align-items: stretch;
+    flex: 1;
 }
 
 .alarm-layout.has-map {
@@ -351,7 +353,7 @@ body {
 
 .map-canvas {
     width: 100%;
-    min-height: clamp(260px, 38vh, 420px);
+    min-height: clamp(360px, 52vh, 640px);
     border-radius: 18px;
     background: linear-gradient(135deg, rgba(243, 245, 249, 0.92), rgba(255, 255, 255, 0.85));
     border: 1px solid rgba(107, 114, 128, 0.25);
@@ -516,6 +518,14 @@ body {
     border-color: rgba(193, 18, 31, 0.35);
 }
 
+body.mode-alarm .app-main {
+    padding-bottom: 2.5rem;
+}
+
+body.mode-alarm .bottom-nav {
+    display: none;
+}
+
 .hidden {
     display: none !important;
 }
@@ -526,7 +536,7 @@ body {
     }
 
     .map-canvas {
-        min-height: 360px;
+        min-height: 420px;
     }
 }
 
