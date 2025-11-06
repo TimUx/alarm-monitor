@@ -43,7 +43,7 @@ function ensureMap() {
     }
     if (typeof window.L === 'undefined') {
         if (!mapWarningLogged) {
-            console.warn('Leaflet library not available, map will be disabled.');
+            console.warn('Leaflet library not available, map will be disabled. Ensure the Leaflet assets can be loaded (internet connection, CDN access).');
             mapWarningLogged = true;
         }
         return false;
@@ -576,7 +576,7 @@ function updateMap(coordinates, location) {
     }
 
     if (!ensureMap()) {
-        showMapPlaceholder('Kartendienst derzeit nicht verfügbar.');
+        showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Internetverbindung sowie Zugriff auf Leaflet- und OpenStreetMap-Ressourcen prüfen.');
         return;
     }
 
