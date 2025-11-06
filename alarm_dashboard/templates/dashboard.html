@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Einsatz Dashboard</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+4wISdJHCIaH0p0tWc0pL8uKXuX2G9gCdTfp1LFWA=" crossorigin="" />
     <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
@@ -73,7 +72,17 @@
                         <div class="meta-card meta-card--map hidden" id="map-panel">
                             <h3>Einsatzkarte</h3>
                             <div class="map-frame">
-                                <div id="map"></div>
+                                <iframe
+                                    id="map-embed"
+                                    class="map-embed hidden"
+                                    title="Karte des Einsatzorts"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    allowfullscreen
+                                ></iframe>
+                                <div id="map-placeholder" class="map-placeholder" role="status" aria-live="polite">
+                                    Kartendaten werden geladen ...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -144,7 +153,6 @@
             </a>
         </nav>
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>
     <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
