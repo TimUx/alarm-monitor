@@ -492,11 +492,27 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
-function clamp(value, min, max) {
-    if (!Number.isFinite(value)) {
-        return value;
+function isLeafletAvailable() {
+    return typeof window !== 'undefined'
+        && typeof window.L === 'object'
+        && typeof window.L.map === 'function';
+}
+
+function showMapPlaceholder(message) {
+    if (!mapPanel) {
+        return;
     }
-    return Math.min(Math.max(value, min), max);
+
+    if (mapPlaceholder) {
+        mapPlaceholder.textContent = message;
+        mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
+    }
+
+    if (mapCanvas) {
+        mapCanvas.classList.add('map-canvas--inactive');
+        mapCanvas.setAttribute('aria-hidden', 'true');
+    }
 }
 
 function isLeafletAvailable() {
