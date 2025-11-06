@@ -12,6 +12,16 @@
     font-size: 16px;
 }
 
+body.mode-idle {
+    --background: #05070f;
+    --surface: #111827;
+    --surface-muted: #1f2937;
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --divider: rgba(148, 163, 184, 0.35);
+    --shadow-soft: 0 18px 42px rgba(0, 0, 0, 0.45);
+}
+
 * {
     box-sizing: border-box;
 }
@@ -455,6 +465,16 @@ body {
 .idle-weather p {
     margin: 0;
     font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
+}
+
+.idle-last-alarm p {
+    margin: 0;
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
+    color: var(--text-primary);
+}
+
+.idle-last-alarm strong {
+    color: var(--accent);
 }
 
 .bottom-nav {
