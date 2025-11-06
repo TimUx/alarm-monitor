@@ -496,11 +496,27 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     return null;
 }
 
-function clamp(value, min, max) {
-    if (!Number.isFinite(value)) {
-        return value;
+function isLeafletAvailable() {
+    return typeof window !== 'undefined'
+        && typeof window.L === 'object'
+        && typeof window.L.map === 'function';
+}
+
+function showMapPlaceholder(message) {
+    if (!mapPanel) {
+        return;
     }
-    return Math.min(Math.max(value, min), max);
+
+    if (mapPlaceholder) {
+        mapPlaceholder.textContent = message;
+        mapPlaceholder.classList.remove('hidden');
+        mapPlaceholder.removeAttribute('aria-hidden');
+    }
+
+    if (mapCanvas) {
+        mapCanvas.classList.add('map-canvas--inactive');
+        mapCanvas.setAttribute('aria-hidden', 'true');
+    }
 }
 
 function isLeafletAvailable() {
@@ -559,7 +575,15 @@ function buildOsmEmbedUrl(lat, lon, locationLabel) {
         marker,
     });
 
-    return `https://www.openstreetmap.org/export/embed.html?${params.toString()}`;
+    if (!leafletMarkerInstance) {
+        leafletMarkerInstance = window.L.marker([lat, lon], {
+            keyboard: false,
+        }).addTo(leafletMapInstance);
+    } else {
+        leafletMarkerInstance.setLatLng([lat, lon]);
+    }
+
+    return leafletMapInstance;
 }
 
 function showIframeMap(lat, lon, locationLabel) {
@@ -612,6 +636,8 @@ function showMapPlaceholder(message) {
         mapCanvas.classList.add('map-canvas--inactive');
         mapCanvas.setAttribute('aria-hidden', 'true');
     }
+
+    leafletMarkerLabel = text;
 }
 
 function ensureLeafletMap(lat, lon) {
