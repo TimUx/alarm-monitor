@@ -141,3 +141,35 @@ def test_create_app_logs_and_discards_fetcher_when_start_fails(
 
     assert flask_app.config["MAIL_FETCHER"] is None
     assert dummy_fetcher[0].started == 0
+
+
+def test_create_app_uses_instance_history_path() -> None:
+    """A default history file should be created inside the instance folder."""
+
+    config = AppConfig(mail=None, history_file=None)
+
+    flask_app = app_module.create_app(config)
+
+    store = flask_app.config["ALARM_STORE"]
+    expected_path = Path(flask_app.instance_path) / "alarm_history.json"
+
+    assert store._persistence_path == expected_path  # type: ignore[attr-defined]
+    assert config.history_file == str(expected_path)
+
+
+def test_history_persists_between_app_instances(tmp_path) -> None:
+    """Entries written by one app instance should load in subsequent ones."""
+
+    history_file = tmp_path / "history.json"
+    config = AppConfig(mail=None, history_file=str(history_file))
+
+    first_app = app_module.create_app(config)
+    first_store = first_app.config["ALARM_STORE"]
+    first_store.update({"alarm": {"keyword": "Persist"}})
+
+    second_app = app_module.create_app(config)
+    second_store = second_app.config["ALARM_STORE"]
+
+    history = second_store.history()
+    assert history
+    assert history[0]["alarm"]["keyword"] == "Persist"

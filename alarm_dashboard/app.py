@@ -27,9 +27,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     if config is None:
         config = load_config()
 
-    store = AlarmStore(persistence_path=config.history_file)
-
     app = Flask(__name__, template_folder=str(Path(__file__).parent / "templates"))
+
+    if config.history_file:
+        persistence_path = Path(config.history_file)
+    else:
+        persistence_path = Path(app.instance_path) / "alarm_history.json"
+        config.history_file = str(persistence_path)
+
+    store = AlarmStore(persistence_path=persistence_path)
     app.config["ALARM_STORE"] = store
     app.config["APP_CONFIG"] = config
     app.config["MAIL_FETCHER"] = None
