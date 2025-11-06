@@ -508,13 +508,15 @@ function buildOsmEmbedUrl(lat, lon) {
     const west = clamp(lon - LON_DELTA, -180, 180);
     const east = clamp(lon + LON_DELTA, -180, 180);
 
-    const url = new URL('https://www.openstreetmap.org/export/embed.html');
-    url.searchParams.set('bbox', `${west},${south},${east},${north}`);
-    url.searchParams.set('layer', 'mapnik');
-    url.searchParams.set('marker', `${lat},${lon}`);
-    url.hash = `map=16/${lat}/${lon}`;
+    const format = (value) => {
+        const normalized = Math.abs(value) < 1e-6 ? 0 : value;
+        return normalized.toFixed(6);
+    };
+    const bbox = [west, south, east, north].map(format).join(',');
+    const marker = [lat, lon].map(format).join(',');
+    const hashLatLon = [lat, lon].map(format).join('/');
 
-    return url.toString();
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}#map=16/${hashLatLon}`;
 }
 
 function showMapPlaceholder(message) {
