@@ -53,3 +53,15 @@ def test_load_config_with_complete_imap_settings():
     assert app_config.mail.host == "imap.example.com"
     assert app_config.mail.username == "user"
     assert app_config.mail.password == "secret"
+
+
+def test_load_config_with_history_file(tmp_path):
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    history_file = tmp_path / "history.json"
+
+    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE=str(history_file)):
+        app_config = config.load_config()
+
+    assert app_config.history_file == str(history_file)
