@@ -254,7 +254,9 @@ function setMode(mode) {
     }
 
     if (document.body) {
-        document.body.classList.toggle('mode-alarm', mode === 'alarm');
+        const isAlarm = mode === 'alarm';
+        document.body.classList.toggle('mode-alarm', isAlarm);
+        document.body.classList.toggle('mode-idle', !isAlarm);
     }
 }
 
