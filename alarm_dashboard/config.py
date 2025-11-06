@@ -49,6 +49,7 @@ class AppConfig:
     default_latitude: Optional[float] = None
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
+    history_file: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -152,6 +153,7 @@ def load_config() -> AppConfig:
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
+    history_file = _get_env("HISTORY_FILE") or None
 
     default_latitude_float: Optional[float] = None
     default_longitude_float: Optional[float] = None
@@ -175,6 +177,7 @@ def load_config() -> AppConfig:
         default_latitude=default_latitude_float,
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
+        history_file=history_file,
     )
 
 

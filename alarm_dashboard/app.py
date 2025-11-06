@@ -27,7 +27,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     if config is None:
         config = load_config()
 
-    store = AlarmStore()
+    store = AlarmStore(persistence_path=config.history_file)
 
     app = Flask(__name__, template_folder=str(Path(__file__).parent / "templates"))
     app.config["ALARM_STORE"] = store
@@ -219,6 +219,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "location": alarm.get("location"),
             "description": alarm.get("description"),
             "groups": alarm.get("groups"),
+            "aao_groups": alarm.get("aao_groups"),
             "remark": alarm.get("remark"),
         }
 
