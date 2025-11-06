@@ -9,7 +9,6 @@
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin=""
     >
 </head>
@@ -80,9 +79,10 @@
                             <div class="map-frame">
                                 <div
                                     id="map-canvas"
-                                    class="map-canvas map-canvas--inactive"
-                                ></div>
-                                <div id="map-placeholder" class="map-placeholder" role="status" aria-live="polite">
+                                    class="map-canvas map-canvas--message"
+                                    role="region"
+                                    aria-live="polite"
+                                >
                                     Kartendaten werden geladen ...
                                 </div>
                             </div>
@@ -157,8 +157,8 @@
     </div>
     <script
         src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mL9Fzp+POeVdS5S9H1bSo="
         crossorigin=""
+        defer
     ></script>
     <script src="/static/js/dashboard.js" defer></script>
 </body>
