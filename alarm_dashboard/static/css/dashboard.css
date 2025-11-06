@@ -229,7 +229,7 @@ body {
 
 .meta-card h3 {
     margin: 0;
-    font-size: clamp(0.95rem, 0.85rem + 0.3vw, 1.2rem);
+    font-size: clamp(1.2rem, 1rem + 0.5vw, 1.65rem);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--accent);
@@ -238,8 +238,8 @@ body {
 .meta-card p,
 .meta-card dd,
 .meta-card li {
-    font-size: clamp(1.1rem, 1rem + 0.3vw, 1.3rem);
-    line-height: 1.4;
+    font-size: clamp(1.2rem, 1.1rem + 0.45vw, 1.55rem);
+    line-height: 1.45;
 }
 
 .meta-card li {
@@ -277,7 +277,7 @@ body {
 .location-details dt {
     margin: 0;
     font-weight: 600;
-    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
+    font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.6rem);
     color: #000;
 }
 
@@ -286,19 +286,20 @@ body {
     text-align: right;
     font-weight: 500;
     color: #000;
-    font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.3rem);
+    font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.6rem);
 }
 
 .meta-card--weather > p {
     margin: 0;
 }
 
+
 .weather-summary {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin: 0.1rem 0 0.75rem;
-    font-size: clamp(1.2rem, 1.05rem + 0.35vw, 1.4rem);
+    font-size: clamp(1.35rem, 1.15rem + 0.45vw, 1.7rem);
     color: var(--text-primary);
     font-weight: 600;
 }
@@ -321,7 +322,7 @@ body {
 .weather-details {
     display: grid;
     gap: 0.5rem;
-    font-size: clamp(1.05rem, 1rem + 0.25vw, 1.2rem);
+    font-size: clamp(1.2rem, 1.05rem + 0.35vw, 1.45rem);
     color: var(--text-primary);
 }
 
