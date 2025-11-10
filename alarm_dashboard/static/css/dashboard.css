@@ -49,7 +49,7 @@ body {
 .app-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 1.25rem;
     padding: 0.85rem clamp(1.6rem, 2.3vw, 2.4rem);
     background: var(--surface);
