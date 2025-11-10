@@ -38,7 +38,7 @@ body {
 .mobile-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     padding: 0.9rem 1.25rem;
     background: var(--surface);
     box-shadow: var(--shadow-soft);
@@ -49,6 +49,10 @@ body {
 .mobile-header-brand {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 54px;
     padding-right: 4.5rem;
 }
 
@@ -265,7 +269,7 @@ body {
 
 .mobile-card--weather h3 {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
@@ -276,7 +280,7 @@ body {
     align-items: center;
     gap: 0.45rem;
     margin: 0.25rem 0 0.5rem;
-    font-size: 0.95rem;
+    font-size: 1.08rem;
     color: var(--text-primary);
     font-weight: 600;
 }
@@ -292,7 +296,7 @@ body {
     padding: 0;
     display: grid;
     gap: 0.35rem;
-    font-size: clamp(0.82rem, 0.78rem + 0.35vw, 0.95rem);
+    font-size: clamp(0.9rem, 0.86rem + 0.35vw, 1.05rem);
     color: var(--text-primary);
 }
 
@@ -307,7 +311,7 @@ body {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: clamp(0.65rem, 0.6rem + 0.2vw, 0.78rem);
+    font-size: clamp(0.72rem, 0.68rem + 0.2vw, 0.84rem);
 }
 
 .mobile-weather-list strong {
@@ -381,19 +385,19 @@ body {
     align-items: center;
     gap: 0.45rem;
     margin: -0.1rem 0 0.35rem;
-    font-size: clamp(0.82rem, 0.78rem + 0.35vw, 0.98rem);
+    font-size: clamp(0.9rem, 0.86rem + 0.35vw, 1.1rem);
     color: var(--text-primary);
     font-weight: 600;
 }
 
 .mobile-idle-weather .weather-summary .weather-icon {
-    font-size: clamp(1.05rem, 1rem + 0.35vw, 1.25rem);
+    font-size: clamp(1.15rem, 1.1rem + 0.35vw, 1.32rem);
 }
 
 .mobile-idle-weather h3,
 .mobile-last-alarm h3 {
     margin: 0;
-    font-size: clamp(0.9rem, 0.86rem + 0.35vw, 1.05rem);
+    font-size: clamp(1rem, 0.95rem + 0.35vw, 1.18rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
@@ -402,7 +406,7 @@ body {
 .mobile-idle-weather .idle-weather-details {
     display: grid;
     gap: 0.35rem;
-    font-size: clamp(0.72rem, 0.68rem + 0.35vw, 0.9rem);
+    font-size: clamp(0.82rem, 0.78rem + 0.35vw, 1rem);
 }
 
 .mobile-idle-weather .idle-weather-details strong {
@@ -411,12 +415,12 @@ body {
 
 .mobile-idle-weather p {
     margin: 0;
-    font-size: clamp(0.68rem, 0.65rem + 0.28vw, 0.82rem);
+    font-size: clamp(0.78rem, 0.74rem + 0.28vw, 0.92rem);
 }
 
 .mobile-last-alarm p {
     margin: 0;
-    font-size: clamp(0.7rem, 0.66rem + 0.28vw, 0.88rem);
+    font-size: clamp(0.82rem, 0.78rem + 0.3vw, 1rem);
 }
 
 .mobile-bottom-nav {
