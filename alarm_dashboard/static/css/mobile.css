@@ -47,23 +47,23 @@ body {
 
 .mobile-header-brand h1 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent);
-    line-height: 1.1;
+    line-height: 1.05;
 }
 
 .mobile-header-brand h1 span {
     display: block;
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.72rem;
 }
 
 .mobile-timestamp {
-    margin: 0.4rem 0 0;
-    font-size: 0.6rem;
+    margin: 0.3rem 0 0;
+    font-size: 0.52rem;
     color: var(--text-secondary);
 }
 
@@ -340,14 +340,14 @@ body {
 
 .mobile-idle-time {
     margin: 0;
-    font-size: clamp(1.9rem, 5.5vw, 2.2rem);
+    font-size: clamp(1.35rem, 4vw, 1.55rem);
     font-weight: 700;
     color: var(--accent);
 }
 
 .mobile-idle-date {
     margin: 0;
-    font-size: clamp(0.68rem, 2.4vw, 0.9rem);
+    font-size: clamp(0.55rem, 2vw, 0.75rem);
     color: var(--text-secondary);
 }
 
@@ -372,19 +372,19 @@ body {
     align-items: center;
     gap: 0.45rem;
     margin: -0.1rem 0 0.35rem;
-    font-size: clamp(0.85rem, 0.8rem + 0.4vw, 1rem);
+    font-size: clamp(0.65rem, 0.62rem + 0.35vw, 0.8rem);
     color: var(--text-primary);
     font-weight: 600;
 }
 
 .mobile-idle-weather .weather-summary .weather-icon {
-    font-size: clamp(1.1rem, 1rem + 0.4vw, 1.35rem);
+    font-size: clamp(0.9rem, 0.85rem + 0.35vw, 1.1rem);
 }
 
 .mobile-idle-weather h3,
 .mobile-last-alarm h3 {
     margin: 0;
-    font-size: clamp(0.9rem, 0.85rem + 0.35vw, 1.05rem);
+    font-size: clamp(0.7rem, 0.68rem + 0.32vw, 0.85rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
@@ -393,7 +393,7 @@ body {
 .mobile-idle-weather .idle-weather-details {
     display: grid;
     gap: 0.3rem;
-    font-size: clamp(0.75rem, 0.7rem + 0.4vw, 0.9rem);
+    font-size: clamp(0.6rem, 0.58rem + 0.35vw, 0.75rem);
 }
 
 .mobile-idle-weather .idle-weather-details strong {
@@ -402,12 +402,12 @@ body {
 
 .mobile-idle-weather p {
     margin: 0;
-    font-size: clamp(0.68rem, 0.65rem + 0.3vw, 0.85rem);
+    font-size: clamp(0.55rem, 0.53rem + 0.28vw, 0.7rem);
 }
 
 .mobile-last-alarm p {
     margin: 0;
-    font-size: clamp(0.65rem, 0.6rem + 0.3vw, 0.8rem);
+    font-size: clamp(0.55rem, 0.52rem + 0.28vw, 0.7rem);
 }
 
 .mobile-bottom-nav {
@@ -491,7 +491,11 @@ body {
     }
 
     .mobile-header-brand h1 {
-        font-size: 0.85rem;
+        font-size: 0.68rem;
+    }
+
+    .mobile-header-brand h1 span {
+        font-size: 0.65rem;
     }
 
     .mobile-main {
@@ -549,25 +553,25 @@ body {
     }
 
     .mobile-idle-time {
-        font-size: clamp(1.7rem, 5.5vw, 2rem);
+        font-size: clamp(1.2rem, 4.5vw, 1.45rem);
     }
 
     .mobile-idle-weather .weather-summary {
-        font-size: clamp(0.75rem, 0.7rem + 0.35vw, 0.9rem);
+        font-size: clamp(0.6rem, 0.58rem + 0.3vw, 0.72rem);
     }
 
     .mobile-idle-weather h3,
     .mobile-last-alarm h3 {
-        font-size: clamp(0.8rem, 0.75rem + 0.35vw, 0.95rem);
+        font-size: clamp(0.6rem, 0.58rem + 0.3vw, 0.75rem);
     }
 
     .mobile-idle-weather .idle-weather-details {
-        font-size: clamp(0.68rem, 0.65rem + 0.35vw, 0.82rem);
+        font-size: clamp(0.55rem, 0.53rem + 0.3vw, 0.68rem);
     }
 
     .mobile-idle-weather p,
     .mobile-last-alarm p {
-        font-size: clamp(0.6rem, 0.55rem + 0.3vw, 0.75rem);
+        font-size: clamp(0.5rem, 0.48rem + 0.28vw, 0.65rem);
     }
 
     .mobile-bottom-nav {
