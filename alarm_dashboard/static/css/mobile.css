@@ -19,6 +19,7 @@ body {
     font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
     background: var(--background);
     color: var(--text-primary);
+    overflow-x: hidden;
 }
 
 .mobile-app {
@@ -103,12 +104,14 @@ body {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
+    overflow-wrap: anywhere;
 }
 
 .mobile-description {
     margin: 0;
     font-size: 1rem;
     color: var(--text-secondary);
+    overflow-wrap: anywhere;
 }
 
 .mobile-remark {
@@ -116,6 +119,7 @@ body {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--accent);
+    overflow-wrap: anywhere;
 }
 
 .mobile-meta {
@@ -144,6 +148,7 @@ body {
     margin: 0.4rem 0 0;
     font-size: 1rem;
     color: var(--text-primary);
+    overflow-wrap: anywhere;
 }
 
 .mobile-meta-list {
@@ -167,6 +172,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    overflow-wrap: anywhere;
 }
 
 .mobile-location {
@@ -188,6 +194,7 @@ body {
     margin: 0 0 0.75rem;
     font-weight: 600;
     color: var(--text-primary);
+    overflow-wrap: anywhere;
 }
 
 .mobile-location-details {
@@ -207,6 +214,11 @@ body {
 .mobile-location-details dt {
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.mobile-location-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
 }
 
 .mobile-navigation-button {
@@ -466,5 +478,140 @@ body {
     .mobile-main {
         max-width: 600px;
         margin: 0 auto;
+    }
+}
+
+@media (max-width: 430px) {
+    .mobile-header {
+        padding: 1.1rem 1.25rem;
+        gap: 1rem;
+    }
+
+    .mobile-header-brand h1 {
+        font-size: 1.2rem;
+    }
+
+    .mobile-crest {
+        width: 56px;
+    }
+
+    .mobile-main {
+        padding: 1.25rem 1.1rem 4rem;
+        gap: 1rem;
+    }
+
+    .mobile-card {
+        padding: 1.25rem;
+        border-radius: 18px;
+        gap: 1rem;
+    }
+
+    .mobile-card--alarm h2 {
+        font-size: 1.45rem;
+    }
+
+    .mobile-subtitle {
+        font-size: 1rem;
+    }
+
+    .mobile-description {
+        font-size: 0.95rem;
+    }
+
+    .mobile-remark {
+        font-size: 0.9rem;
+    }
+
+    .mobile-meta {
+        gap: 0.75rem;
+    }
+
+    .mobile-meta div {
+        padding: 0.85rem 0.9rem;
+    }
+
+    .mobile-meta dt {
+        font-size: 0.7rem;
+    }
+
+    .mobile-meta dd {
+        font-size: 0.9rem;
+    }
+
+    .mobile-meta-list h3,
+    .mobile-location h3 {
+        font-size: 0.75rem;
+    }
+
+    .mobile-location {
+        padding: 1rem;
+        border-radius: 16px;
+    }
+
+    .mobile-location-details {
+        gap: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .mobile-navigation-button {
+        width: 100%;
+        padding: 0.65rem 1.1rem;
+        font-size: 0.75rem;
+    }
+
+    #mobile-map {
+        height: 220px;
+    }
+
+    .mobile-idle-header {
+        gap: 1rem;
+    }
+
+    .mobile-idle-badge {
+        width: 70px;
+        height: 70px;
+        border-radius: 18px;
+    }
+
+    .mobile-idle-time {
+        font-size: clamp(2.6rem, 8vw, 3.2rem);
+    }
+
+    .mobile-idle-date {
+        font-size: clamp(1rem, 3.5vw, 1.2rem);
+    }
+
+    .mobile-idle-weather .weather-summary {
+        font-size: clamp(1.25rem, 1rem + 0.5vw, 1.45rem);
+    }
+
+    .mobile-idle-weather h3,
+    .mobile-last-alarm h3 {
+        font-size: clamp(1.25rem, 1rem + 0.7vw, 1.5rem);
+    }
+
+    .mobile-idle-weather .idle-weather-details {
+        font-size: clamp(1.05rem, 0.9rem + 0.6vw, 1.3rem);
+    }
+
+    .mobile-idle-weather p,
+    .mobile-last-alarm p {
+        font-size: clamp(0.95rem, 0.85rem + 0.4vw, 1.1rem);
+    }
+
+    .mobile-bottom-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 0.6rem 0.9rem;
+        gap: 0.6rem;
+    }
+
+    .mobile-bottom-nav__icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+    }
+
+    .mobile-bottom-nav__label {
+        font-size: 0.6rem;
     }
 }
