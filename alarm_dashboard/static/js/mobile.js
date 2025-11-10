@@ -216,7 +216,7 @@ function collectPrecipitationDetails(weather) {
         const formattedProbability = formatProbability(probability, unit);
         if (formattedProbability) {
             details.push({
-                label: 'Niederschlagswahrscheinlichkeit',
+                label: 'Niederschlags-Wahrsch.',
                 value: formattedProbability,
             });
         }

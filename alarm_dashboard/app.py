@@ -174,7 +174,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/")
     def dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
-        return render_template("dashboard.html", crest_url=crest_url)
+        return render_template(
+            "dashboard.html",
+            crest_url=crest_url,
+            department_name=config.fire_department_name,
+        )
 
     @app.route("/history")
     def history_page() -> str:
@@ -198,12 +202,21 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 "display_time": display_time,
             })
         crest_url = url_for("static", filename="img/crest.png")
-        return render_template("history.html", entries=decorated, crest_url=crest_url)
+        return render_template(
+            "history.html",
+            entries=decorated,
+            crest_url=crest_url,
+            department_name=config.fire_department_name,
+        )
 
     @app.route("/mobile")
     def mobile_dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
-        return render_template("mobile.html", crest_url=crest_url)
+        return render_template(
+            "mobile.html",
+            crest_url=crest_url,
+            department_name=config.fire_department_name,
+        )
 
     def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
         alarm = entry.get("alarm") or {}
