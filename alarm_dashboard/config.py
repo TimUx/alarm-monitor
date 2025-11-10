@@ -43,6 +43,7 @@ class AppConfig:
     poll_interval: int = 60
     activation_groups: List[str] = field(default_factory=list)
     display_duration_minutes: int = 30
+    fire_department_name: str = "Willingshausen"
     nominatim_base_url: str = "https://nominatim.openstreetmap.org/search"
     weather_base_url: str = "https://api.open-meteo.com/v1/forecast"
     weather_params: str = "current_weather=true"
@@ -166,12 +167,18 @@ def load_config() -> AppConfig:
                 "DEFAULT_LATITUDE and DEFAULT_LONGITUDE must be numeric"
             ) from exc
 
+    fire_department_name = (
+        _get_env("FIRE_DEPARTMENT_NAME", default="Willingshausen")
+        or "Willingshausen"
+    )
+
     return AppConfig(
         mail=mail,
         poll_interval=poll_interval,
         nominatim_base_url=nominatim_base_url,
         activation_groups=activation_groups,
         display_duration_minutes=display_duration_minutes,
+        fire_department_name=fire_department_name,
         weather_base_url=weather_base_url,
         weather_params=weather_params,
         default_latitude=default_latitude_float,
