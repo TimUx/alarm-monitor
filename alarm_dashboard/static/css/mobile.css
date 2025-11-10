@@ -330,7 +330,7 @@ body {
 }
 
 .mobile-idle-badge {
-    display: none;
+    display: none !important;
 }
 
 .mobile-idle-clock {
