@@ -7,6 +7,7 @@
     --text-secondary: #6b7280;
     --divider: #e1e6ef;
     --shadow-soft: 0 18px 42px rgba(18, 32, 60, 0.08);
+    font-size: 16px;
 }
 
 * {
@@ -15,7 +16,7 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', 'Montserrat', sans-serif;
+    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     background: var(--background);
     color: var(--text-primary);
 }
@@ -34,75 +35,72 @@ body {
 .history-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 2rem;
-    padding: 1.75rem clamp(1.5rem, 4vw, 3rem);
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 0.85rem clamp(1.6rem, 2.3vw, 2.4rem);
     background: var(--surface);
     box-shadow: var(--shadow-soft);
+    position: relative;
+    z-index: 1;
 }
 
 .history-brand {
+    flex: 1;
+    min-width: 0;
     display: flex;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    justify-content: center;
+    min-height: clamp(60px, 48px + 1.8vw, 82px);
 }
 
-.history-back {
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    border: 1px solid var(--divider);
-    background: var(--surface-muted);
-    display: grid;
-    place-items: center;
-    color: var(--accent);
-    text-decoration: none;
-    font-size: 1.2rem;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.history-back:hover,
-.history-back:focus {
-    background: rgba(193, 18, 31, 0.1);
-    border-color: rgba(193, 18, 31, 0.35);
-    transform: translateY(-2px);
-    outline: none;
-}
-
-.history-brand-text h1 {
+.history-brand h1 {
     margin: 0;
-    font-size: 1.9rem;
+    font-size: clamp(2.5rem, 1.9rem + 1.2vw, 3.05rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    line-height: 0.95;
     color: var(--accent);
-    line-height: 1.2;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.65rem;
 }
 
-.history-brand-text h1 span {
-    display: block;
+.history-brand h1 span {
+    display: inline;
     color: var(--text-primary);
     font-weight: 600;
-}
-
-.history-subtitle {
-    margin: 0.6rem 0 0;
-    font-size: 1rem;
-    color: var(--text-secondary);
     letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-size: 1em;
 }
 
 .history-crest {
-    width: 88px;
+    width: clamp(60px, 48px + 1.8vw, 82px);
     height: auto;
+    flex-shrink: 0;
 }
 
 main {
     flex: 1;
-    padding: 2.5rem clamp(1.25rem, 4vw, 3rem) 5rem;
+    padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 4.5rem;
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    align-content: start;
+}
+
+.history-table-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.history-section-title {
+    margin: 0;
+    font-size: clamp(1.6rem, 1.3rem + 0.6vw, 2rem);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
 }
 
 .history-table-wrap {
@@ -166,17 +164,18 @@ main {
     color: var(--text-secondary);
 }
 
-.history-bottom-nav {
+.bottom-nav {
     background: var(--surface);
     border-top: 1px solid var(--divider);
     box-shadow: 0 -12px 32px rgba(18, 32, 60, 0.08);
     padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 1rem;
 }
 
-.history-bottom-nav__item {
+.bottom-nav__item {
     text-decoration: none;
     color: var(--text-secondary);
     display: flex;
@@ -190,51 +189,42 @@ main {
     transition: color 0.2s ease;
 }
 
-.history-bottom-nav__icon {
+.bottom-nav__icon {
     width: 44px;
     height: 44px;
     border-radius: 14px;
     background: var(--surface-muted);
-    border: 1px solid transparent;
     display: grid;
     place-items: center;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.history-bottom-nav__item svg {
+.bottom-nav__item svg {
     width: 24px;
     height: 24px;
     fill: currentColor;
 }
 
-.history-bottom-nav__item:hover,
-.history-bottom-nav__item:focus {
+.bottom-nav__item:hover .bottom-nav__icon,
+.bottom-nav__item:focus .bottom-nav__icon {
+    border-color: var(--accent);
+    background: rgba(193, 18, 31, 0.08);
+}
+
+.bottom-nav__item:hover,
+.bottom-nav__item:focus {
     color: var(--accent);
     outline: none;
 }
 
-.history-bottom-nav__item:hover .history-bottom-nav__icon,
-.history-bottom-nav__item:focus .history-bottom-nav__icon {
-    background: rgba(193, 18, 31, 0.08);
-    border-color: rgba(193, 18, 31, 0.3);
-}
-
-.history-bottom-nav__item--active {
+.bottom-nav__item--active {
     color: var(--accent);
 }
 
-.history-bottom-nav__item--active .history-bottom-nav__icon {
+.bottom-nav__item--active .bottom-nav__icon {
     background: rgba(193, 18, 31, 0.12);
     border-color: rgba(193, 18, 31, 0.35);
-}
-
-.history-bottom-nav__item[aria-disabled="true"] {
-    pointer-events: none;
-    color: rgba(107, 114, 128, 0.6);
-}
-
-.history-bottom-nav__item[aria-disabled="true"] .history-bottom-nav__icon {
-    opacity: 0.5;
 }
 
 @media (max-width: 960px) {
