@@ -200,14 +200,17 @@ async function requestRoute(start, destination) {
         language: 'de',
     };
 
-    const response = await fetch('https://api.openrouteservice.org/v2/directions/driving-car', {
-        method: 'POST',
-        headers: {
-            Authorization: orsApiKey,
-            'Content-Type': 'application/json',
+    const response = await fetch(
+        'https://api.openrouteservice.org/v2/directions/driving-car?geometry_format=geojson',
+        {
+            method: 'POST',
+            headers: {
+                Authorization: orsApiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
         },
-        body: JSON.stringify(body),
-    });
+    );
 
     let data = null;
     try {
