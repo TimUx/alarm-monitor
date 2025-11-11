@@ -12,87 +12,84 @@
         <div class="history-topline" aria-hidden="true"></div>
         <header class="history-header">
             <div class="history-brand">
-                <a href="/" class="history-back" aria-label="Zurück zum Dashboard">
-                    <span aria-hidden="true">&larr;</span>
-                </a>
-                <div class="history-brand-text">
-                    <h1>
-                        Feuerwehr
-                        <span>{{ department_name }}</span>
-                    </h1>
-                    <p class="history-subtitle">Einsatzhistorie</p>
-                </div>
+                <h1>
+                    Feuerwehr
+                    <span>{{ department_name }}</span>
+                </h1>
             </div>
             <img src="{{ crest_url }}" alt="Gemeindewappen" class="history-crest">
         </header>
         <main>
             {% if entries %}
-            <div class="history-table-wrap">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Datum</th>
-                            <th scope="col">Uhrzeit</th>
-                            <th scope="col">Stichwort</th>
-                            <th scope="col">Ort</th>
-                            <th scope="col">Beschreibung</th>
-                            <th scope="col">Alarmierte Fahrzeuge</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for entry in entries %}
-                        <tr>
-                            <td data-label="Datum">{{ entry.display_date }}</td>
-                            <td data-label="Uhrzeit">{{ entry.display_time }}</td>
-                            <td data-label="Stichwort">{{ entry.keyword or "-" }}</td>
-                            <td data-label="Ort">{{ entry.location or "-" }}</td>
-                            <td data-label="Beschreibung">
-                                {% if entry.description %}
-                                <div class="history-description">{{ entry.description }}</div>
-                                {% else %}
-                                <div class="history-description">-</div>
-                                {% endif %}
-                                {% if entry.remark %}
-                                <div class="history-remark">{{ entry.remark }}</div>
-                                {% endif %}
-                            </td>
-                            <td data-label="Alarmierte Fahrzeuge">
-                                {% set vehicles = entry.aao_groups %}
-                                {% if vehicles %}
-                                    {% if vehicles is string %}
-                                        {{ vehicles }}
+            <section class="history-table-section" aria-labelledby="history-title">
+                <h2 id="history-title" class="history-section-title">Alarm-Historie</h2>
+                <div class="history-table-wrap">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Datum</th>
+                                <th scope="col">Uhrzeit</th>
+                                <th scope="col">Stichwort</th>
+                                <th scope="col">Ort</th>
+                                <th scope="col">Beschreibung</th>
+                                <th scope="col">Alarmierte Fahrzeuge</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries %}
+                            <tr>
+                                <td data-label="Datum">{{ entry.display_date }}</td>
+                                <td data-label="Uhrzeit">{{ entry.display_time }}</td>
+                                <td data-label="Stichwort">{{ entry.keyword or "-" }}</td>
+                                <td data-label="Ort">{{ entry.location or "-" }}</td>
+                                <td data-label="Beschreibung">
+                                    {% if entry.description %}
+                                    <div class="history-description">{{ entry.description }}</div>
                                     {% else %}
-                                        {{ vehicles | join(', ') }}
+                                    <div class="history-description">-</div>
                                     {% endif %}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                    {% if entry.remark %}
+                                    <div class="history-remark">{{ entry.remark }}</div>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Alarmierte Fahrzeuge">
+                                    {% set vehicles = entry.aao_groups %}
+                                    {% if vehicles %}
+                                        {% if vehicles is string %}
+                                            {{ vehicles }}
+                                        {% else %}
+                                            {{ vehicles | join(', ') }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
             {% else %}
             <p class="history-empty">Keine Einsätze vorhanden.</p>
             {% endif %}
         </main>
-        <nav class="history-bottom-nav" aria-label="Hauptnavigation">
-            <a href="/" class="history-bottom-nav__item">
-                <span class="history-bottom-nav__icon" aria-hidden="true">
+        <nav class="bottom-nav" aria-label="Hauptnavigation">
+            <a href="/" class="bottom-nav__item" aria-label="Zurück zum Dashboard">
+                <span class="bottom-nav__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
-                        <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-5h-4v5H5a1 1 0 0 1-1-1z" />
+                        <path d="M13 5 6 12l7 7 1.5-1.5L9 12l5.5-5.5z" />
                     </svg>
                 </span>
-                <span class="history-bottom-nav__label">Home</span>
+                <span class="bottom-nav__label">Zurück</span>
             </a>
-            <a href="/history" class="history-bottom-nav__item history-bottom-nav__item--active">
-                <span class="history-bottom-nav__icon" aria-hidden="true">
+            <a href="/history" class="bottom-nav__item bottom-nav__item--active">
+                <span class="bottom-nav__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" role="presentation">
                         <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14zm-9-7h2v2h-2zm4 0h2v2h-2zm-8 0h2v2H6z" />
                     </svg>
                 </span>
-                <span class="history-bottom-nav__label">Historie</span>
+                <span class="bottom-nav__label">Historie</span>
             </a>
         </nav>
     </div>
