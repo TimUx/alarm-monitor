@@ -34,7 +34,7 @@
                 <ul class="navigation-details" aria-live="polite" aria-label="Routeninformationen">
                     <li>
                         <strong>Start</strong>
-                        <span id="navigation-start">Standort wird bestimmt …</span>
+                        <span id="navigation-start">–</span>
                     </li>
                     <li>
                         <strong>Ziel</strong>
@@ -88,6 +88,15 @@
         crossorigin=""
         defer
     ></script>
+    <script>
+        window.navigationConfig = {
+            defaultStart: {
+                lat: {{ default_latitude | tojson }},
+                lon: {{ default_longitude | tojson }},
+                label: {{ default_location_name | tojson }}
+            }
+        };
+    </script>
     <script src="/static/js/navigation.js" defer></script>
 </body>
 </html>

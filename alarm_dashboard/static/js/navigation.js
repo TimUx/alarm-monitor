@@ -10,6 +10,8 @@ let mapInstance = null;
 let routeLayer = null;
 let startMarker = null;
 let destinationMarker = null;
+const navigationConfig = window.navigationConfig || {};
+const configuredStart = navigationConfig.defaultStart || null;
 
 function setStatus(message, type = 'info') {
     if (!statusEl) {
@@ -172,47 +174,6 @@ function fetchAlarm() {
     });
 }
 
-function requestCurrentPosition() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-        return Promise.reject(new Error('Standortdienste werden von diesem Gerät nicht unterstützt.'));
-    }
-    return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                resolve({
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude,
-                    accuracy: position.coords.accuracy,
-                });
-            },
-            (error) => {
-                let message = 'Der aktuelle Standort konnte nicht ermittelt werden.';
-                if (error && typeof error.code === 'number') {
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            message = 'Der Zugriff auf den Standort wurde verweigert.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            message = 'Der Standort ist derzeit nicht verfügbar.';
-                            break;
-                        case error.TIMEOUT:
-                            message = 'Die Standortbestimmung hat zu lange gedauert.';
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                reject(new Error(message));
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0,
-            },
-        );
-    });
-}
-
 async function requestRoute(start, destination) {
     const baseUrl = 'https://router.project-osrm.org/route/v1/driving/';
     const query = `${start.lon},${start.lat};${destination.lon},${destination.lat}`;
@@ -337,15 +298,25 @@ async function initializeNavigation() {
             return;
         }
 
-        setStatus('Bestimme aktuellen Standort …');
-        const position = await requestCurrentPosition();
+        const startCoordinates = resolveCoordinates(configuredStart);
+        if (!startCoordinates) {
+            const message = 'Es ist kein fester Startpunkt für die Navigation konfiguriert.';
+            setStatus(message, 'error');
+            showMapMessage(message);
+            return;
+        }
         if (startEl) {
-            startEl.textContent = formatCoordinatePair(position);
+            const label =
+                configuredStart && typeof configuredStart.label === 'string'
+                    ? configuredStart.label.trim()
+                    : '';
+            const formattedCoordinates = formatCoordinatePair(startCoordinates);
+            startEl.textContent = label ? `${label} (${formattedCoordinates})` : formattedCoordinates;
         }
 
         setStatus('Berechne Route …');
-        const route = await requestRoute(position, destinationCoordinates);
-        updateRouteOnMap(position, destinationCoordinates, route);
+        const route = await requestRoute(startCoordinates, destinationCoordinates);
+        updateRouteOnMap(startCoordinates, destinationCoordinates, route);
         setStatus('Route bereit. Gute Fahrt!');
     } catch (error) {
         console.error('Navigation konnte nicht geladen werden', error);
@@ -362,9 +333,6 @@ async function initializeNavigation() {
         }
         if (!fallbackShown) {
             showMapMessage(message);
-        }
-        if (startEl) {
-            startEl.textContent = 'Unbekannt';
         }
         if (distanceEl) {
             distanceEl.textContent = '–';

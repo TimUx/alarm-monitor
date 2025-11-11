@@ -187,6 +187,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "navigation.html",
             crest_url=crest_url,
             department_name=config.fire_department_name,
+            default_latitude=config.default_latitude,
+            default_longitude=config.default_longitude,
+            default_location_name=config.default_location_name,
         )
 
     @app.route("/history")
