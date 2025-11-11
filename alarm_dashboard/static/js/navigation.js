@@ -10,8 +10,20 @@ let mapInstance = null;
 let routeLayer = null;
 let startMarker = null;
 let destinationMarker = null;
+let userMarker = null;
+let geolocationWatchId = null;
+let navigationInstructions = [];
+let currentInstructionIndex = 0;
+let activeDestination = null;
+let activeStart = null;
+let navigationCompleted = false;
 const navigationConfig = window.navigationConfig || {};
 const configuredStart = navigationConfig.defaultStart || null;
+const orsApiKey =
+    typeof navigationConfig.orsApiKey === 'string' && navigationConfig.orsApiKey.trim().length > 0
+        ? navigationConfig.orsApiKey.trim()
+        : null;
+const instructionDistanceTrigger = Number(navigationConfig.instructionDistanceTrigger) || 60;
 
 function setStatus(message, type = 'info') {
     if (!statusEl) {
@@ -175,18 +187,92 @@ function fetchAlarm() {
 }
 
 async function requestRoute(start, destination) {
-    const baseUrl = 'https://router.project-osrm.org/route/v1/driving/';
-    const query = `${start.lon},${start.lat};${destination.lon},${destination.lat}`;
-    const params = '?overview=full&geometries=geojson';
-    const response = await fetch(`${baseUrl}${query}${params}`);
-    if (!response.ok) {
-        throw new Error('Die Route konnte nicht berechnet werden.');
+    if (!orsApiKey) {
+        throw new Error('Der OpenRouteService API-Schlüssel ist nicht konfiguriert.');
     }
-    const data = await response.json();
-    if (!data || data.code !== 'Ok' || !Array.isArray(data.routes) || data.routes.length === 0) {
+
+    const body = {
+        coordinates: [
+            [start.lon, start.lat],
+            [destination.lon, destination.lat],
+        ],
+        instructions: true,
+        language: 'de',
+    };
+
+    const response = await fetch('https://api.openrouteservice.org/v2/directions/driving-car', {
+        method: 'POST',
+        headers: {
+            Authorization: orsApiKey,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    let data = null;
+    try {
+        data = await response.json();
+    } catch (parseError) {
+        if (response.ok) {
+            throw new Error('Antwort des Routing-Dienstes konnte nicht gelesen werden.');
+        }
+    }
+
+    if (!response.ok) {
+        const message =
+            (data && (data.error?.message || data.message || data.error)) ||
+            'Die Route konnte nicht berechnet werden.';
+        throw new Error(message);
+    }
+
+    if (!data || !Array.isArray(data.routes) || data.routes.length === 0) {
         throw new Error('Für die Strecke wurde keine Route gefunden.');
     }
-    return data.routes[0];
+
+    const route = data.routes[0];
+    const coordinates = Array.isArray(route.geometry?.coordinates)
+        ? route.geometry.coordinates.map((pair) =>
+              window.L?.latLng ? window.L.latLng(pair[1], pair[0]) : { lat: pair[1], lng: pair[0] },
+          )
+        : [];
+    if (coordinates.length === 0) {
+        throw new Error('Die Route enthält keine Geometrie.');
+    }
+
+    const segment = Array.isArray(route.segments) ? route.segments[0] : null;
+    const stepsSource = segment && Array.isArray(segment.steps) ? segment.steps : [];
+    const steps = stepsSource
+        .filter((step) => typeof step.instruction === 'string' && step.instruction.trim().length > 0)
+        .map((step) => {
+            const indices = Array.isArray(step.way_points) ? step.way_points : [];
+            const waypointIndex = indices.length > 0 ? indices[0] : 0;
+            const anchor = coordinates[Math.min(Math.max(waypointIndex, 0), coordinates.length - 1)];
+            return {
+                text: step.instruction.trim(),
+                latlng: anchor,
+                distance: Number(step.distance) || 0,
+            };
+        });
+
+    const summaryDistance =
+        typeof route.summary?.distance === 'number'
+            ? route.summary.distance
+            : typeof segment?.distance === 'number'
+            ? segment.distance
+            : 0;
+    const summaryDuration =
+        typeof route.summary?.duration === 'number'
+            ? route.summary.duration
+            : typeof segment?.duration === 'number'
+            ? segment.duration
+            : 0;
+
+    return {
+        coordinates,
+        distance: summaryDistance,
+        duration: summaryDuration,
+        steps,
+    };
 }
 
 function updateRouteOnMap(start, destination, route) {
@@ -194,6 +280,8 @@ function updateRouteOnMap(start, destination, route) {
     if (!map) {
         throw new Error('Kartendienst ist derzeit nicht verfügbar.');
     }
+
+    clearMapMessage();
 
     if (routeLayer) {
         map.removeLayer(routeLayer);
@@ -204,9 +292,13 @@ function updateRouteOnMap(start, destination, route) {
     if (destinationMarker) {
         map.removeLayer(destinationMarker);
     }
+    if (userMarker) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+    }
 
-    const coordinates = route.geometry?.coordinates?.map((pair) => [pair[1], pair[0]]);
-    if (!coordinates || coordinates.length === 0) {
+    const coordinates = Array.isArray(route.coordinates) ? route.coordinates : [];
+    if (coordinates.length === 0) {
         throw new Error('Die Route enthält keine Geometrie.');
     }
 
@@ -219,7 +311,7 @@ function updateRouteOnMap(start, destination, route) {
     }).addTo(map);
 
     startMarker = window.L.marker([start.lat, start.lon], {
-        title: 'Aktueller Standort',
+        title: 'Startpunkt',
     }).addTo(map);
     destinationMarker = window.L.marker([destination.lat, destination.lon], {
         title: 'Einsatzort',
@@ -229,6 +321,9 @@ function updateRouteOnMap(start, destination, route) {
     if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [32, 32] });
     }
+
+    activeStart = start;
+    activeDestination = destination;
 
     if (distanceEl) {
         distanceEl.textContent = formatDistance(route.distance);
@@ -255,12 +350,127 @@ function showDestinationOnly(destination) {
     if (destinationMarker) {
         map.removeLayer(destinationMarker);
     }
+    if (userMarker) {
+        map.removeLayer(userMarker);
+        userMarker = null;
+    }
 
     destinationMarker = window.L.marker([destination.lat, destination.lon], {
         title: 'Einsatzort',
     }).addTo(map);
     map.setView([destination.lat, destination.lon], 16);
+    activeDestination = destination;
+    activeStart = null;
+    navigationInstructions = [];
+    currentInstructionIndex = 0;
+    navigationCompleted = false;
     return true;
+}
+
+function speak(text) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        return;
+    }
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+    if (!trimmed) {
+        return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(trimmed);
+    utterance.lang = 'de-DE';
+    window.speechSynthesis.speak(utterance);
+}
+
+function completeNavigation() {
+    if (navigationCompleted) {
+        return;
+    }
+    navigationCompleted = true;
+    setStatus('✅ Ziel erreicht. Gute Fahrt!');
+    speak('Ziel erreicht. Gute Fahrt.');
+    stopGpsTracking();
+}
+
+function updateInstructionGuidance(positionLatLng) {
+    const map = ensureLeafletMap();
+    if (!map || navigationInstructions.length === 0) {
+        return;
+    }
+    if (navigationCompleted) {
+        return;
+    }
+
+    if (currentInstructionIndex >= navigationInstructions.length) {
+        completeNavigation();
+        return;
+    }
+
+    const nextStep = navigationInstructions[currentInstructionIndex];
+    const distance = map.distance(positionLatLng, nextStep.latlng);
+
+    if (distance <= instructionDistanceTrigger) {
+        setStatus(`➡️ ${nextStep.text}`);
+        speak(nextStep.text);
+        currentInstructionIndex += 1;
+        if (currentInstructionIndex >= navigationInstructions.length) {
+            completeNavigation();
+        }
+        return;
+    }
+
+    const roundedDistance = Math.max(1, Math.round(distance));
+    setStatus(`🚗 Nächste Anweisung in ${roundedDistance}\u00A0m – ${nextStep.text}`);
+}
+
+function handleGeolocationSuccess(position) {
+    const map = ensureLeafletMap();
+    if (!map) {
+        return;
+    }
+    const latlng = window.L.latLng(position.coords.latitude, position.coords.longitude);
+
+    if (userMarker) {
+        userMarker.setLatLng(latlng);
+    } else {
+        userMarker = window.L.marker(latlng, { title: 'Eigene Position' }).addTo(map);
+    }
+
+    map.setView(latlng, Math.max(map.getZoom() || 0, 15), { animate: true });
+    updateInstructionGuidance(latlng);
+}
+
+function handleGeolocationError(error) {
+    const message =
+        typeof error?.message === 'string' && error.message
+            ? `❌ Standortfehler: ${error.message}`
+            : '❌ Standort konnte nicht bestimmt werden.';
+    setStatus(message, 'error');
+}
+
+function startGpsTracking() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        setStatus('❌ GPS wird von diesem Gerät nicht unterstützt.', 'error');
+        return;
+    }
+    if (geolocationWatchId !== null) {
+        navigator.geolocation.clearWatch(geolocationWatchId);
+        geolocationWatchId = null;
+    }
+    geolocationWatchId = navigator.geolocation.watchPosition(handleGeolocationSuccess, handleGeolocationError, {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 10000,
+    });
+}
+
+function stopGpsTracking() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        return;
+    }
+    if (geolocationWatchId !== null) {
+        navigator.geolocation.clearWatch(geolocationWatchId);
+        geolocationWatchId = null;
+    }
 }
 
 async function initializeNavigation() {
@@ -272,10 +482,15 @@ async function initializeNavigation() {
 
         if (!data || data.mode !== 'alarm' || !data.alarm) {
             const idleMessage = 'Aktuell liegt kein Einsatz zur Navigation vor.';
-            targetEl.textContent = idleMessage;
-            destinationEl.textContent = '–';
+            if (targetEl) {
+                targetEl.textContent = idleMessage;
+            }
+            if (destinationEl) {
+                destinationEl.textContent = '–';
+            }
             setStatus(idleMessage, 'error');
             showMapMessage(idleMessage);
+            stopGpsTracking();
             return;
         }
 
@@ -283,8 +498,12 @@ async function initializeNavigation() {
         const locationText = describeAlarmLocation(alarm) || 'Einsatzort unbekannt';
         const keyword = alarm.keyword || alarm.subject || 'Aktueller Einsatz';
         const separator = keyword.includes(' – ') ? ' – ' : ' – ';
-        targetEl.textContent = `${keyword}${separator}${locationText}`;
-        destinationEl.textContent = locationText;
+        if (targetEl) {
+            targetEl.textContent = `${keyword}${separator}${locationText}`;
+        }
+        if (destinationEl) {
+            destinationEl.textContent = locationText;
+        }
 
         destinationCoordinates = resolveCoordinates(
             data.coordinates,
@@ -295,6 +514,7 @@ async function initializeNavigation() {
             const message = 'Für den aktuellen Einsatz stehen keine Navigationskoordinaten zur Verfügung.';
             setStatus(message, 'error');
             showMapMessage(message);
+            stopGpsTracking();
             return;
         }
 
@@ -303,6 +523,7 @@ async function initializeNavigation() {
             const message = 'Es ist kein fester Startpunkt für die Navigation konfiguriert.';
             setStatus(message, 'error');
             showMapMessage(message);
+            stopGpsTracking();
             return;
         }
         if (startEl) {
@@ -313,11 +534,30 @@ async function initializeNavigation() {
             const formattedCoordinates = formatCoordinatePair(startCoordinates);
             startEl.textContent = label ? `${label} (${formattedCoordinates})` : formattedCoordinates;
         }
+        if (destinationEl) {
+            const formattedDestination = formatCoordinatePair(destinationCoordinates);
+            destinationEl.textContent =
+                locationText && locationText !== 'Einsatzort unbekannt'
+                    ? `${locationText} (${formattedDestination})`
+                    : formattedDestination;
+        }
 
         setStatus('Berechne Route …');
         const route = await requestRoute(startCoordinates, destinationCoordinates);
+
+        navigationInstructions = Array.isArray(route.steps) ? route.steps : [];
+        currentInstructionIndex = 0;
+        navigationCompleted = false;
+
         updateRouteOnMap(startCoordinates, destinationCoordinates, route);
-        setStatus('Route bereit. Gute Fahrt!');
+
+        if (navigationInstructions.length === 0) {
+            setStatus('Navigation gestartet. Folge der Karte zum Ziel.');
+        } else {
+            setStatus('Route berechnet. Warte auf GPS …');
+        }
+        speak('Navigation gestartet.');
+        startGpsTracking();
     } catch (error) {
         console.error('Navigation konnte nicht geladen werden', error);
         const message = error instanceof Error ? error.message : 'Navigation konnte nicht geladen werden.';
@@ -340,7 +580,15 @@ async function initializeNavigation() {
         if (durationEl) {
             durationEl.textContent = '–';
         }
+        navigationInstructions = [];
+        currentInstructionIndex = 0;
+        navigationCompleted = false;
+        stopGpsTracking();
     }
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', stopGpsTracking);
 }
 
 if (document.readyState === 'loading') {

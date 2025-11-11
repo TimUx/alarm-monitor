@@ -190,6 +190,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             default_latitude=config.default_latitude,
             default_longitude=config.default_longitude,
             default_location_name=config.default_location_name,
+            ors_api_key=config.ors_api_key,
         )
 
     @app.route("/history")

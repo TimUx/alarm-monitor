@@ -94,7 +94,9 @@
                 lat: {{ default_latitude | tojson }},
                 lon: {{ default_longitude | tojson }},
                 label: {{ default_location_name | tojson }}
-            }
+            },
+            orsApiKey: {{ ors_api_key | tojson }},
+            instructionDistanceTrigger: 60
         };
     </script>
     <script src="/static/js/navigation.js" defer></script>
