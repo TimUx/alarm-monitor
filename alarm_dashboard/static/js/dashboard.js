@@ -218,6 +218,7 @@ const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
 const mapCanvas = document.getElementById('map-canvas');
 const alarmLayout = document.getElementById('alarm-layout');
+const navigationNavItem = document.getElementById('nav-navigation');
 const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
 const idleDateEl = document.getElementById('idle-date');
@@ -234,6 +235,22 @@ const locationAdditionalEl = document.getElementById('location-additional');
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+
+function hasValidCoordinates(coords) {
+    if (!coords) {
+        return false;
+    }
+    const lat = Number(coords.lat);
+    const lon = Number(coords.lon);
+    return Number.isFinite(lat) && Number.isFinite(lon);
+}
+
+function setNavigationAvailability(isAvailable) {
+    if (!navigationNavItem) {
+        return;
+    }
+    navigationNavItem.classList.toggle('hidden', !isAvailable);
+}
 
 function setMode(mode) {
     if (mode === 'alarm') {
@@ -701,9 +718,11 @@ function updateDashboard(data) {
             alarm.latitude,
             alarm.longitude,
         );
+        setNavigationAvailability(hasValidCoordinates(coordinates));
         updateMap(coordinates, alarm.location);
     } else {
         setMode('idle');
+        setNavigationAvailability(false);
         if (timestampEl) {
             timestampEl.textContent = 'Keine aktuellen Einsätze';
             timestampEl.classList.remove('hidden');

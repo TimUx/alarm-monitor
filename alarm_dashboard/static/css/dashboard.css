@@ -554,10 +554,6 @@ body.mode-alarm .app-main {
     padding-bottom: 2.5rem;
 }
 
-body.mode-alarm .bottom-nav {
-    display: none;
-}
-
 .hidden {
     display: none !important;
 }
@@ -850,7 +846,122 @@ body.mode-alarm .bottom-nav {
         font-size: clamp(1rem, 3.1vw, 1.18rem);
     }
 
-    .idle-last-alarm strong {
+.idle-last-alarm strong {
         font-size: clamp(1.05rem, 3.2vw, 1.25rem);
+    }
+}
+
+body.navigation-page {
+    background: var(--background);
+    color: var(--text-primary);
+}
+
+body.navigation-page .app-shell {
+    min-height: 100vh;
+}
+
+body.navigation-page .app-main {
+    padding: clamp(1.4rem, 1.1rem + 1vw, 2rem);
+}
+
+.navigation-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 1;
+}
+
+.navigation-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.navigation-header h2 {
+    margin: 0;
+    font-size: clamp(2rem, 1.8rem + 0.9vw, 2.6rem);
+}
+
+.navigation-target {
+    margin: 0;
+    font-size: clamp(1.1rem, 1rem + 0.4vw, 1.4rem);
+    color: var(--text-secondary);
+}
+
+.navigation-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.2rem);
+}
+
+.navigation-details li {
+    min-width: 0;
+}
+
+.navigation-details strong {
+    display: block;
+    font-size: 0.85em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+}
+
+.navigation-map-frame {
+    position: relative;
+    flex: 1;
+    display: flex;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--divider);
+    background: var(--surface-muted);
+    min-height: clamp(360px, 55vh, 640px);
+}
+
+.navigation-map {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: clamp(360px, 55vh, 640px);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(243, 245, 249, 0.92), rgba(255, 255, 255, 0.85));
+    border: 0;
+}
+
+.navigation-map.leaflet-container {
+    font: inherit;
+}
+
+.navigation-map--message {
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 2rem;
+    text-align: center;
+}
+
+.navigation-status {
+    margin: 0;
+    font-size: clamp(1rem, 0.95rem + 0.2vw, 1.15rem);
+    color: var(--text-secondary);
+}
+
+.navigation-status--error {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+@media (max-width: 960px) {
+    .navigation-view {
+        gap: 1.2rem;
+    }
+
+    .navigation-map-frame {
+        min-height: clamp(360px, 65vh, 540px);
     }
 }
