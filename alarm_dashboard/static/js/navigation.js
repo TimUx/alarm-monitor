@@ -25,6 +25,17 @@ const orsApiKey =
         : null;
 const instructionDistanceTrigger = Number(navigationConfig.instructionDistanceTrigger) || 60;
 
+function scheduleMapResize(callback) {
+    if (typeof callback !== 'function') {
+        return;
+    }
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(callback);
+    } else {
+        window.setTimeout(callback, 0);
+    }
+}
+
 function setStatus(message, type = 'info') {
     if (!statusEl) {
         return;
@@ -63,6 +74,13 @@ function ensureLeafletMap() {
         return null;
     }
     if (mapInstance) {
+        scheduleMapResize(() => {
+            try {
+                mapInstance.invalidateSize();
+            } catch (error) {
+                console.warn('Leaflet map resize failed', error);
+            }
+        });
         return mapInstance;
     }
     if (!window.L || typeof window.L.map !== 'function') {
@@ -80,7 +98,11 @@ function ensureLeafletMap() {
         maxZoom: 19,
     }).addTo(mapInstance);
     window.setTimeout(() => {
-        mapInstance.invalidateSize();
+        try {
+            mapInstance.invalidateSize();
+        } catch (error) {
+            console.warn('Leaflet map initial resize failed', error);
+        }
     }, 250);
     return mapInstance;
 }
@@ -430,6 +452,13 @@ function updateRouteOnMap(start, destination, route) {
     const bounds = routeLayer.getBounds();
     if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [32, 32] });
+        scheduleMapResize(() => {
+            try {
+                map.invalidateSize();
+            } catch (error) {
+                console.warn('Leaflet map fitBounds resize failed', error);
+            }
+        });
     }
 
     activeStart = start;
@@ -469,6 +498,13 @@ function showDestinationOnly(destination) {
         title: 'Einsatzort',
     }).addTo(map);
     map.setView([destination.lat, destination.lon], 16);
+    scheduleMapResize(() => {
+        try {
+            map.invalidateSize();
+        } catch (error) {
+            console.warn('Leaflet map destination resize failed', error);
+        }
+    });
     activeDestination = destination;
     activeStart = null;
     navigationInstructions = [];
@@ -550,11 +586,34 @@ function handleGeolocationSuccess(position) {
 }
 
 function handleGeolocationError(error) {
-    const message =
-        typeof error?.message === 'string' && error.message
-            ? `❌ Standortfehler: ${error.message}`
-            : '❌ Standort konnte nicht bestimmt werden.';
+    let message = '❌ Standort konnte nicht bestimmt werden.';
+    let announce = null;
+    const errorMessage = typeof error?.message === 'string' ? error.message : '';
+    if (errorMessage) {
+        message = `❌ Standortfehler: ${errorMessage}`;
+    }
+    if (error && typeof error.code === 'number') {
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                message =
+                    '📵 Standortfreigabe erforderlich. Bitte den Zugriff erlauben und die Seite anschließend neu laden.';
+                announce = 'Die Navigation benötigt Zugriff auf den Standort. Bitte Zugriff erlauben und neu laden.';
+                stopGpsTracking();
+                break;
+            case error.POSITION_UNAVAILABLE:
+                message = '❌ Standortdienst derzeit nicht verfügbar. Bitte später erneut versuchen.';
+                break;
+            case error.TIMEOUT:
+                message = '⏳ Standortbestimmung hat zu lange gedauert. Versuche es erneut.';
+                break;
+            default:
+                break;
+        }
+    }
     setStatus(message, 'error');
+    if (announce) {
+        speak(announce);
+    }
 }
 
 function startGpsTracking() {
@@ -699,6 +758,17 @@ async function initializeNavigation() {
 
 if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', stopGpsTracking);
+    window.addEventListener('resize', () => {
+        if (mapInstance) {
+            scheduleMapResize(() => {
+                try {
+                    mapInstance.invalidateSize();
+                } catch (error) {
+                    console.warn('Leaflet map resize on window change failed', error);
+                }
+            });
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
