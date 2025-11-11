@@ -51,6 +51,7 @@ class AppConfig:
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
     history_file: Optional[str] = None
+    ors_api_key: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -155,6 +156,10 @@ def load_config() -> AppConfig:
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
     history_file = _get_env("HISTORY_FILE") or None
+    ors_api_key = _get_env(
+        "ORS_API_KEY",
+        default="eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijc2OGI1Zjk1ZjYyMTQyZTBiNWVlZTI2MWMxNTVhYTI4IiwiaCI6Im11cm11cjY0In0=",
+    ) or None
 
     default_latitude_float: Optional[float] = None
     default_longitude_float: Optional[float] = None
@@ -185,6 +190,7 @@ def load_config() -> AppConfig:
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
         history_file=history_file,
+        ors_api_key=ors_api_key,
     )
 
 
