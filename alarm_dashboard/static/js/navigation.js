@@ -103,6 +103,114 @@ function formatCoordinatePair(coords) {
     return `${formattedLat}°, ${formattedLon}°`;
 }
 
+function decodePolyline(encoded, precision) {
+    if (typeof encoded !== 'string' || encoded.length === 0) {
+        return [];
+    }
+    const coordinates = [];
+    let index = 0;
+    let lat = 0;
+    let lon = 0;
+    const factor = precision && Number.isFinite(precision) ? precision : 1e-5;
+
+    while (index < encoded.length) {
+        let result = 0;
+        let shift = 0;
+        let byte;
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20 && index < encoded.length);
+        const deltaLat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+        lat += deltaLat;
+
+        result = 0;
+        shift = 0;
+        do {
+            byte = encoded.charCodeAt(index++) - 63;
+            result |= (byte & 0x1f) << shift;
+            shift += 5;
+        } while (byte >= 0x20 && index < encoded.length);
+        const deltaLon = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+        lon += deltaLon;
+
+        const latitude = lat * factor;
+        const longitude = lon * factor;
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            coordinates.push([longitude, latitude]);
+        }
+    }
+
+    return coordinates;
+}
+
+function flattenCoordinatePairs(source) {
+    if (!Array.isArray(source)) {
+        return [];
+    }
+
+    const result = [];
+    const stack = [...source];
+
+    while (stack.length > 0) {
+        const item = stack.shift();
+        if (Array.isArray(item) && item.length >= 2 && Number.isFinite(Number(item[0])) && Number.isFinite(Number(item[1]))) {
+            const lon = Number(item[0]);
+            const lat = Number(item[1]);
+            result.push([lon, lat]);
+        } else if (Array.isArray(item)) {
+            stack.unshift(...item);
+        }
+    }
+
+    return result;
+}
+
+function extractRouteCoordinates(route) {
+    if (!route) {
+        return [];
+    }
+
+    const geometry = route.geometry || route;
+
+    if (Array.isArray(geometry)) {
+        return flattenCoordinatePairs(geometry);
+    }
+
+    if (geometry && typeof geometry === 'object') {
+        if (Array.isArray(geometry.coordinates)) {
+            return flattenCoordinatePairs(geometry.coordinates);
+        }
+        if (Array.isArray(geometry.features)) {
+            const aggregated = [];
+            geometry.features.forEach((feature) => {
+                if (feature && feature.geometry) {
+                    aggregated.push(...extractRouteCoordinates(feature.geometry));
+                }
+            });
+            return aggregated;
+        }
+    }
+
+    if (typeof geometry === 'string') {
+        const precisionFactor =
+            typeof route.geometry_precision === 'number' && Number.isFinite(route.geometry_precision)
+                ? 1 / Math.pow(10, route.geometry_precision)
+                : undefined;
+        const decoded = decodePolyline(geometry, precisionFactor);
+        if (decoded.length === 0) {
+            const fallbackDecoded = decodePolyline(geometry, 1e-6);
+            if (fallbackDecoded.length > 0) {
+                return fallbackDecoded;
+            }
+        }
+        return decoded;
+    }
+
+    return [];
+}
+
 function formatDistance(meters) {
     if (!Number.isFinite(meters) || meters <= 0) {
         return '–';
@@ -233,11 +341,10 @@ async function requestRoute(start, destination) {
     }
 
     const route = data.routes[0];
-    const coordinates = Array.isArray(route.geometry?.coordinates)
-        ? route.geometry.coordinates.map((pair) =>
-              window.L?.latLng ? window.L.latLng(pair[1], pair[0]) : { lat: pair[1], lng: pair[0] },
-          )
-        : [];
+    const coordinatePairs = extractRouteCoordinates(route);
+    const coordinates = coordinatePairs.map((pair) =>
+        window.L?.latLng ? window.L.latLng(pair[1], pair[0]) : { lat: pair[1], lng: pair[0] },
+    );
     if (coordinates.length === 0) {
         throw new Error('Die Route enthält keine Geometrie.');
     }
