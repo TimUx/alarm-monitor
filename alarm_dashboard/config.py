@@ -184,7 +184,6 @@ def load_config() -> AppConfig:
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
         history_file=history_file,
-        ors_api_key=ors_api_key,
     )
 
 
