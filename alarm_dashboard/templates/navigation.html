@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einsatznavigation</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+    >
+</head>
+<body class="navigation-page">
+    <div class="app-shell">
+        <div class="app-topline" aria-hidden="true"></div>
+        <header class="app-header">
+            <div class="header-brand">
+                <h1>
+                    Feuerwehr <span>{{ department_name }}</span>
+                </h1>
+            </div>
+            <div class="header-meta">
+                <img src="{{ crest_url }}" alt="Gemeindewappen" class="crest">
+            </div>
+        </header>
+        <main class="app-main">
+            <section class="panel navigation-view" aria-labelledby="navigation-title">
+                <div class="navigation-header">
+                    <h2 id="navigation-title">Navigation</h2>
+                    <p class="navigation-target" id="navigation-target">Einsatzdaten werden geladen …</p>
+                </div>
+                <ul class="navigation-details" aria-live="polite" aria-label="Routeninformationen">
+                    <li>
+                        <strong>Start</strong>
+                        <span id="navigation-start">Standort wird bestimmt …</span>
+                    </li>
+                    <li>
+                        <strong>Ziel</strong>
+                        <span id="navigation-destination">–</span>
+                    </li>
+                    <li>
+                        <strong>Entfernung</strong>
+                        <span id="navigation-distance">–</span>
+                    </li>
+                    <li>
+                        <strong>Dauer</strong>
+                        <span id="navigation-duration">–</span>
+                    </li>
+                </ul>
+                <div class="navigation-map-frame">
+                    <div
+                        id="navigation-map"
+                        class="navigation-map navigation-map--message"
+                        role="region"
+                        aria-live="polite"
+                    >
+                        Karte wird geladen …
+                    </div>
+                </div>
+                <p class="navigation-status" id="navigation-status">Route wird vorbereitet …</p>
+            </section>
+        </main>
+        <nav class="bottom-nav" aria-label="Hauptnavigation">
+            <a href="/" class="bottom-nav__item" aria-label="Zurück zum Dashboard">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M13 5 6 12l7 7 1.5-1.5L9 12l5.5-5.5z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Zurück</span>
+            </a>
+            <a href="/navigation" class="bottom-nav__item bottom-nav__item--active" aria-current="page">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path
+                            d="M12 2a5 5 0 0 0-5 5c0 3.53 5 11 5 11s5-7.47 5-11a5 5 0 0 0-5-5zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM4 20h16v2H4z"
+                        />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Navigation</span>
+            </a>
+        </nav>
+    </div>
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        crossorigin=""
+        defer
+    ></script>
+    <script src="/static/js/navigation.js" defer></script>
+</body>
+</html>

@@ -180,6 +180,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             department_name=config.fire_department_name,
         )
 
+    @app.route("/navigation")
+    def navigation_page() -> str:
+        crest_url = url_for("static", filename="img/crest.png")
+        return render_template(
+            "navigation.html",
+            crest_url=crest_url,
+            department_name=config.fire_department_name,
+        )
+
     @app.route("/history")
     def history_page() -> str:
         raw_entries = store.history()
