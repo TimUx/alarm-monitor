@@ -232,9 +232,133 @@ const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
 const locationAdditionalEl = document.getElementById('location-additional');
 
+let navigationTarget = null;
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+
+function normalizeNavigationLabel(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    const text = typeof value === 'string' ? value : String(value);
+    return text.replace(/\s+/g, ' ').trim();
+}
+
+function deriveNavigationLabel(alarm) {
+    if (!alarm || typeof alarm !== 'object') {
+        return '';
+    }
+
+    const details = typeof alarm.location_details === 'object' && alarm.location_details !== null
+        ? alarm.location_details
+        : {};
+
+    const street = normalizeNavigationLabel(details.street);
+    const houseNumber = normalizeNavigationLabel(details.house_number);
+    const locality = normalizeNavigationLabel(
+        [
+            details.village,
+            details.town,
+            details.city,
+            details.municipality,
+            details.county,
+        ].find((part) => typeof part === 'string' && part.trim().length > 0) || '',
+    );
+
+    let label = '';
+    if (street) {
+        label = houseNumber ? `${street} ${houseNumber}` : street;
+    }
+
+    if (label && locality) {
+        label = `${label}, ${locality}`;
+    } else if (!label && locality) {
+        label = locality;
+    }
+
+    if (!label && typeof alarm.location === 'string') {
+        label = normalizeNavigationLabel(alarm.location);
+    }
+
+    if (!label && typeof alarm.keyword === 'string') {
+        label = normalizeNavigationLabel(alarm.keyword);
+    }
+
+    return label;
+}
+
+function setNavigationTarget(coordinates, label) {
+    if (!navigationNavItem) {
+        navigationTarget = null;
+        return;
+    }
+
+    if (!coordinates || !hasValidCoordinates(coordinates)) {
+        navigationTarget = null;
+        delete navigationNavItem.dataset.lat;
+        delete navigationNavItem.dataset.lon;
+        delete navigationNavItem.dataset.label;
+        return;
+    }
+
+    const lat = Number(coordinates.lat);
+    const lon = Number(coordinates.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        navigationTarget = null;
+        return;
+    }
+
+    const normalizedLabel = normalizeNavigationLabel(label) || 'Einsatzort';
+    navigationTarget = {
+        lat,
+        lon,
+        label: normalizedLabel,
+    };
+
+    navigationNavItem.dataset.lat = lat.toString();
+    navigationNavItem.dataset.lon = lon.toString();
+    navigationNavItem.dataset.label = normalizedLabel;
+}
+
+function openNavigationApp() {
+    if (!navigationTarget) {
+        return;
+    }
+
+    const { lat, lon, label } = navigationTarget;
+    const latString = lat.toFixed(6);
+    const lonString = lon.toFixed(6);
+    const coordinateText = `${latString},${lonString}`;
+    const userAgent = (navigator.userAgent || '').toLowerCase();
+    const encodedLabel = encodeURIComponent(label);
+
+    if (/iphone|ipad|ipod|macintosh/.test(userAgent)) {
+        window.location.href = `maps://?daddr=${latString},${lonString}&dirflg=d`;
+        return;
+    }
+
+    if (/android/.test(userAgent)) {
+        window.location.href = `geo:${latString},${lonString}?q=${latString},${lonString}(${encodedLabel})`;
+        return;
+    }
+
+    const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(coordinateText)}`;
+    window.open(fallbackUrl, '_blank', 'noopener');
+}
+
+if (navigationNavItem) {
+    navigationNavItem.addEventListener('click', (event) => {
+        if (!navigationTarget) {
+            return;
+        }
+        event.preventDefault();
+        if (typeof navigationNavItem.blur === 'function') {
+            navigationNavItem.blur();
+        }
+        openNavigationApp();
+    });
+}
 
 function hasValidCoordinates(coords) {
     if (!coords) {
@@ -250,6 +374,13 @@ function setNavigationAvailability(isAvailable) {
         return;
     }
     navigationNavItem.classList.toggle('hidden', !isAvailable);
+    navigationNavItem.setAttribute('aria-disabled', isAvailable ? 'false' : 'true');
+    if (navigationNavItem instanceof HTMLButtonElement) {
+        navigationNavItem.disabled = !isAvailable;
+    }
+    if (!isAvailable) {
+        navigationNavItem.blur();
+    }
 }
 
 function setMode(mode) {
@@ -718,10 +849,14 @@ function updateDashboard(data) {
             alarm.latitude,
             alarm.longitude,
         );
-        setNavigationAvailability(hasValidCoordinates(coordinates));
+        const navigationLabel = deriveNavigationLabel(alarm);
+        const navigationAvailable = hasValidCoordinates(coordinates);
+        setNavigationTarget(navigationAvailable ? coordinates : null, navigationLabel);
+        setNavigationAvailability(navigationAvailable);
         updateMap(coordinates, alarm.location);
     } else {
         setMode('idle');
+        setNavigationTarget(null, null);
         setNavigationAvailability(false);
         if (timestampEl) {
             timestampEl.textContent = 'Keine aktuellen Einsätze';

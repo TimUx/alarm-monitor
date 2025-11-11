@@ -499,6 +499,9 @@ body {
 }
 
 .bottom-nav__item {
+    background: none;
+    border: none;
+    padding: 0;
     text-decoration: none;
     color: var(--text-secondary);
     display: flex;
@@ -510,6 +513,7 @@ body {
     text-transform: uppercase;
     font-weight: 700;
     transition: color 0.2s ease;
+    cursor: pointer;
 }
 
 .bottom-nav__item svg {
