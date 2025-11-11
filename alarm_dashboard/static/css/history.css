@@ -228,6 +228,26 @@ main {
 }
 
 @media (max-width: 960px) {
+    .history-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 1.05rem clamp(1.4rem, 6vw, 2.2rem);
+        column-gap: 1rem;
+        row-gap: 0.5rem;
+    }
+
+    .history-brand {
+        min-width: 0;
+        align-self: center;
+        min-height: clamp(56px, 46px + 3vw, 78px);
+    }
+
+    .history-crest {
+        justify-self: end;
+        width: clamp(56px, 46px + 3vw, 78px);
+    }
+
     main {
         padding-bottom: 4rem;
     }
@@ -242,20 +262,31 @@ main {
 
 @media (max-width: 640px) {
     :root {
-        font-size: 15px;
+        font-size: 12.5px;
     }
 
     .history-header {
-        flex-direction: column;
-        align-items: flex-start;
+        column-gap: 0.75rem;
+        row-gap: 0.4rem;
+        padding: 0.9rem clamp(1.1rem, 5vw, 1.5rem);
     }
 
     .history-brand {
-        width: 100%;
+        min-height: clamp(50px, 42px + 2vw, 64px);
+    }
+
+    .history-brand h1 {
+        font-size: clamp(1.45rem, 4.1vw, 1.8rem);
+        letter-spacing: 0.06em;
+        row-gap: 0.25rem;
+    }
+
+    .history-brand h1 span {
+        font-size: 1em;
     }
 
     .history-crest {
-        width: 72px;
+        width: clamp(50px, 42px + 2vw, 64px);
     }
 
     .history-table thead {
