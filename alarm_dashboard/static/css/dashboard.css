@@ -499,6 +499,9 @@ body {
 }
 
 .bottom-nav__item {
+    background: none;
+    border: none;
+    padding: 0;
     text-decoration: none;
     color: var(--text-secondary);
     display: flex;
@@ -510,6 +513,7 @@ body {
     text-transform: uppercase;
     font-weight: 700;
     transition: color 0.2s ease;
+    cursor: pointer;
 }
 
 .bottom-nav__item svg {
@@ -552,10 +556,6 @@ body {
 
 body.mode-alarm .app-main {
     padding-bottom: 2.5rem;
-}
-
-body.mode-alarm .bottom-nav {
-    display: none;
 }
 
 .hidden {
@@ -850,7 +850,7 @@ body.mode-alarm .bottom-nav {
         font-size: clamp(1rem, 3.1vw, 1.18rem);
     }
 
-    .idle-last-alarm strong {
+.idle-last-alarm strong {
         font-size: clamp(1.05rem, 3.2vw, 1.25rem);
     }
 }
