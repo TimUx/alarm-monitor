@@ -221,6 +221,61 @@ function getRootFontSize() {
     return Number.isFinite(size) ? size : 16;
 }
 
+function parseSpacingValue(value) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateHeadlineAvailableWidth(element) {
+    if (!element) {
+        return 0;
+    }
+
+    const container = element.parentElement;
+    if (!container) {
+        return 0;
+    }
+
+    const header = container.closest('.alarm-header');
+    if (!header) {
+        return container.clientWidth;
+    }
+
+    const headerStyles = window.getComputedStyle(header);
+    let availableWidth = header.clientWidth;
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        availableWidth = container.clientWidth;
+    }
+
+    const timeEl = header.querySelector('.alarm-time');
+    if (timeEl && timeEl !== element) {
+        const timeRect = timeEl.getBoundingClientRect();
+        if (timeRect && Number.isFinite(timeRect.width)) {
+            const timeStyles = window.getComputedStyle(timeEl);
+            const marginLeft = parseSpacingValue(timeStyles.marginLeft);
+            const marginRight = parseSpacingValue(timeStyles.marginRight);
+            availableWidth -= timeRect.width + marginLeft + marginRight;
+        }
+    }
+
+    if (availableWidth > 0 && timeEl) {
+        const gap = parseSpacingValue(headerStyles.columnGap || headerStyles.gap);
+        availableWidth -= gap;
+    }
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        return Math.max(1, container.clientWidth);
+    }
+
+    const containerWidth = container.clientWidth;
+    if (Number.isFinite(containerWidth) && containerWidth > 0) {
+        return Math.max(1, Math.min(containerWidth, availableWidth));
+    }
+
+    return Math.max(1, availableWidth);
+}
+
 function fitHeadlineToContainer(element) {
     if (!element) {
         return;
@@ -234,7 +289,7 @@ function fitHeadlineToContainer(element) {
     const previousInlineSize = element.style.fontSize;
     element.style.fontSize = '';
 
-    const containerWidth = container.clientWidth;
+    const containerWidth = calculateHeadlineAvailableWidth(element);
     if (containerWidth < 1) {
         element.style.fontSize = previousInlineSize;
         return;
