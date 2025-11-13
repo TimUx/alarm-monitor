@@ -178,6 +178,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "dashboard.html",
             crest_url=crest_url,
             department_name=config.fire_department_name,
+            display_duration_minutes=config.display_duration_minutes,
         )
 
     @app.route("/navigation")

@@ -35,6 +35,149 @@ const WEATHER_CODE_MAP = [
 
 const MAP_DEFAULT_ZOOM = 17;
 
+const ACTIVE_ALARM_STORAGE_KEY = 'alarm-dashboard.active-alarm';
+const DEFAULT_DISPLAY_DURATION_MINUTES = 30;
+
+function readDisplayDurationMinutes() {
+    if (!document || !document.body) {
+        return null;
+    }
+
+    const raw = document.body.dataset
+        ? document.body.dataset.alarmDisplayMinutes
+        : null;
+
+    if (!raw) {
+        return null;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
+function resolveDisplayDurationMs() {
+    const minutes = readDisplayDurationMinutes()
+        ?? DEFAULT_DISPLAY_DURATION_MINUTES;
+    const normalized = Number.isFinite(minutes) && minutes > 0
+        ? minutes
+        : DEFAULT_DISPLAY_DURATION_MINUTES;
+    return Math.max(1, Math.floor(normalized)) * 60 * 1000;
+}
+
+const ALARM_DISPLAY_DURATION_MS = resolveDisplayDurationMs();
+
+function getPersistentStorage() {
+    try {
+        if (typeof window === 'undefined' || !window.localStorage) {
+            return null;
+        }
+
+        const testKey = `${ACTIVE_ALARM_STORAGE_KEY}::test`;
+        window.localStorage.setItem(testKey, '1');
+        window.localStorage.removeItem(testKey);
+        return window.localStorage;
+    } catch (error) {
+        return null;
+    }
+}
+
+const persistentStorage = getPersistentStorage();
+
+function computeAlarmExpiryTimestamp(payload) {
+    const candidates = [
+        payload?.received_at,
+        payload?.alarm?.timestamp,
+        payload?.alarm?.timestamp_display,
+    ];
+
+    for (let index = 0; index < candidates.length; index += 1) {
+        const value = candidates[index];
+        if (!value) {
+            continue;
+        }
+
+        const parsed = new Date(value);
+        const time = parsed.getTime();
+        if (!Number.isNaN(time)) {
+            return time + ALARM_DISPLAY_DURATION_MS;
+        }
+    }
+
+    return Date.now() + ALARM_DISPLAY_DURATION_MS;
+}
+
+function persistActiveAlarm(payload) {
+    if (!persistentStorage || !payload || payload.mode !== 'alarm') {
+        return;
+    }
+
+    try {
+        const serialized = JSON.stringify({
+            data: payload,
+            expiresAt: computeAlarmExpiryTimestamp(payload),
+            storedAt: Date.now(),
+        });
+        persistentStorage.setItem(ACTIVE_ALARM_STORAGE_KEY, serialized);
+    } catch (error) {
+        // Ignore storage failures (e.g. private browsing, quota exceeded)
+    }
+}
+
+function clearActiveAlarmCache() {
+    if (!persistentStorage) {
+        return;
+    }
+
+    try {
+        persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+    } catch (error) {
+        // Ignore storage failures
+    }
+}
+
+function loadActiveAlarmFromCache() {
+    if (!persistentStorage) {
+        return null;
+    }
+
+    try {
+        const raw = persistentStorage.getItem(ACTIVE_ALARM_STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        const { expiresAt, data } = parsed;
+        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        if (!data || typeof data !== 'object' || data.mode !== 'alarm') {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        try {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+        } catch (removeError) {
+            // Ignore nested failures
+        }
+        return null;
+    }
+}
+
 function isValidNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
 }
@@ -212,6 +355,150 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
+function getRootFontSize() {
+    const root = document.documentElement;
+    if (!root) {
+        return 16;
+    }
+    const size = parseFloat(window.getComputedStyle(root).fontSize);
+    return Number.isFinite(size) ? size : 16;
+}
+
+function parseSpacingValue(value) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateHeadlineAvailableWidth(element) {
+    if (!element) {
+        return 0;
+    }
+
+    const container = element.parentElement;
+    if (!container) {
+        return 0;
+    }
+
+    const header = container.closest('.alarm-header');
+    if (!header) {
+        return container.clientWidth;
+    }
+
+    const headerStyles = window.getComputedStyle(header);
+    let availableWidth = header.clientWidth;
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        availableWidth = container.clientWidth;
+    }
+
+    const timeEl = header.querySelector('.alarm-time');
+    if (timeEl && timeEl !== element) {
+        const timeRect = timeEl.getBoundingClientRect();
+        if (timeRect && Number.isFinite(timeRect.width)) {
+            const timeStyles = window.getComputedStyle(timeEl);
+            const marginLeft = parseSpacingValue(timeStyles.marginLeft);
+            const marginRight = parseSpacingValue(timeStyles.marginRight);
+            availableWidth -= timeRect.width + marginLeft + marginRight;
+        }
+    }
+
+    if (availableWidth > 0 && timeEl) {
+        const gap = parseSpacingValue(headerStyles.columnGap || headerStyles.gap);
+        availableWidth -= gap;
+    }
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        return Math.max(1, container.clientWidth);
+    }
+
+    const containerWidth = container.clientWidth;
+    if (Number.isFinite(containerWidth) && containerWidth > 0) {
+        return Math.max(1, Math.min(containerWidth, availableWidth));
+    }
+
+    return Math.max(1, availableWidth);
+}
+
+function fitHeadlineToContainer(element) {
+    if (!element) {
+        return;
+    }
+
+    const container = element.parentElement;
+    if (!container) {
+        return;
+    }
+
+    const previousInlineSize = element.style.fontSize;
+    element.style.fontSize = '';
+
+    const containerWidth = calculateHeadlineAvailableWidth(element);
+    if (containerWidth < 1) {
+        element.style.fontSize = previousInlineSize;
+        return;
+    }
+
+    const storedMaxFontSize = Number(element.dataset.maxFontSize);
+    const computedFontSize = parseFloat(window.getComputedStyle(element).fontSize);
+    const maxFontSize = Number.isFinite(storedMaxFontSize)
+        ? Math.max(storedMaxFontSize, computedFontSize)
+        : computedFontSize;
+
+    if (!Number.isFinite(maxFontSize)) {
+        element.style.fontSize = previousInlineSize;
+        return;
+    }
+
+    const storedMinFontSize = Number(element.dataset.minFontSize);
+    const minFontSize = Number.isFinite(storedMinFontSize)
+        ? storedMinFontSize
+        : getRootFontSize() * 1.3;
+    const normalizedMinFontSize = Math.min(minFontSize, maxFontSize);
+
+    element.dataset.maxFontSize = String(maxFontSize);
+    element.dataset.minFontSize = String(normalizedMinFontSize);
+
+    let fontSize = maxFontSize;
+    element.style.fontSize = `${fontSize}px`;
+
+    const maxIterations = 25;
+    const tolerance = 0.5;
+    let iterations = 0;
+
+    while (iterations < maxIterations && element.scrollWidth - containerWidth > tolerance) {
+        const ratio = containerWidth / element.scrollWidth;
+        const proposedFontSize = Math.max(normalizedMinFontSize, Math.floor(fontSize * ratio));
+        if (proposedFontSize === fontSize) {
+            if (fontSize <= normalizedMinFontSize) {
+                break;
+            }
+            fontSize = Math.max(normalizedMinFontSize, fontSize - 1);
+        } else {
+            fontSize = proposedFontSize;
+        }
+        element.style.fontSize = `${fontSize}px`;
+        iterations += 1;
+    }
+}
+
+let keywordResizeScheduled = false;
+
+function requestKeywordResize() {
+    if (!keywordHeadingEl) {
+        return;
+    }
+
+    if (keywordResizeScheduled) {
+        return;
+    }
+
+    keywordResizeScheduled = true;
+    window.requestAnimationFrame(() => {
+        keywordResizeScheduled = false;
+        fitHeadlineToContainer(keywordHeadingEl);
+    });
+}
+
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
 const mapPanel = document.getElementById('map-panel');
@@ -225,6 +512,7 @@ const idleDateEl = document.getElementById('idle-date');
 const idleWeatherEl = document.getElementById('idle-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
+const keywordHeadingEl = document.getElementById('keyword');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const remarkEl = document.getElementById('remark');
 const locationTownEl = document.getElementById('location-town');
@@ -236,6 +524,11 @@ let navigationTarget = null;
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+
+const cachedActiveAlarm = loadActiveAlarmFromCache();
+if (cachedActiveAlarm) {
+    updateDashboard(cachedActiveAlarm);
+}
 
 function normalizeNavigationLabel(value) {
     if (value === null || value === undefined) {
@@ -815,9 +1108,9 @@ async function fetchAlarm() {
 
 function updateDashboard(data) {
     const alarm = data.alarm;
-    const keywordEl = document.getElementById('keyword');
 
     if (data.mode === 'alarm' && alarm) {
+        persistActiveAlarm(data);
         setMode('alarm');
         const entryTime = alarm.timestamp_display || alarm.timestamp || data.received_at;
         const formattedTime = formatTimestamp(alarm.timestamp || data.received_at) || entryTime;
@@ -830,7 +1123,9 @@ function updateDashboard(data) {
         const village = alarm.location_details?.village;
         const keywordText = alarm.keyword || alarm.subject || '-';
         const separator = keywordText.includes(' – ') ? ' – ' : ' - ';
-        keywordEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
+        if (keywordHeadingEl) {
+            keywordHeadingEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
+        }
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
             keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
@@ -855,6 +1150,7 @@ function updateDashboard(data) {
         setNavigationAvailability(navigationAvailable);
         updateMap(coordinates, alarm.location);
     } else {
+        clearActiveAlarmCache();
         setMode('idle');
         setNavigationTarget(null, null);
         setNavigationAvailability(false);
@@ -883,7 +1179,17 @@ function updateDashboard(data) {
         }
         updateGroups(null);
         updateLocationDetails({});
+        if (keywordHeadingEl) {
+            keywordHeadingEl.textContent = '-';
+        }
     }
+
+    requestKeywordResize();
+}
+
+if (keywordHeadingEl) {
+    window.addEventListener('resize', requestKeywordResize);
+    requestKeywordResize();
 }
 
 async function poll() {
