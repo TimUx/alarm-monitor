@@ -35,6 +35,149 @@ const WEATHER_CODE_MAP = [
 
 const MAP_DEFAULT_ZOOM = 17;
 
+const ACTIVE_ALARM_STORAGE_KEY = 'alarm-dashboard.active-alarm';
+const DEFAULT_DISPLAY_DURATION_MINUTES = 30;
+
+function readDisplayDurationMinutes() {
+    if (!document || !document.body) {
+        return null;
+    }
+
+    const raw = document.body.dataset
+        ? document.body.dataset.alarmDisplayMinutes
+        : null;
+
+    if (!raw) {
+        return null;
+    }
+
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
+function resolveDisplayDurationMs() {
+    const minutes = readDisplayDurationMinutes()
+        ?? DEFAULT_DISPLAY_DURATION_MINUTES;
+    const normalized = Number.isFinite(minutes) && minutes > 0
+        ? minutes
+        : DEFAULT_DISPLAY_DURATION_MINUTES;
+    return Math.max(1, Math.floor(normalized)) * 60 * 1000;
+}
+
+const ALARM_DISPLAY_DURATION_MS = resolveDisplayDurationMs();
+
+function getPersistentStorage() {
+    try {
+        if (typeof window === 'undefined' || !window.localStorage) {
+            return null;
+        }
+
+        const testKey = `${ACTIVE_ALARM_STORAGE_KEY}::test`;
+        window.localStorage.setItem(testKey, '1');
+        window.localStorage.removeItem(testKey);
+        return window.localStorage;
+    } catch (error) {
+        return null;
+    }
+}
+
+const persistentStorage = getPersistentStorage();
+
+function computeAlarmExpiryTimestamp(payload) {
+    const candidates = [
+        payload?.received_at,
+        payload?.alarm?.timestamp,
+        payload?.alarm?.timestamp_display,
+    ];
+
+    for (let index = 0; index < candidates.length; index += 1) {
+        const value = candidates[index];
+        if (!value) {
+            continue;
+        }
+
+        const parsed = new Date(value);
+        const time = parsed.getTime();
+        if (!Number.isNaN(time)) {
+            return time + ALARM_DISPLAY_DURATION_MS;
+        }
+    }
+
+    return Date.now() + ALARM_DISPLAY_DURATION_MS;
+}
+
+function persistActiveAlarm(payload) {
+    if (!persistentStorage || !payload || payload.mode !== 'alarm') {
+        return;
+    }
+
+    try {
+        const serialized = JSON.stringify({
+            data: payload,
+            expiresAt: computeAlarmExpiryTimestamp(payload),
+            storedAt: Date.now(),
+        });
+        persistentStorage.setItem(ACTIVE_ALARM_STORAGE_KEY, serialized);
+    } catch (error) {
+        // Ignore storage failures (e.g. private browsing, quota exceeded)
+    }
+}
+
+function clearActiveAlarmCache() {
+    if (!persistentStorage) {
+        return;
+    }
+
+    try {
+        persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+    } catch (error) {
+        // Ignore storage failures
+    }
+}
+
+function loadActiveAlarmFromCache() {
+    if (!persistentStorage) {
+        return null;
+    }
+
+    try {
+        const raw = persistentStorage.getItem(ACTIVE_ALARM_STORAGE_KEY);
+        if (!raw) {
+            return null;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        const { expiresAt, data } = parsed;
+        if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        if (!data || typeof data !== 'object' || data.mode !== 'alarm') {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        try {
+            persistentStorage.removeItem(ACTIVE_ALARM_STORAGE_KEY);
+        } catch (removeError) {
+            // Ignore nested failures
+        }
+        return null;
+    }
+}
+
 function isValidNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
 }
@@ -381,6 +524,11 @@ let navigationTarget = null;
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+
+const cachedActiveAlarm = loadActiveAlarmFromCache();
+if (cachedActiveAlarm) {
+    updateDashboard(cachedActiveAlarm);
+}
 
 function normalizeNavigationLabel(value) {
     if (value === null || value === undefined) {
@@ -962,6 +1110,7 @@ function updateDashboard(data) {
     const alarm = data.alarm;
 
     if (data.mode === 'alarm' && alarm) {
+        persistActiveAlarm(data);
         setMode('alarm');
         const entryTime = alarm.timestamp_display || alarm.timestamp || data.received_at;
         const formattedTime = formatTimestamp(alarm.timestamp || data.received_at) || entryTime;
@@ -1001,6 +1150,7 @@ function updateDashboard(data) {
         setNavigationAvailability(navigationAvailable);
         updateMap(coordinates, alarm.location);
     } else {
+        clearActiveAlarmCache();
         setMode('idle');
         setNavigationTarget(null, null);
         setNavigationAvailability(false);
