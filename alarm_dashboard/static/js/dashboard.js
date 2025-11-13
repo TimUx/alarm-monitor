@@ -212,6 +212,150 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
+function getRootFontSize() {
+    const root = document.documentElement;
+    if (!root) {
+        return 16;
+    }
+    const size = parseFloat(window.getComputedStyle(root).fontSize);
+    return Number.isFinite(size) ? size : 16;
+}
+
+function parseSpacingValue(value) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function calculateHeadlineAvailableWidth(element) {
+    if (!element) {
+        return 0;
+    }
+
+    const container = element.parentElement;
+    if (!container) {
+        return 0;
+    }
+
+    const header = container.closest('.alarm-header');
+    if (!header) {
+        return container.clientWidth;
+    }
+
+    const headerStyles = window.getComputedStyle(header);
+    let availableWidth = header.clientWidth;
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        availableWidth = container.clientWidth;
+    }
+
+    const timeEl = header.querySelector('.alarm-time');
+    if (timeEl && timeEl !== element) {
+        const timeRect = timeEl.getBoundingClientRect();
+        if (timeRect && Number.isFinite(timeRect.width)) {
+            const timeStyles = window.getComputedStyle(timeEl);
+            const marginLeft = parseSpacingValue(timeStyles.marginLeft);
+            const marginRight = parseSpacingValue(timeStyles.marginRight);
+            availableWidth -= timeRect.width + marginLeft + marginRight;
+        }
+    }
+
+    if (availableWidth > 0 && timeEl) {
+        const gap = parseSpacingValue(headerStyles.columnGap || headerStyles.gap);
+        availableWidth -= gap;
+    }
+
+    if (!Number.isFinite(availableWidth) || availableWidth <= 0) {
+        return Math.max(1, container.clientWidth);
+    }
+
+    const containerWidth = container.clientWidth;
+    if (Number.isFinite(containerWidth) && containerWidth > 0) {
+        return Math.max(1, Math.min(containerWidth, availableWidth));
+    }
+
+    return Math.max(1, availableWidth);
+}
+
+function fitHeadlineToContainer(element) {
+    if (!element) {
+        return;
+    }
+
+    const container = element.parentElement;
+    if (!container) {
+        return;
+    }
+
+    const previousInlineSize = element.style.fontSize;
+    element.style.fontSize = '';
+
+    const containerWidth = calculateHeadlineAvailableWidth(element);
+    if (containerWidth < 1) {
+        element.style.fontSize = previousInlineSize;
+        return;
+    }
+
+    const storedMaxFontSize = Number(element.dataset.maxFontSize);
+    const computedFontSize = parseFloat(window.getComputedStyle(element).fontSize);
+    const maxFontSize = Number.isFinite(storedMaxFontSize)
+        ? Math.max(storedMaxFontSize, computedFontSize)
+        : computedFontSize;
+
+    if (!Number.isFinite(maxFontSize)) {
+        element.style.fontSize = previousInlineSize;
+        return;
+    }
+
+    const storedMinFontSize = Number(element.dataset.minFontSize);
+    const minFontSize = Number.isFinite(storedMinFontSize)
+        ? storedMinFontSize
+        : getRootFontSize() * 1.3;
+    const normalizedMinFontSize = Math.min(minFontSize, maxFontSize);
+
+    element.dataset.maxFontSize = String(maxFontSize);
+    element.dataset.minFontSize = String(normalizedMinFontSize);
+
+    let fontSize = maxFontSize;
+    element.style.fontSize = `${fontSize}px`;
+
+    const maxIterations = 25;
+    const tolerance = 0.5;
+    let iterations = 0;
+
+    while (iterations < maxIterations && element.scrollWidth - containerWidth > tolerance) {
+        const ratio = containerWidth / element.scrollWidth;
+        const proposedFontSize = Math.max(normalizedMinFontSize, Math.floor(fontSize * ratio));
+        if (proposedFontSize === fontSize) {
+            if (fontSize <= normalizedMinFontSize) {
+                break;
+            }
+            fontSize = Math.max(normalizedMinFontSize, fontSize - 1);
+        } else {
+            fontSize = proposedFontSize;
+        }
+        element.style.fontSize = `${fontSize}px`;
+        iterations += 1;
+    }
+}
+
+let keywordResizeScheduled = false;
+
+function requestKeywordResize() {
+    if (!keywordHeadingEl) {
+        return;
+    }
+
+    if (keywordResizeScheduled) {
+        return;
+    }
+
+    keywordResizeScheduled = true;
+    window.requestAnimationFrame(() => {
+        keywordResizeScheduled = false;
+        fitHeadlineToContainer(keywordHeadingEl);
+    });
+}
+
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
 const mapPanel = document.getElementById('map-panel');
@@ -225,6 +369,7 @@ const idleDateEl = document.getElementById('idle-date');
 const idleWeatherEl = document.getElementById('idle-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
+const keywordHeadingEl = document.getElementById('keyword');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const remarkEl = document.getElementById('remark');
 const locationTownEl = document.getElementById('location-town');
@@ -815,7 +960,6 @@ async function fetchAlarm() {
 
 function updateDashboard(data) {
     const alarm = data.alarm;
-    const keywordEl = document.getElementById('keyword');
 
     if (data.mode === 'alarm' && alarm) {
         setMode('alarm');
@@ -830,7 +974,9 @@ function updateDashboard(data) {
         const village = alarm.location_details?.village;
         const keywordText = alarm.keyword || alarm.subject || '-';
         const separator = keywordText.includes(' – ') ? ' – ' : ' - ';
-        keywordEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
+        if (keywordHeadingEl) {
+            keywordHeadingEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
+        }
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
             keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
@@ -883,7 +1029,17 @@ function updateDashboard(data) {
         }
         updateGroups(null);
         updateLocationDetails({});
+        if (keywordHeadingEl) {
+            keywordHeadingEl.textContent = '-';
+        }
     }
+
+    requestKeywordResize();
+}
+
+if (keywordHeadingEl) {
+    window.addEventListener('resize', requestKeywordResize);
+    requestKeywordResize();
 }
 
 async function poll() {
