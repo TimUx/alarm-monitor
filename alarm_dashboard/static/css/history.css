@@ -19,12 +19,17 @@ body {
     font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     background: var(--background);
     color: var(--text-primary);
+    min-height: 100vh;
 }
 
 .history-app {
     min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .history-topline {
@@ -87,6 +92,10 @@ main {
     flex-direction: column;
     gap: 2rem;
     align-content: start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
 }
 
 .history-table-section {
@@ -173,6 +182,8 @@ main {
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 1rem;
+    flex-shrink: 0;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
 
 .bottom-nav__item {
@@ -249,7 +260,7 @@ main {
     }
 
     main {
-        padding-bottom: 4rem;
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom));
     }
 
     .history-table {
