@@ -2,10 +2,11 @@
 
 Dieses Projekt stellt ein webbasiertes Dashboard bereit, das Alarm-E-Mails
 von einer Leitstelle automatisiert verarbeitet und einsatzrelevante
-Informationen inklusive Karten- und Wetteranzeige darstellt. Es richtet
-sich insbesondere an Installationen auf einem Raspberry Pi im lokalen
-Netzwerk, bei dem ein Gerät als Server fungiert und weitere Geräte das
-Dashboard im Vollbildmodus anzeigen.
+Informationen inklusive Karten- und Wetteranzeige darstellt. Es eignet sich
+für Installationen im lokalen Netzwerk, bei denen ein Gerät als Server
+fungiert und weitere Geräte das Dashboard im Vollbildmodus anzeigen. Als
+Server oder Client können sowohl Raspberry Pis als auch klassische PCs,
+Notebooks oder Smart-Displays eingesetzt werden.
 
 ## Funktionsumfang
 
@@ -32,7 +33,7 @@ Dashboard im Vollbildmodus anzeigen.
 ```
 +------------------+         +----------------------+        +-------------------+
 |  IMAP Postfach   | ---->   |  Flask Backend       | ---->  |  Browser Clients  |
-|  (Leitstelle)    |         |  Raspberry Pi Server |        |  Raspberry Pi etc |
+|  (Leitstelle)    |         |  Server-Instanz      |        |  Endgeräte        |
 +------------------+         +----------------------+        +-------------------+
          |                           |                              |
          |                           |                              |
@@ -40,12 +41,16 @@ Dashboard im Vollbildmodus anzeigen.
   Alarm-Mail            Geokodierung & Wetter             Leaflet Dashboard
 ```
 
-Der Server-Raspberry-Pi ruft regelmäßig das IMAP-Postfach ab, parst neue
-Alarme und stellt sie im internen Speicher bereit. Browser-Clients im
-LAN können über die Weboberfläche oder die REST-API auf die Informationen
-zugreifen. Es ist keine eingehende Verbindung aus dem Internet zum Pi
+Der Server ruft regelmäßig das IMAP-Postfach ab, parst neue Alarme und
+stellt sie im internen Speicher bereit. Browser-Clients im LAN können
+über die Weboberfläche oder die REST-API auf die Informationen zugreifen.
+Es ist keine eingehende Verbindung aus dem Internet zum Server
 notwendig; lediglich ausgehende Verbindungen für IMAP, Geokodierung und
-Wetter werden benötigt.
+Wetter werden benötigt. Die Serverrolle kann z. B. von einem Raspberry Pi
+übernommen werden, funktioniert aber ebenso auf klassischen PCs, VMs oder
+Cloud-Instanzen. Als Anzeigegeräte eignen sich alle Browser-fähigen
+Clients (Raspberry Pi, Desktop-PC, Notebook, Tablet, Smartphone,
+Smart-TV, TV-Stick usw.).
 
 ## Funktionsweise im Überblick
 
@@ -144,7 +149,8 @@ eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
 5. **Dashboard anzeigen**
 
    Öffnen Sie im lokalen Netzwerk `http://<server-ip>:8000` im Browser der
-   Client-Raspberry-Pis und aktivieren Sie den Kiosk- oder Vollbildmodus.
+   gewünschten Anzeige-Geräte (z. B. Raspberry Pi, PC, Notebook, Tablet)
+   und aktivieren Sie bei Bedarf den Kiosk- oder Vollbildmodus.
 
 ### Container Deployment (Docker)
 
@@ -268,8 +274,8 @@ folgenden Beispiel nutzt vollständig anonymisierte Werte:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <INCIDENT>
-  <STICHWORT>F3D</STICHWORT>
-  <ESTICHWORT_1>F3D</ESTICHWORT_1>
+  <STICHWORT>F3Y</STICHWORT>
+  <ESTICHWORT_1>F3Y</ESTICHWORT_1>
   <ESTICHWORT_2>Personen in Gefahr</ESTICHWORT_2>
   <ENR>7850001123</ENR>
   <FENR>F7850005120</FENR>
@@ -378,11 +384,12 @@ Die mobile Oberfläche blendet zusätzlich einen Button "Navigation starten" ein
 * Farbgebung und Layout sind an das bereitgestellte Wappen angelehnt und
   binden das Wappen sowohl in der Alarm- als auch in der Idle-Ansicht ein.
 
-## Betrieb auf dem Raspberry Pi
+## Option: Betrieb auf dem Raspberry Pi
 
 * Aktivieren Sie den Autostart der Flask-App via `systemd`-Service.
 * Nutzen Sie `chromium-browser --kiosk http://<server-ip>:8000` oder
-  `firefox --kiosk` auf den Client-Raspberry-Pis.
+  `firefox --kiosk` auf dem Raspberry Pi, wenn dieser als Anzeige-Client
+  dient.
 * Stellen Sie sicher, dass die Geräte im gleichen LAN sind und der Server
   ausgehende Verbindungen zu IMAP, Nominatim und Open-Meteo aufbauen darf.
 * Aus Sicherheitsgründen sollten keine Portweiterleitungen ins Internet
