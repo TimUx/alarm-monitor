@@ -382,8 +382,24 @@ Die mobile Oberfläche blendet zusätzlich einen Button "Navigation starten" ein
 * Läuft ein Alarm länger als die konfigurierte Anzeigedauer, wird
   automatisch in die Standardansicht gewechselt, um Fehlinterpretationen
   zu vermeiden.
-* Farbgebung und Layout sind an das bereitgestellte Wappen angelehnt und
-  binden das Wappen sowohl in der Alarm- als auch in der Idle-Ansicht ein.
+
+Das Design kann an eigene Bedürfnisse angepasst werden:
+
+1. **Feuerwehrname konfigurieren** – Hinterlegen Sie den gewünschten Namen
+   über `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` in Ihrer `.env`. Der Wert
+   erscheint prominent in der Kopfzeile sowie in der Standardansicht.
+2. **Wappen oder Logo austauschen** – Ersetzen Sie die Datei
+   `alarm_dashboard/static/img/crest.png` durch ein eigenes Bild (PNG mit
+   transparentem Hintergrund empfohlen). Verwenden Sie entweder denselben
+   Dateinamen oder passen Sie in `alarm_dashboard/app.py` den Pfad im Aufruf
+   `url_for("static", filename="img/crest.png")` an, falls Sie einen anderen
+   Dateinamen nutzen möchten.
+3. **Farbschema anpassen** – Die zentralen Farben sind als CSS-Variablen in
+   `alarm_dashboard/static/css/dashboard.css` definiert (Abschnitt `:root`
+   für den Alarmmodus, `body.mode-idle` für die Standardansicht). Weitere
+   Ansichten verwenden `history.css` und `mobile.css`. Durch Anpassen der
+   Variablen `--accent`, `--background`, `--surface` usw. lässt sich das
+   Erscheinungsbild schnell auf die eigenen Hausfarben abstimmen.
 
 ## Option: Betrieb auf dem Raspberry Pi
 
