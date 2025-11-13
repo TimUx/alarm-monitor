@@ -68,34 +68,13 @@ Smart-TV, TV-Stick usw.).
    sowie Zusatzinformationen dargestellt. Für mobile Geräte steht eine
    separate Route zur Verfügung.
 
-## Deployment-Varianten
+## Installation
 
-Die Anwendung lässt sich sowohl klassisch (Python-Umgebung) als auch in
-Docker-Containern betreiben. Die Konfiguration erfolgt in beiden Fällen
-über Environment-Variablen, die bequem in einer `.env` Datei verwaltet
-werden können.
-
-## Speicherung von Alarmen und Historie
-
-Eingehende Einsätze werden in der Klasse `AlarmStore` gespeichert
-(`alarm_dashboard/storage.py`). Die Komponente hält den zuletzt
-eingegangenen Alarm im Speicher bereit, verwaltet eine Historie und
-persistiert die Daten optional als JSON-Datei. Standardmäßig wird der
-Pfad `instance/alarm_history.json` innerhalb des Flask
-`instance`-Verzeichnisses genutzt. Das Verzeichnis liegt außerhalb des
-Repositorys, ist beschreibbar und wird beim Anwendungsstart automatisch
-angelegt.
-
-Der Speicherort lässt sich über die Konfiguration anpassen:
-
-* Setzen Sie die Umgebungsvariable `ALARM_DASHBOARD_HISTORY_FILE` (z. B.
-  in `.env`), um einen absoluten oder relativen Pfad vorzugeben.
-* Alternativ kann `history_file` beim Erstellen einer `AppConfig`
-  übergeben werden.
-
-Sobald ein eigener Pfad gesetzt ist, schreibt `AlarmStore` die Daten
-direkt dorthin. Bei einem Neustart der Anwendung wird die Datei wieder
-eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
+Die Anwendung kann sowohl klassisch in einer lokalen Python-Umgebung als
+auch containerisiert mit Docker beziehungsweise Docker Compose betrieben
+werden. In beiden Varianten erfolgt die Konfiguration komfortabel über
+Environment-Variablen, die beispielsweise in einer `.env` Datei
+gespeichert werden.
 
 ### Native Installation (Python)
 
@@ -199,7 +178,7 @@ eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
    zeigt. Containerisierte Clients können denselben Compose-Stack nutzen
    oder mittels Reverse-Proxy auf das Dashboard zugreifen.
 
-## Konfiguration über Environment-Variablen
+### Konfiguration über Environment-Variablen
 
 Alle Variablen tragen den Präfix `ALARM_DASHBOARD_`. Pflichtfelder sind
 markiert.
@@ -243,7 +222,7 @@ ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
 ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Wache Beispielstadt
 ```
 
-### Alarmaktivierung über Gruppenfilter
+#### Alarmaktivierung über Gruppenfilter
 
 Über die Variable `ALARM_DASHBOARD_GRUPPEN` lassen sich die anzuzeigenden
 Alarme auf bestimmte TME-Gruppen einschränken. Hinterlegen Sie eine
@@ -256,6 +235,28 @@ Die maximale Dauer, wie lange ein Alarm aktiv sichtbar bleibt, kann über
 `ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES` angepasst werden. Standardmäßig
 kehrt das Dashboard nach 30 Minuten ohne neue Meldung in die Standardansicht
 zurück. Setzen Sie bei Bedarf z. B. `ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=45`.
+
+## Speicherung von Alarmen und Historie
+
+Eingehende Einsätze werden in der Klasse `AlarmStore` gespeichert
+(`alarm_dashboard/storage.py`). Die Komponente hält den zuletzt
+eingegangenen Alarm im Speicher bereit, verwaltet eine Historie und
+persistiert die Daten optional als JSON-Datei. Standardmäßig wird der
+Pfad `instance/alarm_history.json` innerhalb des Flask
+`instance`-Verzeichnisses genutzt. Das Verzeichnis liegt außerhalb des
+Repositorys, ist beschreibbar und wird beim Anwendungsstart automatisch
+angelegt.
+
+Der Speicherort lässt sich über die Konfiguration anpassen:
+
+* Setzen Sie die Umgebungsvariable `ALARM_DASHBOARD_HISTORY_FILE` (z. B.
+  in `.env`), um einen absoluten oder relativen Pfad vorzugeben.
+* Alternativ kann `history_file` beim Erstellen einer `AppConfig`
+  übergeben werden.
+
+Sobald ein eigener Pfad gesetzt ist, schreibt `AlarmStore` die Daten
+direkt dorthin. Bei einem Neustart der Anwendung wird die Datei wieder
+eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
 
 ## Entwicklung
 
