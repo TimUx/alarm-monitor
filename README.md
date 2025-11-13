@@ -258,6 +258,71 @@ Sobald ein eigener Pfad gesetzt ist, schreibt `AlarmStore` die Daten
 direkt dorthin. Bei einem Neustart der Anwendung wird die Datei wieder
 eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
 
+## Einsatzhistorie & Standardansicht
+
+Sobald kein aktueller Alarm vorliegt oder der letzte Alarm älter als die
+eingestellte Anzeigedauer ist, wechselt das Dashboard automatisch in die
+Standardansicht.
+Diese zeigt neben Uhrzeit, Wetter und Wappen auch kompakt den zuletzt
+eingegangenen Einsatz (Datum/Uhrzeit und Stichwort) an. Über den Button
+"Historie ansehen" führt ein Link zur tabellarischen Übersicht der
+letzten Einsätze, die sowohl vom großen Dashboard als auch aus der
+mobilen Ansicht erreichbar ist.
+
+Die tabellarische Übersicht ist direkt unter `http://<server>/history`
+erreichbar. Die zugrunde liegenden Daten können außerdem per API
+abgefragt werden:
+
+* `GET /api/history` – liefert die gespeicherten Einsätze (neuester zuerst).
+  Optional kann mit dem Query-Parameter `limit` die Anzahl der Einträge
+  begrenzt werden (maximal 500). Jedes Element enthält u.a. Zeitstempel,
+  Stichwort, Ort, Diagnose/Beschreibung, Bemerkungen und alarmierte Fahrzeuge.
+* `GET /api/alarm` – wie bisher, ergänzt im Idle-Fall um das Feld
+  `last_alarm`, das die wichtigsten Informationen des letzten Einsatzes
+  enthält und für die kompakte Anzeige genutzt wird.
+
+Für einfache mobile Zugriffe ohne native App stehen die mobiloptimierte Route `/mobile` sowie die JSON-API `GET /api/mobile/alarm` zur Verfügung. Beide Varianten greifen auf dieselben Alarm- und Historieninformationen wie das Hauptdashboard zu und aktualisieren sich automatisch.
+
+Die mobile Oberfläche blendet zusätzlich einen Button "Navigation starten" ein, der je nach Endgerät Apple Karten oder Google Maps mit den übermittelten Koordinaten bzw. Adressdaten öffnet, sodass die Anfahrt direkt begonnen werden kann.
+
+## Standardansicht & Gestaltung
+
+* In Ruhephasen blendet das Dashboard eine großformatige Uhr, das lokale
+  Wetter sowie das Gemeindewappen ein. Die Ansicht greift dabei auf die
+  konfigurierten Standardkoordinaten zurück.
+* Läuft ein Alarm länger als die konfigurierte Anzeigedauer, wird
+  automatisch in die Standardansicht gewechselt, um Fehlinterpretationen
+  zu vermeiden.
+
+Das Design kann an eigene Bedürfnisse angepasst werden:
+
+1. **Feuerwehrname konfigurieren** – Hinterlegen Sie den gewünschten Namen
+   über `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` in Ihrer `.env`. Der Wert
+   erscheint prominent in der Kopfzeile sowie in der Standardansicht.
+2. **Wappen oder Logo austauschen** – Ersetzen Sie die Datei
+   `alarm_dashboard/static/img/crest.png` durch ein eigenes Bild (PNG mit
+   transparentem Hintergrund empfohlen). Verwenden Sie entweder denselben
+   Dateinamen oder passen Sie in `alarm_dashboard/app.py` den Pfad im Aufruf
+   `url_for("static", filename="img/crest.png")` an, falls Sie einen anderen
+   Dateinamen nutzen möchten.
+3. **Farbschema anpassen** – Die zentralen Farben sind als CSS-Variablen in
+   `alarm_dashboard/static/css/dashboard.css` definiert (Abschnitt `:root`
+   für den Alarmmodus, `body.mode-idle` für die Standardansicht). Weitere
+   Ansichten verwenden `history.css` und `mobile.css`. Durch Anpassen der
+   Variablen `--accent`, `--background`, `--surface` usw. lässt sich das
+   Erscheinungsbild schnell auf die eigenen Hausfarben abstimmen.
+
+## Option: Betrieb auf dem Raspberry Pi
+
+* Aktivieren Sie den Autostart der Flask-App via `systemd`-Service.
+* Nutzen Sie `chromium-browser --kiosk http://<server-ip>:8000` oder
+  `firefox --kiosk` auf dem Raspberry Pi, wenn dieser als Anzeige-Client
+  dient.
+* Stellen Sie sicher, dass die Geräte im gleichen LAN sind und der Server
+  ausgehende Verbindungen zu IMAP, Nominatim und Open-Meteo aufbauen darf.
+* Aus Sicherheitsgründen sollten keine Portweiterleitungen ins Internet
+  eingerichtet werden.
+
 ## Entwicklung
 
 * Konfigurationsdateien liegen unter `alarm_dashboard/config.py`.
@@ -346,71 +411,6 @@ ist so ausgelegt, dass der Mail-Poller auch deaktiviert werden kann,
 indem die `AlarmMailFetcher`-Instanz nicht gestartet wird. Nutzen Sie z.B.
 Postman oder `curl`, um die API unter `http://localhost:8000/api/alarm`
 anzufragen.
-
-## Einsatzhistorie & Standardansicht
-
-Sobald kein aktueller Alarm vorliegt oder der letzte Alarm älter als die
-eingestellte Anzeigedauer ist, wechselt das Dashboard automatisch in die
-Standardansicht.
-Diese zeigt neben Uhrzeit, Wetter und Wappen auch kompakt den zuletzt
-eingegangenen Einsatz (Datum/Uhrzeit und Stichwort) an. Über den Button
-"Historie ansehen" führt ein Link zur tabellarischen Übersicht der
-letzten Einsätze, die sowohl vom großen Dashboard als auch aus der
-mobilen Ansicht erreichbar ist.
-
-Die tabellarische Übersicht ist direkt unter `http://<server>/history`
-erreichbar. Die zugrunde liegenden Daten können außerdem per API
-abgefragt werden:
-
-* `GET /api/history` – liefert die gespeicherten Einsätze (neuester zuerst).
-  Optional kann mit dem Query-Parameter `limit` die Anzahl der Einträge
-  begrenzt werden (maximal 500). Jedes Element enthält u.a. Zeitstempel,
-  Stichwort, Ort, Diagnose/Beschreibung, Bemerkungen und alarmierte Fahrzeuge.
-* `GET /api/alarm` – wie bisher, ergänzt im Idle-Fall um das Feld
-  `last_alarm`, das die wichtigsten Informationen des letzten Einsatzes
-  enthält und für die kompakte Anzeige genutzt wird.
-
-Für einfache mobile Zugriffe ohne native App stehen die mobiloptimierte Route `/mobile` sowie die JSON-API `GET /api/mobile/alarm` zur Verfügung. Beide Varianten greifen auf dieselben Alarm- und Historieninformationen wie das Hauptdashboard zu und aktualisieren sich automatisch.
-
-Die mobile Oberfläche blendet zusätzlich einen Button "Navigation starten" ein, der je nach Endgerät Apple Karten oder Google Maps mit den übermittelten Koordinaten bzw. Adressdaten öffnet, sodass die Anfahrt direkt begonnen werden kann.
-
-## Standardansicht & Gestaltung
-
-* In Ruhephasen blendet das Dashboard eine großformatige Uhr, das lokale
-  Wetter sowie das Gemeindewappen ein. Die Ansicht greift dabei auf die
-  konfigurierten Standardkoordinaten zurück.
-* Läuft ein Alarm länger als die konfigurierte Anzeigedauer, wird
-  automatisch in die Standardansicht gewechselt, um Fehlinterpretationen
-  zu vermeiden.
-
-Das Design kann an eigene Bedürfnisse angepasst werden:
-
-1. **Feuerwehrname konfigurieren** – Hinterlegen Sie den gewünschten Namen
-   über `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` in Ihrer `.env`. Der Wert
-   erscheint prominent in der Kopfzeile sowie in der Standardansicht.
-2. **Wappen oder Logo austauschen** – Ersetzen Sie die Datei
-   `alarm_dashboard/static/img/crest.png` durch ein eigenes Bild (PNG mit
-   transparentem Hintergrund empfohlen). Verwenden Sie entweder denselben
-   Dateinamen oder passen Sie in `alarm_dashboard/app.py` den Pfad im Aufruf
-   `url_for("static", filename="img/crest.png")` an, falls Sie einen anderen
-   Dateinamen nutzen möchten.
-3. **Farbschema anpassen** – Die zentralen Farben sind als CSS-Variablen in
-   `alarm_dashboard/static/css/dashboard.css` definiert (Abschnitt `:root`
-   für den Alarmmodus, `body.mode-idle` für die Standardansicht). Weitere
-   Ansichten verwenden `history.css` und `mobile.css`. Durch Anpassen der
-   Variablen `--accent`, `--background`, `--surface` usw. lässt sich das
-   Erscheinungsbild schnell auf die eigenen Hausfarben abstimmen.
-
-## Option: Betrieb auf dem Raspberry Pi
-
-* Aktivieren Sie den Autostart der Flask-App via `systemd`-Service.
-* Nutzen Sie `chromium-browser --kiosk http://<server-ip>:8000` oder
-  `firefox --kiosk` auf dem Raspberry Pi, wenn dieser als Anzeige-Client
-  dient.
-* Stellen Sie sicher, dass die Geräte im gleichen LAN sind und der Server
-  ausgehende Verbindungen zu IMAP, Nominatim und Open-Meteo aufbauen darf.
-* Aus Sicherheitsgründen sollten keine Portweiterleitungen ins Internet
-  eingerichtet werden.
 
 ## Lizenz
 
