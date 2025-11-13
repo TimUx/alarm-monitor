@@ -1,4 +1,4 @@
-# Feuerwehr Alarm Dashboard
+# Feuerwehr Alarm Monitor
 
 Dieses Projekt stellt ein webbasiertes Dashboard bereit, das Alarm-E-Mails
 von einer Leitstelle automatisiert verarbeitet und einsatzrelevante
