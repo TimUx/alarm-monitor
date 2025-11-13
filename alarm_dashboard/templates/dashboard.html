@@ -144,6 +144,26 @@
                 </span>
                 <span class="bottom-nav__label">Historie</span>
             </a>
+            <div class="bottom-nav__meta" role="contentinfo">
+                <span class="bottom-nav__credit">
+                    © <a
+                        href="mailto:t.braun@feuerwehr-willingshausen.de"
+                        class="bottom-nav__credit-link"
+                    >Timo Braun</a>
+                </span>
+                {% if app_version %}
+                    {% if app_version_url %}
+                        <a
+                            href="{{ app_version_url }}"
+                            class="bottom-nav__version"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >Version {{ app_version }}</a>
+                    {% else %}
+                        <span class="bottom-nav__version">Version {{ app_version }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
         </nav>
     </div>
     <script

@@ -28,6 +28,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         config = load_config()
 
     app = Flask(__name__, template_folder=str(Path(__file__).parent / "templates"))
+    app.config["APP_VERSION"] = config.app_version
+    app.config["APP_VERSION_URL"] = config.app_version_url
 
     if config.history_file:
         persistence_path = Path(config.history_file)
@@ -179,6 +181,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             crest_url=crest_url,
             department_name=config.fire_department_name,
             display_duration_minutes=config.display_duration_minutes,
+            app_version=config.app_version,
+            app_version_url=config.app_version_url,
         )
 
     @app.route("/navigation")
@@ -192,6 +196,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             default_longitude=config.default_longitude,
             default_location_name=config.default_location_name,
             ors_api_key=config.ors_api_key,
+            app_version=config.app_version,
+            app_version_url=config.app_version_url,
         )
 
     @app.route("/history")
@@ -221,6 +227,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             entries=decorated,
             crest_url=crest_url,
             department_name=config.fire_department_name,
+            app_version=config.app_version,
+            app_version_url=config.app_version_url,
         )
 
     @app.route("/mobile")
@@ -230,6 +238,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "mobile.html",
             crest_url=crest_url,
             department_name=config.fire_department_name,
+            app_version=config.app_version,
+            app_version_url=config.app_version_url,
         )
 
     def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
