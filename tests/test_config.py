@@ -65,3 +65,49 @@ def test_load_config_with_history_file(tmp_path):
         app_config = config.load_config()
 
     assert app_config.history_file == str(history_file)
+
+
+def test_load_config_sets_defaults_for_branding_and_version():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    app_config = config.load_config()
+
+    assert app_config.fire_department_name == "Alarm-Monitor"
+    assert app_config.app_version == "dev-main"
+    assert app_config.app_version_url.endswith("/releases")
+
+
+def test_load_config_builds_release_url_from_version():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_APP_VERSION="v1.2.3"):
+        app_config = config.load_config()
+
+    assert app_config.app_version == "v1.2.3"
+    assert app_config.app_version_url.endswith("/releases/tag/v1.2.3")
+
+
+def test_load_config_respects_explicit_version_url():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(
+        ALARM_DASHBOARD_APP_VERSION="v2.0.0",
+        ALARM_DASHBOARD_APP_VERSION_URL="https://example.invalid/releases/v2.0.0",
+    ):
+        app_config = config.load_config()
+
+    assert app_config.app_version == "v2.0.0"
+    assert app_config.app_version_url == "https://example.invalid/releases/v2.0.0"
+
+
+def test_load_config_reads_ors_api_key():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_ORS_API_KEY="secret-key"):
+        app_config = config.load_config()
+
+    assert app_config.ors_api_key == "secret-key"

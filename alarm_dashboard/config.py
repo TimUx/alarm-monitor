@@ -43,7 +43,7 @@ class AppConfig:
     poll_interval: int = 60
     activation_groups: List[str] = field(default_factory=list)
     display_duration_minutes: int = 30
-    fire_department_name: str = "Willingshausen"
+    fire_department_name: str = "Alarm-Monitor"
     nominatim_base_url: str = "https://nominatim.openstreetmap.org/search"
     weather_base_url: str = "https://api.open-meteo.com/v1/forecast"
     weather_params: str = "current_weather=true"
@@ -51,6 +51,9 @@ class AppConfig:
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
     history_file: Optional[str] = None
+    ors_api_key: Optional[str] = None
+    app_version: str = "dev-main"
+    app_version_url: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -171,6 +174,23 @@ def load_config() -> AppConfig:
         or "Alarm-Monitor"
     )
 
+    ors_api_key = _get_env("ORS_API_KEY") or None
+
+    default_version = "dev-main"
+    app_version = _get_env("APP_VERSION") or default_version
+    app_version_url = _get_env("APP_VERSION_URL") or None
+    if not app_version_url:
+        if app_version and app_version != default_version:
+            app_version_url = (
+                "https://github.com/feuerwehr-willingshausen/alarm-dashboard/"
+                f"releases/tag/{app_version}"
+            )
+        else:
+            app_version_url = (
+                "https://github.com/feuerwehr-willingshausen/alarm-dashboard/"
+                "releases"
+            )
+
     return AppConfig(
         mail=mail,
         poll_interval=poll_interval,
@@ -184,6 +204,9 @@ def load_config() -> AppConfig:
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
         history_file=history_file,
+        ors_api_key=ors_api_key,
+        app_version=app_version,
+        app_version_url=app_version_url,
     )
 
 

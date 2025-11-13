@@ -111,9 +111,26 @@
                 </span>
                 <span class="mobile-bottom-nav__label">Historie</span>
             </a>
-            <span class="mobile-bottom-nav__credit">
-                © <a href="mailto:t.braun@feuerwehr-willingshausen.de" class="mobile-bottom-nav__credit-link">Timo Braun</a>
-            </span>
+            <div class="mobile-bottom-nav__meta" role="contentinfo">
+                <span class="mobile-bottom-nav__credit">
+                    © <a
+                        href="mailto:t.braun@feuerwehr-willingshausen.de"
+                        class="mobile-bottom-nav__credit-link"
+                    >Timo Braun</a>
+                </span>
+                {% if app_version %}
+                    {% if app_version_url %}
+                        <a
+                            href="{{ app_version_url }}"
+                            class="mobile-bottom-nav__version"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >Version {{ app_version }}</a>
+                    {% else %}
+                        <span class="mobile-bottom-nav__version">Version {{ app_version }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
         </nav>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStbGhF2cuglNG2z8GN28AL5so6qdZ8vP4bM=" crossorigin=""></script>

@@ -200,7 +200,10 @@ markiert.
 | `NOMINATIM_URL` | nein (Default `https://nominatim.openstreetmap.org/search`) | Basis-URL für die Geokodierung. |
 | `WEATHER_URL` | nein (Default `https://api.open-meteo.com/v1/forecast`) | Basis-URL für Wetterabfragen. |
 | `WEATHER_PARAMS` | nein | Query-Parameter für die Wetter-API (z. B. welche Felder geladen werden). |
+| `ORS_API_KEY` | nein | API-Key für OpenRouteService, falls Navigation mit Routenführung verwendet werden soll. |
 | `HISTORY_FILE` | nein | Pfad zur JSON-Datei, in der Historien-Daten persistiert werden. Standard: `instance/alarm_history.json`. |
+| `APP_VERSION` | nein (Default `dev-main`) | Versionskennung, die im Footer angezeigt und zur Release-Verlinkung genutzt wird. |
+| `APP_VERSION_URL` | nein | Überschreibt den Link auf die GitHub-Release-Seite (Standard: automatisch anhand der Version). |
 
 Eine befüllte `.env` könnte beispielsweise so aussehen:
 
@@ -219,6 +222,10 @@ ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
 ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
 ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
 ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Wache Beispielstadt
+# optional: Navigation und Versionierung
+ALARM_DASHBOARD_ORS_API_KEY=
+ALARM_DASHBOARD_APP_VERSION=v1.2.3
+ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/feuerwehr-willingshausen/alarm-dashboard/releases/tag/v1.2.3
 ```
 
 #### Alarmaktivierung über Gruppenfilter
