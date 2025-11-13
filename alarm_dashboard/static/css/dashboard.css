@@ -168,6 +168,9 @@ body {
     font-size: clamp(3.4rem, 2.8rem + 1.4vw, 4.2rem);
     color: var(--accent);
     letter-spacing: 0.04em;
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
 }
 
 .alarm-header-meta {
