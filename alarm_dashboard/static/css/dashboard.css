@@ -38,6 +38,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .app-topline {
@@ -56,6 +58,7 @@ body {
     box-shadow: var(--shadow-soft);
     position: relative;
     z-index: 1;
+    flex-shrink: 0;
 }
 
 .header-brand {
@@ -112,11 +115,13 @@ body {
 
 .app-main {
     flex: 1;
-    padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 4.5rem;
+    padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 3.5rem;
     display: flex;
     flex-direction: column;
     gap: 2rem;
     align-content: start;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .panel {
@@ -163,6 +168,9 @@ body {
     font-size: clamp(3.4rem, 2.8rem + 1.4vw, 4.2rem);
     color: var(--accent);
     letter-spacing: 0.04em;
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
 }
 
 .alarm-header-meta {
@@ -496,6 +504,7 @@ body {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1rem;
+    flex-shrink: 0;
 }
 
 .bottom-nav__item {
