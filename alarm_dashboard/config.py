@@ -167,8 +167,8 @@ def load_config() -> AppConfig:
             ) from exc
 
     fire_department_name = (
-        _get_env("FIRE_DEPARTMENT_NAME", default="Willingshausen")
-        or "Willingshausen"
+        _get_env("FIRE_DEPARTMENT_NAME", default="Alarm-Monitor")
+        or "Alarm-Monitor"
     )
 
     return AppConfig(

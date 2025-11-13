@@ -432,8 +432,9 @@ body {
     box-shadow: 0 -12px 32px rgba(18, 32, 60, 0.08);
     padding: 0.55rem 0.75rem;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: 0.55rem;
+    align-items: center;
 }
 
 .mobile-bottom-nav__item {
@@ -486,6 +487,32 @@ body {
 .mobile-bottom-nav__item--active .mobile-bottom-nav__icon {
     background: rgba(193, 18, 31, 0.12);
     border-color: rgba(193, 18, 31, 0.35);
+}
+
+.mobile-bottom-nav__credit {
+    justify-self: end;
+    font-size: 0.5rem;
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    opacity: 0.8;
+}
+
+.mobile-bottom-nav__credit-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.mobile-bottom-nav__credit-link:hover,
+.mobile-bottom-nav__credit-link:focus {
+    color: var(--accent);
+    border-color: currentColor;
+    outline: none;
 }
 
 .hidden {

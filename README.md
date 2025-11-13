@@ -33,7 +33,7 @@ Notebooks oder Smart-Displays eingesetzt werden.
 ```
 +------------------+         +----------------------+        +-------------------+
 |  IMAP Postfach   | ---->   |  Flask Backend       | ---->  |  Browser Clients  |
-|  (Leitstelle)    |         |  Server-Instanz      |        |  Endgeräte        |
+|  (Feuerwehr)     |         |  Server-Instanz      |        |  Endgeräte        |
 +------------------+         +----------------------+        +-------------------+
          |                           |                              |
          |                           |                              |
@@ -41,16 +41,15 @@ Notebooks oder Smart-Displays eingesetzt werden.
   Alarm-Mail            Geokodierung & Wetter             Leaflet Dashboard
 ```
 
-Der Server ruft regelmäßig das IMAP-Postfach ab, parst neue Alarme und
-stellt sie im internen Speicher bereit. Browser-Clients im LAN können
-über die Weboberfläche oder die REST-API auf die Informationen zugreifen.
-Es ist keine eingehende Verbindung aus dem Internet zum Server
-notwendig; lediglich ausgehende Verbindungen für IMAP, Geokodierung und
-Wetter werden benötigt. Die Serverrolle kann z. B. von einem Raspberry Pi
-übernommen werden, funktioniert aber ebenso auf klassischen PCs, VMs oder
-Cloud-Instanzen. Als Anzeigegeräte eignen sich alle Browser-fähigen
-Clients (Raspberry Pi, Desktop-PC, Notebook, Tablet, Smartphone,
-Smart-TV, TV-Stick usw.).
+Der Server ruft regelmäßig das IMAP-Postfach der Feuerwehr ab, parst neue
+Alarme und stellt sie im internen Speicher bereit. Die Leitstelle sendet
+ihre Alarm-E-Mails dorthin, sodass das Dashboard ausschließlich
+ausgehende Verbindungen benötigt. Browser-Clients im LAN können über die
+Weboberfläche oder die REST-API auf die Informationen zugreifen. Die
+Serverrolle kann z. B. von einem Raspberry Pi übernommen werden,
+funktioniert aber ebenso auf klassischen PCs, VMs oder Cloud-Instanzen.
+Als Anzeigegeräte eignen sich alle Browser-fähigen Clients (Raspberry
+Pi, Desktop-PC, Notebook, Tablet, Smartphone, Smart-TV, TV-Stick usw.).
 
 ## Funktionsweise im Überblick
 
@@ -195,7 +194,7 @@ markiert.
 | `POLL_INTERVAL` | nein (Default `60`) | Abrufintervall des Postfachs in Sekunden. |
 | `GRUPPEN` | nein | Kommagetrennte Liste von TME-Codes; filtert Einsätze auf bestimmte Gruppen. |
 | `DISPLAY_DURATION_MINUTES` | nein (Default `30`) | Dauer, wie lange ein Alarm sichtbar bleibt, bevor die Standardansicht erscheint. |
-| `FIRE_DEPARTMENT_NAME` | nein (Default `Willingshausen`) | Anzeigename, der in Kopfzeile und Idle-Ansicht erscheint. |
+| `FIRE_DEPARTMENT_NAME` | nein (Default `Alarm-Monitor`) | Anzeigename, der in Kopfzeile und Idle-Ansicht erscheint. |
 | `DEFAULT_LATITUDE` / `DEFAULT_LONGITUDE` | nein | Koordinaten für Wetter- und Kartendaten in der Idle-Ansicht, wenn kein Alarm aktiv ist. |
 | `DEFAULT_LOCATION_NAME` | nein | Beschriftung der Idle-Ansicht (z. B. Standort der Wache). |
 | `NOMINATIM_URL` | nein (Default `https://nominatim.openstreetmap.org/search`) | Basis-URL für die Geokodierung. |
