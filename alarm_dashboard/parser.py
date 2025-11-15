@@ -169,67 +169,22 @@ def _parse_incident_xml(body: str) -> Optional[Dict[str, Any]]:
     return alarm
 
 
-def parse_alarm(raw_email: bytes) -> Dict[str, Any]:
-    """Parse the raw email into a dictionary of alarm fields."""
+def parse_alarm(raw_email: bytes) -> Optional[Dict[str, Any]]:
+    """Parse the raw email into a dictionary of alarm fields.
+
+    Returns ``None`` when the message does not contain a valid ``<INCIDENT>``
+    XML payload.
+    """
 
     message = email.message_from_bytes(raw_email, policy=email.policy.default)
     body = _parse_body(message)
 
     xml_alarm = _parse_incident_xml(body)
-    if xml_alarm is not None:
-        xml_alarm["subject"] = message.get("Subject")
-        return xml_alarm
+    if xml_alarm is None:
+        return None
 
-    fields = {
-        "timestamp": None,
-        "timestamp_display": None,
-        "keyword": None,
-        "description": None,
-        "groups": None,
-        "aao_groups": None,
-        "location": None,
-    }
-
-    for line in body.splitlines():
-        line = line.strip()
-        if not line or ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        key = key.strip().lower()
-        value = value.strip()
-        if key in ("uhrzeit", "zeit", "timestamp"):
-            fields.update(_parse_timestamp(value))
-        elif key in ("einsatzstichwort", "stichwort", "keyword"):
-            fields["keyword"] = value
-        elif key in ("beschreibung", "description"):
-            fields["description"] = value
-        elif key in ("alarmierte gruppen", "gruppen", "groups"):
-            fields["groups"] = value
-        elif key in ("ort", "location"):
-            fields["location"] = value
-
-    if fields["timestamp"] is None:
-        date_header = message.get("Date")
-        if date_header:
-            try:
-                parsed = email.utils.parsedate_to_datetime(date_header)
-                fields["timestamp"] = parsed.isoformat()
-                fields["timestamp_display"] = parsed.isoformat()
-            except (TypeError, ValueError):
-                fields["timestamp"] = date_header
-                fields["timestamp_display"] = date_header
-        else:
-            now_iso = datetime.utcnow().isoformat()
-            fields["timestamp"] = now_iso
-            fields["timestamp_display"] = now_iso
-
-    if fields["description"] is None:
-        stripped = body.strip()
-        fields["description"] = stripped or None
-
-    fields["subject"] = message.get("Subject")
-
-    return fields
+    xml_alarm["subject"] = message.get("Subject")
+    return xml_alarm
 
 
 __all__ = ["parse_alarm"]

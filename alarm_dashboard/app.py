@@ -44,6 +44,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     def process_email(raw_email: bytes) -> None:
         alarm = parse_alarm(raw_email)
+        if alarm is None:
+            LOGGER.info("Ignoring email without INCIDENT payload")
+            return
+
         LOGGER.info("Parsed alarm: %s", alarm)
 
         activation_filters = config.activation_groups
