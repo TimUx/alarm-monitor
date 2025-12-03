@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -36,7 +36,7 @@ class AlarmStore:
     def update(self, payload: Dict[str, Any]) -> None:
         with self._lock:
             payload = dict(payload)
-            payload["received_at"] = datetime.utcnow()
+            payload["received_at"] = datetime.now(timezone.utc)
             self._alarm = payload
             self._history.insert(0, dict(payload))
             if len(self._history) > self._max_history:

@@ -7,7 +7,8 @@ import email.policy
 from datetime import datetime
 import re
 from typing import Any, Dict, List, Optional
-import xml.etree.ElementTree as ET
+
+import defusedxml.ElementTree as ET
 
 
 def _parse_body(message: email.message.Message) -> str:

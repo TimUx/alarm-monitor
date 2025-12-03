@@ -9,6 +9,10 @@ import requests
 
 LOGGER = logging.getLogger(__name__)
 
+# User-Agent header required by Nominatim usage policy
+# https://operations.osmfoundation.org/policies/nominatim/
+DEFAULT_USER_AGENT = "AlarmDashboard/1.0"
+
 
 class GeocodingError(RuntimeError):
     """Raised when the geocoding service returns an error."""
@@ -22,8 +26,11 @@ def geocode_location(base_url: str, location: str) -> Optional[Dict[str, float]]
         "format": "json",
         "limit": 1,
     }
+    headers = {
+        "User-Agent": DEFAULT_USER_AGENT,
+    }
     LOGGER.debug("Geocoding location '%s' via %s", location, base_url)
-    response = requests.get(base_url, params=params, timeout=10)
+    response = requests.get(base_url, params=params, headers=headers, timeout=10)
     if response.status_code != 200:
         raise GeocodingError(
             f"Geocoding request failed with status {response.status_code}: {response.text}"
