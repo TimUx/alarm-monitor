@@ -8,6 +8,23 @@ fungiert und weitere Geräte das Dashboard im Vollbildmodus anzeigen. Als
 Server oder Client können sowohl Raspberry Pis als auch klassische PCs,
 Notebooks oder Smart-Displays eingesetzt werden.
 
+## Screenshots
+
+### Dashboard – Standardansicht (Idle)
+Die Standardansicht zeigt Uhrzeit, Datum, aktuelles Wetter und den letzten Einsatz an.
+
+![Dashboard Standardansicht](docs/screenshots/dashboard-idle.png)
+
+### Mobile Ansicht
+Die mobile Ansicht ist für Smartphones und Tablets optimiert.
+
+![Mobile Ansicht](docs/screenshots/mobile-idle.png)
+
+### Einsatzhistorie
+Die Historie zeigt alle vergangenen Einsätze in einer übersichtlichen Tabelle.
+
+![Einsatzhistorie](docs/screenshots/history.png)
+
 ## Funktionsumfang
 
 * Polling eines IMAP-Postfachs nach neuen Alarm-E-Mails.
