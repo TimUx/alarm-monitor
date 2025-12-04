@@ -7,12 +7,19 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash appuser
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY alarm_dashboard ./alarm_dashboard
+
+# Create instance directory for persistence and set ownership
+RUN mkdir -p /app/instance && chown -R appuser:appuser /app
+
+# Switch to non-root user for security
+USER appuser
 
 EXPOSE 8000
 

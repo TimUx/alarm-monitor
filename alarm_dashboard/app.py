@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import atexit
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -294,7 +294,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "alarm": None,
             "weather": weather,
             "location": config.default_location_name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "last_alarm": last_alarm_entry,
         }
 
@@ -315,7 +315,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             received_at = None
 
         display_duration = max(1, config.display_duration_minutes)
-        if received_at and received_at + timedelta(minutes=display_duration) < datetime.utcnow():
+        if received_at and received_at + timedelta(minutes=display_duration) < datetime.now(timezone.utc):
             return jsonify(_build_idle_response(alarm_payload))
 
         response: Dict[str, Any] = {
