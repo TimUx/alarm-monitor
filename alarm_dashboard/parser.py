@@ -79,6 +79,7 @@ def _parse_incident_xml(body: str) -> Optional[Dict[str, Any]]:
     def get_text(name: str) -> Optional[str]:
         return _extract_text(root.find(name))
 
+    incident_number = get_text("ENR")
     keyword_primary = get_text("ESTICHWORT_1") or get_text("STICHWORT")
     keyword_secondary = get_text("ESTICHWORT_2")
     diagnosis = get_text("DIAGNOSE")
@@ -145,6 +146,7 @@ def _parse_incident_xml(body: str) -> Optional[Dict[str, Any]]:
 
     alarm: Dict[str, Optional[str]] = {
         **timestamp_values,
+        "incident_number": incident_number,
         "keyword": keyword_display or keyword_primary,
         "keyword_primary": keyword_primary,
         "keyword_secondary": keyword_secondary,

@@ -49,6 +49,20 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             return
 
         LOGGER.info("Parsed alarm: %s", alarm)
+        
+        # Check for incident number (required field)
+        incident_number = alarm.get("incident_number")
+        if not incident_number:
+            LOGGER.warning("Ignoring alarm without incident number (ENR)")
+            return
+        
+        # Check for duplicate based on incident number
+        if store.has_incident_number(incident_number):
+            LOGGER.info(
+                "Ignoring duplicate alarm with incident number: %s",
+                incident_number,
+            )
+            return
 
         activation_filters = config.activation_groups
         if activation_filters:
@@ -262,6 +276,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "timestamp": timestamp,
             "timestamp_display": alarm.get("timestamp_display"),
             "received_at": received_at_iso,
+            "incident_number": alarm.get("incident_number"),
             "keyword": alarm.get("keyword") or alarm.get("subject"),
             "location": alarm.get("location"),
             "description": alarm.get("description"),
