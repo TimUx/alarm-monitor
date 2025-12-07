@@ -264,3 +264,70 @@ def test_process_email_ignores_duplicates_by_incident_number(
     assert history[0]["alarm"]["incident_number"] == "67890"
     assert history[1]["alarm"]["incident_number"] == "12345"
 
+
+def test_process_email_rejects_alarms_without_incident_number(
+    tmp_path: Path, dummy_fetcher: List[_DummyFetcher]
+) -> None:
+    """The app should reject alarms without incident number (ENR)."""
+    import textwrap
+
+    history_path = tmp_path / "history.json"
+    config = AppConfig(
+        mail=MailConfig(
+            host="imap.example.com",
+            port=993,
+            use_ssl=True,
+            username="user@example.com",
+            password="secret",
+            mailbox="INBOX",
+            search_criteria="UNSEEN",
+        ),
+        poll_interval=60,
+        history_file=str(history_path),
+    )
+
+    application = app_module.create_app(config)
+    store = application.config["ALARM_STORE"]
+    assert len(dummy_fetcher) == 1
+    
+    callback = dummy_fetcher[0].callback
+    
+    # Alarm without incident number (should be rejected)
+    raw_email = textwrap.dedent(
+        """
+        Subject: Alarm without ENR
+
+        <INCIDENT>
+          <STICHWORT>F3Y</STICHWORT>
+          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+    
+    callback(raw_email)
+    
+    # Should have no entries
+    history = store.history()
+    assert len(history) == 0
+    
+    # Now send a valid alarm with incident number
+    raw_email_valid = textwrap.dedent(
+        """
+        Subject: Valid Alarm
+
+        <INCIDENT>
+          <ENR>12345</ENR>
+          <STICHWORT>F4Y</STICHWORT>
+          <EBEGINN>24.07.2026 19:00:00</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+    
+    callback(raw_email_valid)
+    
+    # Should now have one entry
+    history = store.history()
+    assert len(history) == 1
+    assert history[0]["alarm"]["incident_number"] == "12345"
+
+

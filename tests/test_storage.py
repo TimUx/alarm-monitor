@@ -44,22 +44,6 @@ def test_has_incident_number_returns_false_for_empty_history():
     assert store.has_incident_number("12345") is False
 
 
-def test_has_incident_number_returns_false_for_none():
-    """has_incident_number should return False for None."""
-    store = AlarmStore()
-    payload = {"alarm": {"keyword": "Test", "incident_number": "12345"}}
-    store.update(payload)
-    assert store.has_incident_number(None) is False
-
-
-def test_has_incident_number_returns_false_for_empty_string():
-    """has_incident_number should return False for empty string."""
-    store = AlarmStore()
-    payload = {"alarm": {"keyword": "Test", "incident_number": "12345"}}
-    store.update(payload)
-    assert store.has_incident_number("") is False
-
-
 def test_has_incident_number_detects_existing_incident():
     """has_incident_number should return True when incident number exists."""
     store = AlarmStore()

@@ -59,3 +59,23 @@ def test_parse_alarm_without_enr() -> None:
     assert alarm is not None
     assert alarm["incident_number"] is None
 
+
+def test_parse_alarm_with_empty_enr() -> None:
+    """Alarms with empty ENR should have incident_number set to None."""
+
+    raw_email = textwrap.dedent(
+        """
+        Subject: Alarm
+
+        <INCIDENT>
+          <ENR></ENR>
+          <STICHWORT>F3Y</STICHWORT>
+          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+
+    alarm = parse_alarm(raw_email)
+    assert alarm is not None
+    assert alarm["incident_number"] is None
+

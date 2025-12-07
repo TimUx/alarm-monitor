@@ -64,14 +64,15 @@ class AlarmStore:
             items = self._history if limit is None else self._history[:limit]
             return [dict(item) for item in items]
 
-    def has_incident_number(self, incident_number: Optional[str]) -> bool:
+    def has_incident_number(self, incident_number: str) -> bool:
         """Check if an alarm with the given incident number already exists in history.
         
-        Returns False if incident_number is None or empty.
+        Args:
+            incident_number: The incident number to check for.
+            
+        Returns:
+            True if an alarm with this incident number exists, False otherwise.
         """
-        if not incident_number:
-            return False
-        
         with self._lock:
             for entry in self._history:
                 alarm = entry.get("alarm")
