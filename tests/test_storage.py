@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import sys
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -42,6 +43,20 @@ def test_has_incident_number_returns_false_for_empty_history():
     """has_incident_number should return False when history is empty."""
     store = AlarmStore()
     assert store.has_incident_number("12345") is False
+
+
+def test_has_incident_number_raises_error_for_none():
+    """has_incident_number should raise ValueError for None."""
+    store = AlarmStore()
+    with pytest.raises(ValueError, match="must not be None or empty"):
+        store.has_incident_number(None)
+
+
+def test_has_incident_number_raises_error_for_empty_string():
+    """has_incident_number should raise ValueError for empty string."""
+    store = AlarmStore()
+    with pytest.raises(ValueError, match="must not be None or empty"):
+        store.has_incident_number("")
 
 
 def test_has_incident_number_detects_existing_incident():

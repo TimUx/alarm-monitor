@@ -72,7 +72,13 @@ class AlarmStore:
             
         Returns:
             True if an alarm with this incident number exists, False otherwise.
+            
+        Raises:
+            ValueError: If incident_number is None or empty.
         """
+        if not incident_number:
+            raise ValueError("incident_number must not be None or empty")
+        
         with self._lock:
             for entry in self._history:
                 alarm = entry.get("alarm")

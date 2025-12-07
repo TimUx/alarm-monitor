@@ -289,7 +289,6 @@ def test_process_email_rejects_alarms_without_incident_number(
     application = app_module.create_app(config)
     store = application.config["ALARM_STORE"]
     assert len(dummy_fetcher) == 1
-    
     callback = dummy_fetcher[0].callback
     
     # Alarm without incident number (should be rejected)
