@@ -173,3 +173,94 @@ def test_history_persists_between_app_instances(tmp_path) -> None:
     history = second_store.history()
     assert history
     assert history[0]["alarm"]["keyword"] == "Persist"
+
+
+def test_process_email_ignores_duplicates_by_incident_number(
+    tmp_path: Path, dummy_fetcher: List[_DummyFetcher]
+) -> None:
+    """The app should ignore alarms with duplicate incident numbers."""
+    import textwrap
+
+    history_path = tmp_path / "history.json"
+    config = AppConfig(
+        mail=MailConfig(
+            host="imap.example.com",
+            port=993,
+            use_ssl=True,
+            username="user@example.com",
+            password="secret",
+            mailbox="INBOX",
+            search_criteria="UNSEEN",
+        ),
+        poll_interval=60,
+        history_file=str(history_path),
+    )
+
+    application = app_module.create_app(config)
+    store = application.config["ALARM_STORE"]
+    assert len(dummy_fetcher) == 1
+    
+    callback = dummy_fetcher[0].callback
+    
+    # First alarm with incident number 12345
+    raw_email_1 = textwrap.dedent(
+        """
+        Subject: Alarm 1
+
+        <INCIDENT>
+          <ENR>12345</ENR>
+          <STICHWORT>F3Y</STICHWORT>
+          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+    
+    callback(raw_email_1)
+    
+    history = store.history()
+    assert len(history) == 1
+    assert history[0]["alarm"]["incident_number"] == "12345"
+    
+    # Second alarm with same incident number (should be ignored)
+    raw_email_2 = textwrap.dedent(
+        """
+        Subject: Alarm 2 (Duplicate)
+
+        <INCIDENT>
+          <ENR>12345</ENR>
+          <STICHWORT>F4Y</STICHWORT>
+          <EBEGINN>24.07.2026 19:00:00</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+    
+    callback(raw_email_2)
+    
+    # Should still have only one entry
+    history = store.history()
+    assert len(history) == 1
+    assert history[0]["alarm"]["incident_number"] == "12345"
+    # Should be the first one (not updated)
+    assert history[0]["alarm"]["keyword_primary"] == "F3Y"
+    
+    # Third alarm with different incident number (should be added)
+    raw_email_3 = textwrap.dedent(
+        """
+        Subject: Alarm 3
+
+        <INCIDENT>
+          <ENR>67890</ENR>
+          <STICHWORT>F5Y</STICHWORT>
+          <EBEGINN>24.07.2026 20:00:00</EBEGINN>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+    
+    callback(raw_email_3)
+    
+    # Should now have two entries
+    history = store.history()
+    assert len(history) == 2
+    assert history[0]["alarm"]["incident_number"] == "67890"
+    assert history[1]["alarm"]["incident_number"] == "12345"
+
