@@ -8,7 +8,7 @@ messenger server URL is configured via environment variables.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -41,6 +41,8 @@ class AlarmMessenger:
             config: Configuration for the messenger service
         """
         self.config = config
+        # Cache mapping of incident_number to emergency_id
+        self._emergency_id_cache: Dict[str, str] = {}
 
     def send_alarm(self, alarm_data: Dict[str, Any]) -> bool:
         """Send alarm notification to the messenger server.
@@ -72,9 +74,19 @@ class AlarmMessenger:
 
             response.raise_for_status()
             
-            # Extract incident number for logging (handle both wrapped and unwrapped formats)
+            # Extract incident number and emergency_id for caching
             alarm = alarm_data.get("alarm", alarm_data)
             incident_number = alarm.get("incident_number")
+            
+            # Store emergency_id from response for later participant lookups
+            emergency_data = response.json()
+            if emergency_data and "id" in emergency_data:
+                self._emergency_id_cache[incident_number] = emergency_data["id"]
+                LOGGER.debug(
+                    "Cached emergency_id %s for incident %s",
+                    emergency_data["id"],
+                    incident_number,
+                )
             
             LOGGER.info(
                 "Successfully sent alarm notification to messenger: incident=%s",
@@ -135,6 +147,58 @@ class AlarmMessenger:
                 payload["groups"] = codes
 
         return payload
+
+    def get_participants(self, incident_number: str) -> Optional[List[Dict[str, Any]]]:
+        """Get participants for an emergency by incident number.
+
+        Args:
+            incident_number: The incident number (ENR) from the alarm
+
+        Returns:
+            List of participants with responder details, or None if not found/error
+        """
+        # Get emergency_id from cache
+        emergency_id = self._emergency_id_cache.get(incident_number)
+        if not emergency_id:
+            LOGGER.warning(
+                "No emergency_id cached for incident %s, cannot fetch participants",
+                incident_number,
+            )
+            return None
+
+        try:
+            # Call the alarm-messenger API to get participants
+            response = requests.get(
+                f"{self.config.server_url}/api/emergencies/{emergency_id}/participants",
+                headers={
+                    "X-API-Key": self.config.api_key,
+                },
+                timeout=self.config.timeout,
+            )
+
+            response.raise_for_status()
+            data = response.json()
+
+            participants = data.get("participants", [])
+            LOGGER.info(
+                "Retrieved %d participants for incident %s",
+                len(participants),
+                incident_number,
+            )
+            return participants
+
+        except requests.exceptions.Timeout:
+            LOGGER.error(
+                "Timeout fetching participants from messenger server: %s",
+                self.config.server_url,
+            )
+            return None
+        except requests.exceptions.RequestException as exc:
+            LOGGER.error("Failed to fetch participants from messenger: %s", exc)
+            return None
+        except Exception as exc:  # pragma: no cover
+            LOGGER.error("Unexpected error fetching participants: %s", exc)
+            return None
 
 
 def create_messenger(

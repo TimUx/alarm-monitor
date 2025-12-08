@@ -358,6 +358,19 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         return jsonify(response)
 
+    @app.route("/api/alarm/participants/<incident_number>")
+    def api_participants(incident_number: str):
+        """Get participants for an alarm by incident number."""
+        if not messenger:
+            return jsonify({"error": "Messenger not configured"}), 503
+
+        participants = messenger.get_participants(incident_number)
+        if participants is None:
+            return jsonify({"error": "Failed to fetch participants"}), 500
+
+        return jsonify({"participants": participants})
+
+
     @app.route("/api/history")
     def api_history():
         limit: Optional[int] = None

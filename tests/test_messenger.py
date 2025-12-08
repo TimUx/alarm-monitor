@@ -84,6 +84,7 @@ class TestAlarmMessenger:
     def test_send_alarm_success(self, mock_post, messenger_config, alarm_data):
         mock_response = Mock()
         mock_response.status_code = 200
+        mock_response.json.return_value = {"id": "emergency-uuid-123"}
         mock_post.return_value = mock_response
 
         messenger = AlarmMessenger(messenger_config)
@@ -103,6 +104,9 @@ class TestAlarmMessenger:
         assert payload["emergencyNumber"] == "12345"
         assert payload["emergencyKeyword"] == "F3Y – Brand"
         assert payload["emergencyLocation"] == "Musterstraße 1, 12345 Musterstadt"
+        
+        # Verify emergency_id was cached
+        assert messenger._emergency_id_cache.get("12345") == "emergency-uuid-123"
 
     @patch("alarm_dashboard.messenger.requests.post")
     def test_send_alarm_timeout(self, mock_post, messenger_config, alarm_data):
@@ -203,6 +207,87 @@ class TestAlarmMessenger:
         assert payload["emergencyNumber"] == "22222"
         # groups should be comma-separated string
         assert payload["groups"] == "WIL26,WIL41"
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_success(self, mock_get, messenger_config):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "emergencyId": "emergency-uuid-123",
+            "totalParticipants": 2,
+            "participants": [
+                {
+                    "id": "response-1",
+                    "deviceId": "device-1",
+                    "platform": "android",
+                    "respondedAt": "2024-12-08T14:00:00.000Z",
+                    "responder": {
+                        "firstName": "Max",
+                        "lastName": "Mustermann",
+                        "qualifications": {
+                            "machinist": True,
+                            "agt": True,
+                            "paramedic": False,
+                        },
+                        "leadershipRole": "groupLeader",
+                    },
+                },
+                {
+                    "id": "response-2",
+                    "deviceId": "device-2",
+                    "platform": "ios",
+                    "respondedAt": "2024-12-08T14:01:00.000Z",
+                    "responder": {
+                        "firstName": "Anna",
+                        "lastName": "Schmidt",
+                        "qualifications": {
+                            "machinist": False,
+                            "agt": False,
+                            "paramedic": True,
+                        },
+                        "leadershipRole": "none",
+                    },
+                },
+            ],
+        }
+        mock_get.return_value = mock_response
+
+        messenger = AlarmMessenger(messenger_config)
+        # Manually set cache entry
+        messenger._emergency_id_cache["12345"] = "emergency-uuid-123"
+
+        participants = messenger.get_participants("12345")
+
+        assert participants is not None
+        assert len(participants) == 2
+        assert participants[0]["responder"]["firstName"] == "Max"
+        assert participants[0]["responder"]["leadershipRole"] == "groupLeader"
+        assert participants[1]["responder"]["firstName"] == "Anna"
+
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args
+        assert (
+            call_args[0][0]
+            == "https://messenger.example.com/api/emergencies/emergency-uuid-123/participants"
+        )
+        assert call_args[1]["headers"]["X-API-Key"] == "test-api-key-123"
+
+    def test_get_participants_no_cache(self, messenger_config):
+        messenger = AlarmMessenger(messenger_config)
+        participants = messenger.get_participants("99999")
+
+        assert participants is None
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_request_error(self, mock_get, messenger_config):
+        mock_get.side_effect = requests.exceptions.RequestException("Network error")
+
+        messenger = AlarmMessenger(messenger_config)
+        messenger._emergency_id_cache["12345"] = "emergency-uuid-123"
+
+        participants = messenger.get_participants("12345")
+
+        assert participants is None
 
 
 class TestCreateMessenger:
