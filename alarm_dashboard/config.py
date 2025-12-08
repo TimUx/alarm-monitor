@@ -182,13 +182,16 @@ def load_config() -> AppConfig:
     messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
     messenger_api_key = _get_env("MESSENGER_API_KEY") or None
 
+    # Validate messenger configuration - both URL and API key are required
     if messenger_server_url and not messenger_api_key:
         LOGGER.warning(
             "MESSENGER_SERVER_URL is set but MESSENGER_API_KEY is missing. "
             "Alarm messenger integration will be disabled."
         )
+        # Clear both to maintain consistency
         messenger_server_url = None
-    elif messenger_server_url:
+        messenger_api_key = None
+    elif messenger_server_url and messenger_api_key:
         LOGGER.info(
             "Alarm messenger integration enabled: %s", messenger_server_url
         )

@@ -136,7 +136,7 @@ def test_load_config_disables_messenger_without_api_key():
     ):
         app_config = config.load_config()
 
-    # Should disable messenger if URL is set but API key is missing
+    # The system should disable messenger if URL is set but API key is missing
     assert app_config.messenger_server_url is None
     assert app_config.messenger_api_key is None
 

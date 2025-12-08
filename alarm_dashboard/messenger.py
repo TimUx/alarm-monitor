@@ -71,9 +71,14 @@ class AlarmMessenger:
             )
 
             response.raise_for_status()
+            
+            # Extract incident number for logging (handle both wrapped and unwrapped formats)
+            alarm = alarm_data.get("alarm", alarm_data)
+            incident_number = alarm.get("incident_number")
+            
             LOGGER.info(
                 "Successfully sent alarm notification to messenger: incident=%s",
-                alarm_data.get("incident_number"),
+                incident_number,
             )
             return True
 
