@@ -1204,3 +1204,157 @@ async function poll() {
 }
 
 poll();
+
+// Participants functionality
+const participantsColumn = document.getElementById('participants-column');
+const participantsList = document.getElementById('participants-list');
+let currentIncidentNumber = null;
+let participantsPollInterval = null;
+
+function formatResponderName(firstName, lastName) {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() + '.' : '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() + '.' : '';
+    return `${lastInitial}${lastInitial && firstInitial ? ', ' : ''}${firstInitial}`;
+}
+
+function createQualificationBadges(qualifications) {
+    const badges = [];
+    
+    if (qualifications.agt) {
+        badges.push('<span class="qualification-badge qualification-badge--agt" title="AGT (Atemschutzgeräteträger)"></span>');
+    }
+    
+    if (qualifications.machinist) {
+        badges.push('<span class="qualification-badge qualification-badge--machinist" title="Maschinist"></span>');
+    }
+    
+    if (qualifications.paramedic) {
+        badges.push('<span class="qualification-badge qualification-badge--paramedic" title="Sanitäter"></span>');
+    }
+    
+    return badges.join('');
+}
+
+function createLeadershipBars(leadershipRole) {
+    if (leadershipRole === 'groupLeader') {
+        return '<div class="participant-leadership"><span class="leadership-bar"></span></div>';
+    } else if (leadershipRole === 'platoonLeader') {
+        return '<div class="participant-leadership"><span class="leadership-bar"></span><span class="leadership-bar"></span></div>';
+    }
+    return '';
+}
+
+function renderParticipant(participant) {
+    const responder = participant.responder;
+    const name = formatResponderName(responder.firstName, responder.lastName);
+    const qualificationBadges = createQualificationBadges(responder.qualifications);
+    const leadershipBars = createLeadershipBars(responder.leadershipRole);
+    
+    return `
+        <div class="participant-item">
+            <div class="participant-name">${name}</div>
+            <div class="participant-meta">
+                <div class="participant-qualifications">
+                    ${qualificationBadges}
+                </div>
+                ${leadershipBars}
+            </div>
+        </div>
+    `;
+}
+
+async function fetchParticipants(incidentNumber) {
+    try {
+        const response = await fetch(`/api/alarm/participants/${encodeURIComponent(incidentNumber)}`);
+        if (!response.ok) {
+            if (response.status === 503) {
+                // Messenger not configured
+                return null;
+            }
+            throw new Error('Failed to fetch participants');
+        }
+        const data = await response.json();
+        return data.participants;
+    } catch (error) {
+        console.error('Error fetching participants:', error);
+        return null;
+    }
+}
+
+function updateParticipantsDisplay(participants) {
+    if (!participantsList) return;
+    
+    if (!participants || participants.length === 0) {
+        participantsList.innerHTML = '<p class="participants-message">Warte auf Rückmeldungen...</p>';
+        return;
+    }
+    
+    const html = participants.map(renderParticipant).join('');
+    participantsList.innerHTML = html;
+}
+
+function showParticipantsColumn() {
+    if (participantsColumn) {
+        participantsColumn.classList.remove('hidden');
+    }
+    if (alarmLayout) {
+        alarmLayout.classList.add('has-participants');
+    }
+}
+
+function hideParticipantsColumn() {
+    if (participantsColumn) {
+        participantsColumn.classList.add('hidden');
+    }
+    if (alarmLayout) {
+        alarmLayout.classList.remove('has-participants');
+    }
+}
+
+function stopParticipantsPolling() {
+    if (participantsPollInterval) {
+        clearInterval(participantsPollInterval);
+        participantsPollInterval = null;
+    }
+    currentIncidentNumber = null;
+}
+
+function startParticipantsPolling(incidentNumber) {
+    stopParticipantsPolling();
+    
+    if (!incidentNumber) {
+        hideParticipantsColumn();
+        return;
+    }
+    
+    currentIncidentNumber = incidentNumber;
+    showParticipantsColumn();
+    
+    // Fetch immediately
+    fetchParticipants(incidentNumber).then(updateParticipantsDisplay);
+    
+    // Then poll every 10 seconds
+    participantsPollInterval = setInterval(() => {
+        if (currentIncidentNumber === incidentNumber) {
+            fetchParticipants(incidentNumber).then(updateParticipantsDisplay);
+        }
+    }, 10000);
+}
+
+// Modify updateDashboard to handle participants
+const originalUpdateDashboard = updateDashboard;
+updateDashboard = function(data) {
+    originalUpdateDashboard(data);
+    
+    const alarm = data.alarm;
+    if (data.mode === 'alarm' && alarm && alarm.incident_number) {
+        startParticipantsPolling(alarm.incident_number);
+    } else {
+        stopParticipantsPolling();
+        hideParticipantsColumn();
+        updateParticipantsDisplay(null);
+    }
+};
+
+// Clean up on page unload
+window.addEventListener('beforeunload', stopParticipantsPolling);
