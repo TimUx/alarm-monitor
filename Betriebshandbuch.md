@@ -131,6 +131,10 @@ ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
 ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
 ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
 ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
+
+# Alarm-Messenger Integration (optional)
+# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+# ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
 ```
 
 ### Wichtige Konfigurationsparameter
@@ -140,6 +144,8 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 | `POLL_INTERVAL` | Abrufintervall in Sekunden | 60 |
 | `DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
 | `GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
+| `MESSENGER_SERVER_URL` | URL des Alarm-Messenger-Servers | (deaktiviert) |
+| `MESSENGER_API_KEY` | API-Key für Messenger-Authentifizierung | (deaktiviert) |
 | `HISTORY_FILE` | Pfad zur Historie-Datei | instance/alarm_history.json |
 
 ---
@@ -425,6 +431,10 @@ ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
 ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
 ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
 ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Musterstadt
+
+# Alarm-Messenger Integration (optional)
+# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+# ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
 
 # Optional
 ALARM_DASHBOARD_ORS_API_KEY=
