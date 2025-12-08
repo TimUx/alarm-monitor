@@ -406,7 +406,10 @@ docker compose logs -f
 3. **Netzwerkverbindung testen**: Der alarm-mail Service muss den alarm-monitor
    erreichen können:
    ```bash
-   curl -X POST http://localhost:8000/api/alarm      -H "X-API-Key: <ihr-api-key>"      -H "Content-Type: application/json"      -d '{"incident_number":"TEST-001"}'
+   curl -X POST http://localhost:8000/api/alarm \
+     -H "X-API-Key: <ihr-api-key>" \
+     -H "Content-Type: application/json" \
+     -d '{"incident_number":"TEST-001"}'
    ```
 
 4. **alarm-mail Service Status prüfen**:
