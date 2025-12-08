@@ -235,7 +235,8 @@ ERROR:alarm_dashboard.messenger:Failed to fetch participants from messenger: <er
 
 ```bash
 # Teilnehmerliste abrufen (benötigt emergency_id vom alarm-messenger)
-curl -H "X-API-Key: your-api-key"   https://messenger.example.com/api/emergencies/{emergency-id}/participants | jq
+curl -H "X-API-Key: your-api-key" \
+  https://messenger.example.com/api/emergencies/{emergency-id}/participants | jq
 ```
 
 ## Alarm-Messenger Setup
