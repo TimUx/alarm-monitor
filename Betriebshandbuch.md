@@ -39,14 +39,17 @@ und technisch versierte Anwender.
 
 ### Externe Dienste
 
-Der Server benötigt ausgehende Verbindungen zu:
+Der alarm-monitor benötigt ausgehende Verbindungen zu:
 
 | Dienst | URL | Port | Zweck |
 |--------|-----|------|-------|
-| IMAP-Server | Konfigurierbar | 993 (SSL) / 143 | E-Mail-Abruf |
 | Nominatim | nominatim.openstreetmap.org | 443 | Geokodierung |
 | Open-Meteo | api.open-meteo.com | 443 | Wetterdaten |
 | OpenStreetMap | tile.openstreetmap.org | 443 | Kartenkacheln |
+| alarm-messenger | Konfigurierbar (optional) | 443/3000 | Teilnehmerrückmeldungen |
+
+**Hinweis:** Der E-Mail-Abruf (IMAP) wird vom separaten **alarm-mail Service**
+durchgeführt, nicht vom alarm-monitor.
 
 ---
 
@@ -106,17 +109,9 @@ cp .env.example .env
 Bearbeiten Sie die Datei mit Ihren Zugangsdaten:
 
 ```ini
-# IMAP-Konfiguration (Pflichtfelder)
-ALARM_DASHBOARD_IMAP_HOST=imap.ihr-provider.de
-ALARM_DASHBOARD_IMAP_PORT=993
-ALARM_DASHBOARD_IMAP_USE_SSL=true
-ALARM_DASHBOARD_IMAP_USERNAME=alarm@feuerwehr-beispiel.de
-ALARM_DASHBOARD_IMAP_PASSWORD=IhrSicheresPasswort
-ALARM_DASHBOARD_IMAP_MAILBOX=INBOX
-ALARM_DASHBOARD_IMAP_SEARCH=UNSEEN
-
-# Polling-Intervall in Sekunden
-ALARM_DASHBOARD_POLL_INTERVAL=60
+# API-Key für Alarmempfang (Pflichtfeld)
+# Generieren mit: openssl rand -hex 32
+ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...
 
 # Gruppenfilter (optional, kommagetrennt)
 ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41
@@ -141,7 +136,7 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 
 | Parameter | Beschreibung | Standardwert |
 |-----------|--------------|--------------|
-| `POLL_INTERVAL` | Abrufintervall in Sekunden | 60 |
+| `API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
 | `DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
 | `GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
 | `MESSENGER_SERVER_URL` | URL des Alarm-Messenger-Servers | (deaktiviert) |
@@ -184,6 +179,93 @@ docker compose up -d
    # Docker
    docker compose logs -f
    ```
+
+---
+
+
+## Einrichtung des alarm-mail Service
+
+Der alarm-monitor benötigt den **alarm-mail Service**, um Alarme zu empfangen.
+Dieser Service überwacht das IMAP-Postfach und leitet Alarme weiter.
+
+### Schnellinstallation mit Docker Compose
+
+1. **Repository klonen**
+   ```bash
+   cd /home/pi  # oder ein anderes Verzeichnis
+   git clone https://github.com/TimUx/alarm-mail.git
+   cd alarm-mail
+   ```
+
+2. **Konfiguration erstellen**
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+
+   Tragen Sie folgende Werte ein:
+   ```ini
+   # IMAP-Konfiguration (E-Mail-Abruf)
+   ALARM_MAIL_IMAP_HOST=imap.example.com
+   ALARM_MAIL_IMAP_PORT=993
+   ALARM_MAIL_IMAP_USE_SSL=true
+   ALARM_MAIL_IMAP_USERNAME=alarm@feuerwehr.de
+   ALARM_MAIL_IMAP_PASSWORD=IhrSicheresPasswort
+   ALARM_MAIL_IMAP_MAILBOX=INBOX
+   ALARM_MAIL_POLL_INTERVAL=60
+   
+   # alarm-monitor Integration
+   ALARM_MAIL_MONITOR_URL=http://localhost:8000
+   ALARM_MAIL_MONITOR_API_KEY=<der-api-key-aus-alarm-monitor>
+   
+   # Optional: alarm-messenger Integration
+   # ALARM_MAIL_MESSENGER_URL=http://localhost:3000
+   # ALARM_MAIL_MESSENGER_API_KEY=<messenger-api-key>
+   ```
+
+3. **Service starten**
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Logs prüfen**
+   ```bash
+   docker compose logs -f
+   ```
+
+### Systemd-Service für alarm-mail
+
+Für eine native Installation ohne Docker:
+
+```bash
+sudo nano /etc/systemd/system/alarm-mail.service
+```
+
+Inhalt:
+```ini
+[Unit]
+Description=Alarm Mail Service
+After=network.target alarm-dashboard.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/alarm-mail
+Environment="PATH=/home/pi/alarm-mail/.venv/bin"
+ExecStart=/home/pi/alarm-mail/.venv/bin/python -m alarm_mail.app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Service aktivieren:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable alarm-mail
+sudo systemctl start alarm-mail
+```
 
 ---
 
@@ -306,16 +388,33 @@ docker compose logs -f
 
 #### Dashboard zeigt keine Alarme
 
-1. **IMAP-Verbindung prüfen**:
+1. **API-Verbindung prüfen**:
    ```bash
-   # Logs auf Fehler prüfen
-   sudo journalctl -u alarm-dashboard | grep -i "imap\|error"
+   # alarm-monitor Logs auf Fehler prüfen
+   sudo journalctl -u alarm-dashboard | grep -i "api\|error"
+   
+   # alarm-mail Service Logs prüfen
+   sudo journalctl -u alarm-mail | grep -i "error\|failed"
+   # oder bei Docker:
+   cd alarm-mail && docker compose logs -f
    ```
 
-2. **Zugangsdaten verifizieren**: Testen Sie die IMAP-Zugangsdaten
-   manuell mit einem E-Mail-Client.
+2. **API-Key verifizieren**: Stellen Sie sicher, dass der API-Key in beiden
+   Services identisch ist (`ALARM_DASHBOARD_API_KEY` im alarm-monitor und
+   `ALARM_MAIL_MONITOR_API_KEY` im alarm-mail Service).
 
-3. **Firewall prüfen**: Port 993 (IMAPS) muss ausgehend erlaubt sein.
+3. **Netzwerkverbindung testen**: Der alarm-mail Service muss den alarm-monitor
+   erreichen können:
+   ```bash
+   curl -X POST http://localhost:8000/api/alarm      -H "X-API-Key: <ihr-api-key>"      -H "Content-Type: application/json"      -d '{"incident_number":"TEST-001"}'
+   ```
+
+4. **alarm-mail Service Status prüfen**:
+   ```bash
+   sudo systemctl status alarm-mail
+   # oder bei Docker:
+   docker compose ps
+   ```
 
 #### Karte wird nicht angezeigt
 
@@ -333,15 +432,22 @@ docker compose logs -f
 ```bash
 # Service-Status prüfen
 sudo systemctl status alarm-dashboard
+sudo systemctl status alarm-mail
 
 # Netzwerk-Verbindung testen
 curl -s http://localhost:8000/health
 
-# IMAP-Verbindung testen
-openssl s_client -connect imap.example.com:993
-
-# API-Antwort prüfen
+# API-Endpunkt testen (GET für aktuellen Alarm)
 curl -s http://localhost:8000/api/alarm | python3 -m json.tool
+
+# API-Endpunkt testen (POST für neuen Alarm - nur zu Testzwecken)
+curl -X POST http://localhost:8000/api/alarm   -H "X-API-Key: <ihr-api-key>"   -H "Content-Type: application/json"   -d '{"incident_number":"TEST-001","keyword":"Test","location":"Testort"}'
+
+# alarm-mail Service Logs prüfen
+sudo journalctl -u alarm-mail --since "10 minutes ago"
+
+# Netzwerkverbindung zwischen Services testen
+nc -zv localhost 8000
 ```
 
 ---
@@ -354,12 +460,25 @@ curl -s http://localhost:8000/api/alarm | python3 -m json.tool
   erreichbar sein. Richten Sie **keine** Portweiterleitungen ein.
 
 - **Firewall**: Erlauben Sie nur die notwendigen ausgehenden Verbindungen
-  (IMAP, Nominatim, Open-Meteo, OpenStreetMap).
+  (Nominatim, Open-Meteo, OpenStreetMap). Der alarm-mail Service benötigt
+  zusätzlich Zugriff auf den IMAP-Server.
+
+### API-Sicherheit
+
+- **API-Key schützen**: Der API-Key für den Alarmempfang ist sensibel und
+  sollte niemals in öffentlichen Repositories committed werden.
+- **Starke Keys verwenden**: Generieren Sie API-Keys mit ausreichender
+  Entropie (`openssl rand -hex 32`).
+- **Keys regelmäßig rotieren**: Wechseln Sie API-Keys in regelmäßigen
+  Abständen oder bei Verdacht auf Kompromittierung.
+- **Zugriffsbeschränkung**: Stellen Sie sicher, dass der `/api/alarm`
+  Endpunkt nur vom alarm-mail Service erreichbar ist (z. B. über
+  Firewall-Regeln oder Docker-Netzwerke).
 
 ### Zugangsdaten
 
-- Speichern Sie IMAP-Passwörter niemals im Klartext in öffentlichen
-  Repositories.
+- Speichern Sie IMAP-Passwörter (alarm-mail Service) niemals im Klartext
+  in öffentlichen Repositories.
 - Verwenden Sie starke, einzigartige Passwörter für das Alarm-Postfach.
 - Nutzen Sie wenn möglich App-spezifische Passwörter.
 
@@ -412,17 +531,10 @@ sudo systemctl restart alarm-dashboard
 ### Beispiel: Vollständige .env-Datei
 
 ```ini
-# IMAP-Konfiguration
-ALARM_DASHBOARD_IMAP_HOST=imap.mailserver.de
-ALARM_DASHBOARD_IMAP_PORT=993
-ALARM_DASHBOARD_IMAP_USE_SSL=true
-ALARM_DASHBOARD_IMAP_USERNAME=alarm@feuerwehr-beispiel.de
-ALARM_DASHBOARD_IMAP_PASSWORD=GeheimesPasswort123!
-ALARM_DASHBOARD_IMAP_MAILBOX=INBOX
-ALARM_DASHBOARD_IMAP_SEARCH=UNSEEN
+# API-Key für Alarmempfang (erforderlich)
+ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...  # openssl rand -hex 32
 
 # Betriebsparameter
-ALARM_DASHBOARD_POLL_INTERVAL=60
 ALARM_DASHBOARD_GRUPPEN=
 ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 
@@ -432,9 +544,9 @@ ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
 ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
 ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Musterstadt
 
-# Alarm-Messenger Integration (optional)
+# Alarm-Messenger Integration (optional - für Teilnehmerrückmeldungen)
 # ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
-# ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
+# ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 
 # Optional
 ALARM_DASHBOARD_ORS_API_KEY=
