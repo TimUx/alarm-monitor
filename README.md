@@ -15,6 +15,11 @@ Bei einem aktiven Einsatz zeigt das Dashboard alle relevanten Informationen wie 
 
 ![Dashboard Alarmansicht](docs/screenshots/dashboard-alarm.png)
 
+### Dashboard – Teilnehmerrückmeldungen
+Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldungen der Einsatzkräfte in Echtzeit an (Zusagen, Qualifikationen und Führungsrollen).
+
+![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-feedback.png)
+
 ### Dashboard – Standardansicht (Idle)
 Die Standardansicht zeigt Uhrzeit, Datum, aktuelles Wetter und den letzten Einsatz an.
 
