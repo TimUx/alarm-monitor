@@ -79,14 +79,17 @@ class AlarmMessenger:
             incident_number = alarm.get("incident_number")
             
             # Store emergency_id from response for later participant lookups
-            emergency_data = response.json()
-            if emergency_data and "id" in emergency_data:
-                self._emergency_id_cache[incident_number] = emergency_data["id"]
-                LOGGER.debug(
-                    "Cached emergency_id %s for incident %s",
-                    emergency_data["id"],
-                    incident_number,
-                )
+            try:
+                emergency_data = response.json()
+                if emergency_data and "id" in emergency_data:
+                    self._emergency_id_cache[incident_number] = emergency_data["id"]
+                    LOGGER.debug(
+                        "Cached emergency_id %s for incident %s",
+                        emergency_data["id"],
+                        incident_number,
+                    )
+            except (ValueError, KeyError) as exc:
+                LOGGER.warning("Failed to parse emergency response JSON: %s", exc)
             
             LOGGER.info(
                 "Successfully sent alarm notification to messenger: incident=%s",

@@ -1149,6 +1149,11 @@ function updateDashboard(data) {
         setNavigationTarget(navigationAvailable ? coordinates : null, navigationLabel);
         setNavigationAvailability(navigationAvailable);
         updateMap(coordinates, alarm.location);
+        
+        // Update participants for the current alarm
+        if (alarm.incident_number) {
+            startParticipantsPolling(alarm.incident_number);
+        }
     } else {
         clearActiveAlarmCache();
         setMode('idle');
@@ -1182,6 +1187,11 @@ function updateDashboard(data) {
         if (keywordHeadingEl) {
             keywordHeadingEl.textContent = '-';
         }
+        
+        // Stop participants polling when no alarm
+        stopParticipantsPolling();
+        hideParticipantsColumn();
+        updateParticipantsDisplay(null);
     }
 
     requestKeywordResize();
@@ -1212,9 +1222,12 @@ let currentIncidentNumber = null;
 let participantsPollInterval = null;
 
 function formatResponderName(firstName, lastName) {
-    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() + '.' : '';
     const lastInitial = lastName ? lastName.charAt(0).toUpperCase() + '.' : '';
-    return `${lastInitial}${lastInitial && firstInitial ? ', ' : ''}${firstInitial}`;
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() + '.' : '';
+    if (lastInitial && firstInitial) {
+        return `${lastInitial}, ${firstInitial}`;
+    }
+    return lastInitial || firstInitial || '';
 }
 
 function createQualificationBadges(qualifications) {
@@ -1264,6 +1277,12 @@ function renderParticipant(participant) {
 }
 
 async function fetchParticipants(incidentNumber) {
+    // Validate incident number
+    if (!incidentNumber || typeof incidentNumber !== 'string') {
+        console.error('Invalid incident number');
+        return null;
+    }
+    
     try {
         const response = await fetch(`/api/alarm/participants/${encodeURIComponent(incidentNumber)}`);
         if (!response.ok) {
@@ -1348,13 +1367,6 @@ updateDashboard = function(data) {
     
     const alarm = data.alarm;
     if (data.mode === 'alarm' && alarm && alarm.incident_number) {
-        startParticipantsPolling(alarm.incident_number);
-    } else {
-        stopParticipantsPolling();
-        hideParticipantsColumn();
-        updateParticipantsDisplay(null);
-    }
-};
 
 // Clean up on page unload
 window.addEventListener('beforeunload', stopParticipantsPolling);
