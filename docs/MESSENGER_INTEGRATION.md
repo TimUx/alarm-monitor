@@ -21,12 +21,14 @@ Die Messenger-Integration verbindet drei Komponenten:
 **Datenfluss:**
 
 1. **alarm-mail** empfängt Alarm-E-Mails vom IMAP-Server
-2. **alarm-mail** sendet den Alarm an **beide** Services parallel:
-   - An **alarm-monitor** für die Dashboard-Anzeige
-   - An **alarm-messenger** für mobile Benachrichtigungen
-3. **alarm-messenger** sendet Push-Notifications an registrierte Geräte
-4. Teilnehmer geben Rückmeldung über ihre mobilen Apps
-5. **alarm-monitor** ruft bei Bedarf Teilnehmerlisten vom **alarm-messenger** ab
+2. **alarm-mail** sendet den Alarm an den **alarm-monitor** (immer erforderlich)
+3. **alarm-mail** sendet den Alarm optional auch an **alarm-messenger** (wenn konfiguriert)
+4. **alarm-messenger** sendet Push-Notifications an registrierte Geräte (optional)
+5. Teilnehmer geben Rückmeldung über ihre mobilen Apps (optional)
+6. **alarm-monitor** ruft bei Bedarf Teilnehmerlisten vom **alarm-messenger** ab (optional)
+
+**Hinweis:** Der alarm-messenger ist optional. Ohne ihn funktioniert das System 
+vollständig, zeigt aber keine Teilnehmerrückmeldungen an.
 
 ## Konfiguration
 

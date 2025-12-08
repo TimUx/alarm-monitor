@@ -160,7 +160,9 @@ gespeichert werden.
 
    ```bash
    # API-Key für Alarmempfang (erforderlich)
-   export ALARM_DASHBOARD_API_KEY=$(openssl rand -hex 32)
+   # SICHERHEITSHINWEIS: Generieren Sie den Key separat, um ihn nicht in der Shell-History zu speichern
+   openssl rand -hex 32  # Kopieren Sie den Output
+   export ALARM_DASHBOARD_API_KEY=<eingefügter-key>
    
    # Optionale Anzeigeeinstellungen
    export ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME="Feuerwehr Musterstadt"
@@ -170,8 +172,10 @@ gespeichert werden.
    export ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
    ```
 
-   **Wichtig:** Notieren Sie sich den generierten API-Key, da dieser für die
-   Konfiguration des alarm-mail Service benötigt wird.
+   **Wichtig:** 
+   - Notieren Sie sich den generierten API-Key sicher (z. B. in einem Passwort-Manager)
+   - Der API-Key wird für die Konfiguration des alarm-mail Service benötigt
+   - Verwenden Sie für produktive Umgebungen immer `.env`-Dateien statt Export-Befehlen
    
    Weitere optionale Variablen wie `ALARM_DASHBOARD_GRUPPEN`,
    `ALARM_DASHBOARD_NOMINATIM_URL` oder `ALARM_DASHBOARD_WEATHER_PARAMS`
@@ -268,6 +272,8 @@ Alarm-E-Mails an den Monitor weiterleitet.
    ALARM_MAIL_POLL_INTERVAL=60
    
    # alarm-monitor Integration (Ziel-API)
+   # Hinweis: HTTP ist für interne Docker-Netzwerke akzeptabel.
+   # Für Produktivumgebungen über das Internet verwenden Sie HTTPS.
    ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
    ALARM_MAIL_MONITOR_API_KEY=<der-generierte-api-key>
    
