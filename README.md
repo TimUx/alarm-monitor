@@ -32,23 +32,32 @@ Die mobile Ansicht ist für Smartphones und Tablets optimiert.
 
 ## Funktionsumfang
 
-* Polling eines IMAP-Postfachs nach neuen Alarm-E-Mails.
-* Parsing der E-Mail-Inhalte inklusive Einsatzstichwort (Haupt- und
-  Unterstichwort), Diagnose, Bemerkungen, alarmierter Fahrzeuge (AAO)
-  sowie detaillierter Adresse mit Ort, Ortsteil, Straße und Hausnummer.
-* Geokodierung des Einsatzortes über OpenStreetMap (Nominatim).
-* Anzeige einer OpenStreetMap-Karte des Einsatzortes mittels Leaflet.
-* Abruf der aktuellen Wetterdaten über die Open-Meteo API.
-* REST-API und Weboberfläche auf Basis von Flask.
-* Dashboard optimiert für eine Darstellung im Kiosk-/Vollbildmodus.
-* Automatischer Wechsel auf eine Standardanzeige mit Uhrzeit, Lokalwetter
-  und Vereinswappen, sobald kein Alarm vorliegt oder ein Alarm älter als
-  die konfigurierbare Anzeigedauer (Standard: 30 Minuten) ist.
-* Darstellung des zuletzt eingegangenen Einsatzes in der Standardansicht
-  inklusive Alarmstichwort und Zeitstempel.
-* Abrufbare Einsatzhistorie über das Dashboard (Button) oder die REST-API.
-* Separate mobilfreundliche Ansicht unter `/mobile` für Smartphones und Tablets.
-* Mobilansicht mit direktem Navigations-Button, der Apple Karten oder Google Maps mit dem Einsatzziel öffnet.
+* **API-basierter Alarmempfang** – Empfängt Alarme vom alarm-mail Service 
+  über einen authentifizierten REST-API-Endpunkt.
+* **Datenspeicherung & Historie** – Speichert alle Alarme persistent und 
+  stellt eine durchsuchbare Einsatzhistorie bereit.
+* **Geokodierung** – Ermittelt Koordinaten über OpenStreetMap (Nominatim), 
+  falls nicht in den Alarmdaten enthalten.
+* **Interaktive Karte** – Zeigt den Einsatzort auf einer OpenStreetMap-Karte 
+  mittels Leaflet an.
+* **Wetterdaten** – Ruft aktuelle Wetterdaten über die Open-Meteo API ab.
+* **Gruppenfilterung** – Filtert Alarme optional nach TME-Codes oder 
+  Gruppennamen.
+* **Dashboard** – Webbasierte Oberfläche optimiert für Kiosk-/Vollbildmodus.
+* **Idle-Ansicht** – Automatischer Wechsel auf Standardanzeige mit Uhrzeit, 
+  Lokalwetter und Vereinswappen nach konfigurierbarer Anzeigedauer 
+  (Standard: 30 Minuten).
+* **Letzter Einsatz** – Darstellung des zuletzt eingegangenen Einsatzes in 
+  der Idle-Ansicht.
+* **Einsatzhistorie** – Abrufbare Liste aller vergangenen Einsätze über 
+  Dashboard-Button oder REST-API.
+* **Mobile Ansicht** – Separate mobilfreundliche Ansicht unter `/mobile` für 
+  Smartphones und Tablets mit direktem Navigations-Button (Apple Karten / 
+  Google Maps).
+* **Navigation** – Dedizierte Navigationsseite mit Routenplanung (optional 
+  mit OpenRouteService).
+* **Messenger-Integration** – Optional: Anzeige von Teilnehmerrückmeldungen 
+  vom alarm-messenger System.
 
 ## Architekturüberblick
 
@@ -286,15 +295,8 @@ markiert.
 
 | Variable | Pflicht | Beschreibung |
 | --- | --- | --- |
-| `IMAP_HOST` | ja | Hostname oder IP des IMAP-Servers der Leitstelle. |
-| `IMAP_PORT` | nein (Default `993`) | Port des IMAP-Servers. |
-| `IMAP_USE_SSL` | nein (Default `true`) | `true` für TLS-geschützte Verbindung, `false` für unverschlüsselt. |
-| `IMAP_USERNAME` | ja | Benutzername für das Alarm-Postfach. |
-| `IMAP_PASSWORD` | ja | Passwort für das Alarm-Postfach. |
-| `IMAP_MAILBOX` | nein (Default `INBOX`) | Zu überwachender Ordner im Postfach. |
-| `IMAP_SEARCH` | nein (Default `UNSEEN`) | IMAP-Suchfilter für neue Nachrichten. |
-| `POLL_INTERVAL` | nein (Default `60`) | Abrufintervall des Postfachs in Sekunden. |
-| `GRUPPEN` | nein | Kommagetrennte Liste von TME-Codes; filtert Einsätze auf bestimmte Gruppen. |
+| `API_KEY` | ja | API-Schlüssel für den Empfang von Alarmen vom alarm-mail Service. Generieren mit `openssl rand -hex 32`. |
+| `GRUPPEN` | nein | Kommagetrennte Liste von TME-Codes oder Gruppennamen; filtert Einsätze auf bestimmte Gruppen. |
 | `DISPLAY_DURATION_MINUTES` | nein (Default `30`) | Dauer, wie lange ein Alarm sichtbar bleibt, bevor die Standardansicht erscheint. |
 | `FIRE_DEPARTMENT_NAME` | nein (Default `Alarm-Monitor`) | Anzeigename, der in Kopfzeile und Idle-Ansicht erscheint. |
 | `DEFAULT_LATITUDE` / `DEFAULT_LONGITUDE` | nein | Koordinaten für Wetter- und Kartendaten in der Idle-Ansicht, wenn kein Alarm aktiv ist. |
