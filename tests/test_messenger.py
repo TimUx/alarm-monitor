@@ -93,16 +93,16 @@ class TestAlarmMessenger:
         mock_post.assert_called_once()
         call_args = mock_post.call_args
 
-        assert call_args[0][0] == "https://messenger.example.com/api/alarm"
-        assert call_args[1]["headers"]["Authorization"] == "Bearer test-api-key-123"
+        assert call_args[0][0] == "https://messenger.example.com/api/emergencies"
+        assert call_args[1]["headers"]["X-API-Key"] == "test-api-key-123"
         assert call_args[1]["headers"]["Content-Type"] == "application/json"
         assert call_args[1]["timeout"] == 10
 
-        # Verify the payload
+        # Verify the payload matches alarm-messenger API structure
         payload = call_args[1]["json"]
-        assert payload["incident_number"] == "12345"
-        assert payload["keyword"] == "F3Y – Brand"
-        assert payload["location"] == "Musterstraße 1, 12345 Musterstadt"
+        assert payload["emergencyNumber"] == "12345"
+        assert payload["emergencyKeyword"] == "F3Y – Brand"
+        assert payload["emergencyLocation"] == "Musterstraße 1, 12345 Musterstadt"
 
     @patch("alarm_dashboard.messenger.requests.post")
     def test_send_alarm_timeout(self, mock_post, messenger_config, alarm_data):
@@ -143,13 +143,14 @@ class TestAlarmMessenger:
         messenger = AlarmMessenger(messenger_config)
         payload = messenger._prepare_payload(alarm_data)
 
-        assert payload["incident_number"] == "12345"
-        assert payload["keyword"] == "F3Y – Brand"
-        assert payload["location"] == "Musterstraße 1, 12345 Musterstadt"
-        assert payload["description"] == "Brand in Wohngebäude"
-        assert payload["remark"] == "Mehrere Anrufer"
-        assert payload["groups"] == ["LF 1", "DLK 1"]
-        assert payload["coordinates"] == {"lat": 51.5, "lon": 9.5}
+        # Verify alarm-messenger API field names
+        assert payload["emergencyNumber"] == "12345"
+        assert payload["emergencyKeyword"] == "F3Y – Brand"
+        assert payload["emergencyLocation"] == "Musterstraße 1, 12345 Musterstadt"
+        assert payload["emergencyDescription"] == "Brand in Wohngebäude"
+        assert payload["emergencyDate"] == "2024-01-01T12:00:00"
+        # groups should be comma-separated string if present
+        assert "groups" not in payload or isinstance(payload.get("groups"), str)
 
     def test_prepare_payload_without_wrapped_alarm(self, messenger_config):
         messenger = AlarmMessenger(messenger_config)
@@ -159,14 +160,14 @@ class TestAlarmMessenger:
             "timestamp": "2024-01-02T14:00:00",
             "keyword": "H1",
             "location": "Test Location",
-            "latitude": 52.0,
-            "longitude": 10.0,
+            "description": "Test description",
         }
         payload = messenger._prepare_payload(alarm_data)
 
-        assert payload["incident_number"] == "67890"
-        assert payload["keyword"] == "H1"
-        assert payload["coordinates"] == {"lat": 52.0, "lon": 10.0}
+        assert payload["emergencyNumber"] == "67890"
+        assert payload["emergencyKeyword"] == "H1"
+        assert payload["emergencyLocation"] == "Test Location"
+        assert payload["emergencyDescription"] == "Test description"
 
     def test_prepare_payload_minimal_data(self, messenger_config):
         messenger = AlarmMessenger(messenger_config)
@@ -178,11 +179,30 @@ class TestAlarmMessenger:
         }
         payload = messenger._prepare_payload(alarm_data)
 
-        assert payload["incident_number"] == "11111"
-        assert payload["keyword"] == "Test"
-        assert payload["coordinates"] is None
-        assert "remark" not in payload
+        assert payload["emergencyNumber"] == "11111"
+        assert payload["emergencyKeyword"] == "Test"
+        assert payload["emergencyLocation"] == ""
+        assert payload["emergencyDescription"] == ""
+        # groups only included if dispatch_group_codes present
         assert "groups" not in payload
+
+    def test_prepare_payload_with_dispatch_group_codes(self, messenger_config):
+        messenger = AlarmMessenger(messenger_config)
+        alarm_data = {
+            "alarm": {
+                "incident_number": "22222",
+                "keyword": "F3Y",
+                "location": "Test",
+                "description": "Test",
+                "timestamp": "2024-01-01T12:00:00",
+                "dispatch_group_codes": ["WIL26", "WIL41"],
+            }
+        }
+        payload = messenger._prepare_payload(alarm_data)
+
+        assert payload["emergencyNumber"] == "22222"
+        # groups should be comma-separated string
+        assert payload["groups"] == "WIL26,WIL41"
 
 
 class TestCreateMessenger:

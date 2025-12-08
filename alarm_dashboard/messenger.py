@@ -59,12 +59,12 @@ class AlarmMessenger:
             # Prepare the payload for the messenger API
             payload = self._prepare_payload(alarm_data)
 
-            # Send the notification
+            # Send the notification to the correct endpoint: /api/emergencies
             response = requests.post(
-                f"{self.config.server_url}/api/alarm",
+                f"{self.config.server_url}/api/emergencies",
                 json=payload,
                 headers={
-                    "Authorization": f"Bearer {self.config.api_key}",
+                    "X-API-Key": self.config.api_key,
                     "Content-Type": "application/json",
                 },
                 timeout=self.config.timeout,
@@ -98,6 +98,14 @@ class AlarmMessenger:
     def _prepare_payload(self, alarm_data: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare the alarm data payload for the messenger API.
 
+        The alarm-messenger API expects the following fields:
+        - emergencyNumber (required)
+        - emergencyDate (required)
+        - emergencyKeyword (required)
+        - emergencyDescription (required)
+        - emergencyLocation (required)
+        - groups (optional) - comma-separated group codes
+
         Args:
             alarm_data: Raw alarm data from the parser
 
@@ -107,31 +115,24 @@ class AlarmMessenger:
         # Extract the alarm object if it's wrapped
         alarm = alarm_data.get("alarm", alarm_data)
 
-        # Build a structured payload with the most relevant fields
+        # Map alarm-monitor fields to alarm-messenger API fields
         payload: Dict[str, Any] = {
-            "incident_number": alarm.get("incident_number"),
-            "timestamp": alarm.get("timestamp"),
-            "keyword": alarm.get("keyword"),
-            "location": alarm.get("location"),
-            "description": alarm.get("description"),
-            "coordinates": None,
+            "emergencyNumber": alarm.get("incident_number") or "UNKNOWN",
+            "emergencyDate": alarm.get("timestamp") or alarm.get("received_at"),
+            "emergencyKeyword": alarm.get("keyword") or alarm.get("keyword_primary") or "ALARM",
+            "emergencyDescription": alarm.get("description") or alarm.get("diagnosis") or "",
+            "emergencyLocation": alarm.get("location") or "",
         }
 
-        # Add coordinates if available
-        if "coordinates" in alarm_data:
-            payload["coordinates"] = alarm_data["coordinates"]
-        elif alarm.get("latitude") and alarm.get("longitude"):
-            payload["coordinates"] = {
-                "lat": alarm["latitude"],
-                "lon": alarm["longitude"],
-            }
-
-        # Add optional fields if present
-        if alarm.get("remark"):
-            payload["remark"] = alarm["remark"]
-
-        if alarm.get("groups"):
-            payload["groups"] = alarm["groups"]
+        # Add optional groups field if present
+        # Convert list of groups to comma-separated string if needed
+        if alarm.get("dispatch_group_codes"):
+            # Use dispatch_group_codes as they represent the TME codes
+            codes = alarm.get("dispatch_group_codes")
+            if isinstance(codes, list):
+                payload["groups"] = ",".join(codes)
+            elif isinstance(codes, str):
+                payload["groups"] = codes
 
         return payload
 
