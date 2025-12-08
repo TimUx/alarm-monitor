@@ -12,7 +12,9 @@ from flask import Flask, jsonify, render_template, request, url_for
 
 from .config import AppConfig, load_config
 from .geocode import geocode_location
+from .mail_checker import AlarmMailFetcher
 from .messenger import create_messenger
+from .parser import parse_alarm
 from .storage import AlarmStore
 from .weather import fetch_weather
 
@@ -39,6 +41,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     store = AlarmStore(persistence_path=persistence_path)
     app.config["ALARM_STORE"] = store
     app.config["APP_CONFIG"] = config
+    app.config["MAIL_FETCHER"] = None
 
     # Initialize alarm messenger if configured
     messenger = create_messenger(
@@ -46,13 +49,13 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     )
     app.config["ALARM_MESSENGER"] = messenger
 
-    def process_alarm(alarm: Dict[str, Any]) -> None:
-        """Process incoming alarm data from API.
-        
-        Args:
-            alarm: Parsed alarm data from alarm-mail service
-        """
-        LOGGER.info("Processing alarm: %s", alarm.get("incident_number"))
+    def process_email(raw_email: bytes) -> None:
+        alarm = parse_alarm(raw_email)
+        if alarm is None:
+            LOGGER.info("Ignoring email without INCIDENT payload")
+            return
+
+        LOGGER.info("Parsed alarm: %s", alarm)
         
         # Check for incident number (required field)
         incident_number = alarm.get("incident_number")
@@ -134,36 +137,73 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         store.update(alarm_payload)
 
-        # Register emergency_id with messenger for participant lookups
-        # The emergency_id comes from alarm-mail which gets it from alarm-messenger
-        if messenger and alarm.get("emergency_id"):
-            messenger.register_emergency(incident_number, alarm["emergency_id"])
+        # Send notification to alarm messenger if configured
+        if messenger:
+            try:
+                messenger.send_alarm(alarm_payload)
+            except Exception as exc:  # pragma: no cover - best effort
+                LOGGER.error("Failed to send alarm to messenger: %s", exc)
 
-    # API endpoint for receiving alarms from alarm-mail service
-    @app.route("/api/alarm", methods=["POST"])
-    def receive_alarm():
-        """Receive alarm data via API from alarm-mail service."""
-        # Verify API key
-        api_key = request.headers.get("X-API-Key")
-        if not config.api_key or api_key != config.api_key:
-            LOGGER.warning("Unauthorized API access attempt")
-            return jsonify({"error": "Unauthorized"}), 401
-        
-        # Get alarm data from request
-        alarm_data = request.get_json()
-        if not alarm_data:
-            LOGGER.warning("Received empty alarm data")
-            return jsonify({"error": "Invalid request"}), 400
-        
+    fetcher: Optional[AlarmMailFetcher] = None
+
+    def _ensure_background_fetcher_started() -> None:
+        """Ensure the background mail fetcher reference is registered."""
+
+        return None
+
+    if config.mail is not None:
+        fetcher = AlarmMailFetcher(
+            config=config.mail,
+            callback=process_email,
+            poll_interval=config.poll_interval,
+        )
+
         try:
-            process_alarm(alarm_data)
-            return jsonify({"status": "ok"}), 200
-        except Exception as exc:
-            LOGGER.error("Error processing alarm: %s", exc)
-            return jsonify({"error": "Internal server error"}), 500
+            fetcher.start()
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.error("Failed to start mail fetcher: %s", exc)
+            fetcher = None
+        else:
 
-    # Remove email fetcher code - no longer needed
-    # Alarms are now received via API from alarm-mail service
+            app.config["MAIL_FETCHER"] = fetcher
+
+            def _ensure_background_fetcher_started() -> None:
+                """Ensure the fetcher remains available to the application."""
+
+                nonlocal fetcher
+                if fetcher is None:
+                    return
+                if app.config.get("MAIL_FETCHER") is not fetcher:
+                    app.config["MAIL_FETCHER"] = fetcher
+
+            def _stop_background_fetcher() -> None:
+                nonlocal fetcher
+                if fetcher is not None:
+                    fetcher.stop()
+                    fetcher = None
+                    app.config["MAIL_FETCHER"] = None
+
+            app.config["MAIL_FETCHER_CLEANUP"] = _stop_background_fetcher
+
+    # ``before_first_request`` was removed in Flask 3.0.  Older releases, however,
+    # still rely on it, so we probe the available lifecycle hooks in a
+    # compatibility-friendly way without assuming the attribute exists.
+    for hook_name in ("before_serving", "before_request"):
+        try:
+            hook = getattr(app, hook_name)
+        except AttributeError:
+            continue
+        if not callable(hook):
+            continue
+
+        hook(_ensure_background_fetcher_started)
+        if hook_name != "before_serving":
+            # Legacy Flask versions do not provide ``before_serving`` so we start the
+            # fetcher immediately instead of waiting for the first HTTP request.
+            _ensure_background_fetcher_started()
+        break
+    else:  # Fallback if Flask does not expose lifecycle hooks
+        _ensure_background_fetcher_started()
 
     @app.route("/")
     def dashboard() -> str:

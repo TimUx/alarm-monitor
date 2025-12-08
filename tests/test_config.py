@@ -29,30 +29,25 @@ def _clear_alarm_env():
             del os.environ[name]
 
 
-def test_load_config_without_imap_settings_disables_mail_fetching():
+def test_load_config_without_api_key():
     _clear_alarm_env()
     importlib.reload(config)
 
     app_config = config.load_config()
 
-    assert app_config.mail is None
+    assert app_config.api_key is None
 
 
-def test_load_config_with_complete_imap_settings():
+def test_load_config_with_api_key():
     _clear_alarm_env()
     importlib.reload(config)
 
     with _temp_env(
-        ALARM_DASHBOARD_IMAP_HOST="imap.example.com",
-        ALARM_DASHBOARD_IMAP_USERNAME="user",
-        ALARM_DASHBOARD_IMAP_PASSWORD="secret",
+        ALARM_DASHBOARD_API_KEY="test-api-key-123",
     ):
         app_config = config.load_config()
 
-    assert app_config.mail is not None
-    assert app_config.mail.host == "imap.example.com"
-    assert app_config.mail.username == "user"
-    assert app_config.mail.password == "secret"
+    assert app_config.api_key == "test-api-key-123"
 
 
 def test_load_config_with_history_file(tmp_path):

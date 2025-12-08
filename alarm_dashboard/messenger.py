@@ -1,8 +1,8 @@
-"""Alarm messenger notification integration.
+"""Alarm messenger integration for participant responses.
 
-This module provides functionality to send alarm notifications to an external
-alarm messenger server via HTTP API. The integration is activated when the
-messenger server URL is configured via environment variables.
+This module provides functionality to retrieve participant responses from an
+external alarm messenger server. The alarm messenger is notified of emergencies
+by the alarm-mail service, and this module polls for participant confirmations.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class AlarmMessengerConfig:
 
 
 class AlarmMessenger:
-    """Client for sending alarm notifications to alarm messenger server."""
+    """Client for retrieving participant responses from alarm messenger server."""
 
     def __init__(self, config: AlarmMessengerConfig):
         """Initialize the alarm messenger client.
@@ -44,112 +44,23 @@ class AlarmMessenger:
         # Cache mapping of incident_number to emergency_id
         self._emergency_id_cache: Dict[str, str] = {}
 
-    def send_alarm(self, alarm_data: Dict[str, Any]) -> bool:
-        """Send alarm notification to the messenger server.
+    def register_emergency(self, incident_number: str, emergency_id: str) -> None:
+        """Register an emergency_id for an incident number.
+
+        This allows participant lookups by incident number.
+        Typically called when an alarm is received from the alarm-mail service.
 
         Args:
-            alarm_data: Dictionary containing alarm information
-
-        Returns:
-            True if notification was sent successfully, False otherwise
+            incident_number: The incident number (ENR) from the alarm
+            emergency_id: The emergency ID from alarm-messenger
         """
-        if not alarm_data:
-            LOGGER.warning("Cannot send empty alarm data to messenger")
-            return False
-
-        try:
-            # Prepare the payload for the messenger API
-            payload = self._prepare_payload(alarm_data)
-
-            # Send the notification to the correct endpoint: /api/emergencies
-            response = requests.post(
-                f"{self.config.server_url}/api/emergencies",
-                json=payload,
-                headers={
-                    "X-API-Key": self.config.api_key,
-                    "Content-Type": "application/json",
-                },
-                timeout=self.config.timeout,
-            )
-
-            response.raise_for_status()
-            
-            # Extract incident number and emergency_id for caching
-            alarm = alarm_data.get("alarm", alarm_data)
-            incident_number = alarm.get("incident_number")
-            
-            # Store emergency_id from response for later participant lookups
-            try:
-                emergency_data = response.json()
-                if emergency_data and "id" in emergency_data:
-                    self._emergency_id_cache[incident_number] = emergency_data["id"]
-                    LOGGER.debug(
-                        "Cached emergency_id %s for incident %s",
-                        emergency_data["id"],
-                        incident_number,
-                    )
-            except (ValueError, KeyError) as exc:
-                LOGGER.warning("Failed to parse emergency response JSON: %s", exc)
-            
-            LOGGER.info(
-                "Successfully sent alarm notification to messenger: incident=%s",
+        if incident_number and emergency_id:
+            self._emergency_id_cache[incident_number] = emergency_id
+            LOGGER.debug(
+                "Registered emergency_id %s for incident %s",
+                emergency_id,
                 incident_number,
             )
-            return True
-
-        except requests.exceptions.Timeout:
-            LOGGER.error(
-                "Timeout sending alarm to messenger server: %s",
-                self.config.server_url,
-            )
-            return False
-        except requests.exceptions.RequestException as exc:
-            LOGGER.error("Failed to send alarm to messenger: %s", exc)
-            return False
-        except Exception as exc:  # pragma: no cover
-            LOGGER.error("Unexpected error sending alarm to messenger: %s", exc)
-            return False
-
-    def _prepare_payload(self, alarm_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Prepare the alarm data payload for the messenger API.
-
-        The alarm-messenger API expects the following fields:
-        - emergencyNumber (required)
-        - emergencyDate (required)
-        - emergencyKeyword (required)
-        - emergencyDescription (required)
-        - emergencyLocation (required)
-        - groups (optional) - comma-separated group codes
-
-        Args:
-            alarm_data: Raw alarm data from the parser
-
-        Returns:
-            Formatted payload for the messenger API
-        """
-        # Extract the alarm object if it's wrapped
-        alarm = alarm_data.get("alarm", alarm_data)
-
-        # Map alarm-monitor fields to alarm-messenger API fields
-        payload: Dict[str, Any] = {
-            "emergencyNumber": alarm.get("incident_number") or "UNKNOWN",
-            "emergencyDate": alarm.get("timestamp") or alarm.get("received_at"),
-            "emergencyKeyword": alarm.get("keyword") or alarm.get("keyword_primary") or "ALARM",
-            "emergencyDescription": alarm.get("description") or alarm.get("diagnosis") or "",
-            "emergencyLocation": alarm.get("location") or "",
-        }
-
-        # Add optional groups field if present
-        # Convert list of groups to comma-separated string if needed
-        if alarm.get("dispatch_group_codes"):
-            # Use dispatch_group_codes as they represent the TME codes
-            codes = alarm.get("dispatch_group_codes")
-            if isinstance(codes, list):
-                payload["groups"] = ",".join(codes)
-            elif isinstance(codes, str):
-                payload["groups"] = codes
-
-        return payload
 
     def get_participants(self, incident_number: str) -> Optional[List[Dict[str, Any]]]:
         """Get participants for an emergency by incident number.
