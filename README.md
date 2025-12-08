@@ -223,6 +223,8 @@ markiert.
 | `WEATHER_URL` | nein (Default `https://api.open-meteo.com/v1/forecast`) | Basis-URL für Wetterabfragen. |
 | `WEATHER_PARAMS` | nein | Query-Parameter für die Wetter-API (z. B. welche Felder geladen werden). |
 | `ORS_API_KEY` | nein | API-Key für OpenRouteService, falls Navigation mit Routenführung verwendet werden soll. |
+| `MESSENGER_SERVER_URL` | nein | Basis-URL des Alarm-Messenger-Servers für mobile Benachrichtigungen. |
+| `MESSENGER_API_KEY` | nein | API-Key/Token zur Authentifizierung beim Alarm-Messenger-Server. |
 | `HISTORY_FILE` | nein | Pfad zur JSON-Datei, in der Historien-Daten persistiert werden. Standard: `instance/alarm_history.json`. |
 | `APP_VERSION` | nein (Default `dev-main`) | Versionskennung, die im Footer angezeigt und zur Release-Verlinkung genutzt wird. |
 | `APP_VERSION_URL` | nein | Überschreibt den Link auf die GitHub-Release-Seite (Standard: automatisch anhand der Version). |
@@ -248,6 +250,31 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Wache Beispielstadt
 ALARM_DASHBOARD_ORS_API_KEY=
 ALARM_DASHBOARD_APP_VERSION=v1.2.3
 ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/feuerwehr-willingshausen/alarm-dashboard/releases/tag/v1.2.3
+# optional: Alarm-Messenger Integration
+ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
+```
+
+#### Integration mit Alarm-Messenger
+
+Der Alarm-Monitor kann eingehende Einsätze automatisch an einen externen
+Alarm-Messenger-Server weiterleiten, um mobile Endgeräte zu benachrichtigen.
+Die Integration ist optional und wird aktiviert, sobald die entsprechenden
+Umgebungsvariablen gesetzt sind:
+
+* `ALARM_DASHBOARD_MESSENGER_SERVER_URL` – Basis-URL des Alarm-Messenger-Servers
+  (z. B. `https://messenger.example.com`)
+* `ALARM_DASHBOARD_MESSENGER_API_KEY` – API-Key oder Token zur Authentifizierung
+
+Sobald beide Variablen konfiguriert sind, werden alle verarbeiteten Alarme
+als JSON-Payload via HTTP POST an den Endpunkt `/api/alarm` des
+Messenger-Servers übermittelt. Die Authentifizierung erfolgt über einen
+`Authorization: Bearer <token>` Header. Bei Fehlern oder Timeouts werden
+diese geloggt, beeinträchtigen jedoch nicht die Hauptfunktion des Dashboards.
+
+Wird die Messenger-URL nicht gesetzt oder fehlt der API-Key, bleibt die
+Funktion deaktiviert, und Alarme werden ausschließlich lokal gespeichert
+und im Dashboard angezeigt.
 ```
 
 #### Alarmaktivierung über Gruppenfilter

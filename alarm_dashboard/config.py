@@ -2,7 +2,7 @@
 
 This module centralises configuration handling for the alarm dashboard
 application. Configuration is primarily sourced from environment
-variables so deployments can inject secrets (such as IMAP credentials)
+variables so deployments can inject secrets (such as API keys)
 without committing them to the repository.
 """
 
@@ -23,24 +23,10 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency fallback
 
 
 @dataclass
-class MailConfig:
-    """IMAP mail server configuration."""
-
-    host: str
-    username: str
-    password: str
-    mailbox: str = "INBOX"
-    port: int = 993
-    use_ssl: bool = True
-    search_criteria: str = "UNSEEN"
-
-
-@dataclass
 class AppConfig:
     """Top level configuration container."""
 
-    mail: Optional[MailConfig]
-    poll_interval: int = 60
+    api_key: Optional[str]
     activation_groups: List[str] = field(default_factory=list)
     display_duration_minutes: int = 30
     fire_department_name: str = "Alarm-Monitor"
@@ -54,6 +40,8 @@ class AppConfig:
     ors_api_key: Optional[str] = None
     app_version: str = "dev-main"
     app_version_url: Optional[str] = None
+    messenger_server_url: Optional[str] = None
+    messenger_api_key: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -87,42 +75,14 @@ def _get_env(name: str, default: Optional[str] = None, required: bool = False) -
 def load_config() -> AppConfig:
     """Load application configuration from environment variables."""
 
-    host = _get_env("IMAP_HOST")
-    username = _get_env("IMAP_USERNAME")
-    password = _get_env("IMAP_PASSWORD")
-
-    mail: Optional[MailConfig]
-    if host and username and password:
-        mail = MailConfig(
-            host=cast(str, host),
-            username=cast(str, username),
-            password=cast(str, password),
-            mailbox=_get_env("IMAP_MAILBOX", default="INBOX") or "INBOX",
-            port=int(_get_env("IMAP_PORT", default="993") or "993"),
-            use_ssl=(
-                _get_env("IMAP_USE_SSL", default="true") or "true"
-            ).lower()
-            != "false",
-            search_criteria=_get_env("IMAP_SEARCH", default="UNSEEN") or "UNSEEN",
-        )
-    else:
-        missing = [
-            name
-            for name, value in (
-                ("IMAP_HOST", host),
-                ("IMAP_USERNAME", username),
-                ("IMAP_PASSWORD", password),
-            )
-            if not value
-        ]
+    # API key for receiving alarms from alarm-mail service
+    api_key = _get_env("API_KEY") or None
+    if not api_key:
         LOGGER.warning(
-            "IMAP configuration incomplete (missing: %s). "
-            "Mail fetching will be disabled.",
-            ", ".join(missing) or "unknown",
+            "API_KEY not set. The /api/alarm endpoint will reject all requests. "
+            "Set ALARM_DASHBOARD_API_KEY to enable API-based alarm reception."
         )
-        mail = None
 
-    poll_interval = int(_get_env("POLL_INTERVAL", default="60") or "60")
     activation_raw = _get_env("GRUPPEN")
     activation_groups: List[str] = []
     if activation_raw:
@@ -176,6 +136,24 @@ def load_config() -> AppConfig:
 
     ors_api_key = _get_env("ORS_API_KEY") or None
 
+    # Alarm messenger configuration
+    messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
+    messenger_api_key = _get_env("MESSENGER_API_KEY") or None
+
+    # Validate messenger configuration - both URL and API key are required
+    if messenger_server_url and not messenger_api_key:
+        LOGGER.warning(
+            "MESSENGER_SERVER_URL is set but MESSENGER_API_KEY is missing. "
+            "Alarm messenger integration will be disabled."
+        )
+        # Clear both to maintain consistency
+        messenger_server_url = None
+        messenger_api_key = None
+    elif messenger_server_url and messenger_api_key:
+        LOGGER.info(
+            "Alarm messenger integration enabled: %s", messenger_server_url
+        )
+
     default_version = "dev-main"
     app_version = _get_env("APP_VERSION") or default_version
     app_version_url = _get_env("APP_VERSION_URL") or None
@@ -192,8 +170,7 @@ def load_config() -> AppConfig:
             )
 
     return AppConfig(
-        mail=mail,
-        poll_interval=poll_interval,
+        api_key=api_key,
         nominatim_base_url=nominatim_base_url,
         activation_groups=activation_groups,
         display_duration_minutes=display_duration_minutes,
@@ -207,12 +184,14 @@ def load_config() -> AppConfig:
         ors_api_key=ors_api_key,
         app_version=app_version,
         app_version_url=app_version_url,
+        messenger_server_url=messenger_server_url,
+        messenger_api_key=messenger_api_key,
     )
+
 
 
 __all__ = [
     "AppConfig",
-    "MailConfig",
     "MissingConfiguration",
     "load_config",
 ]
