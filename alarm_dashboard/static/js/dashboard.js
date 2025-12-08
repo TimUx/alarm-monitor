@@ -1360,18 +1360,5 @@ function startParticipantsPolling(incidentNumber) {
     }, 10000);
 }
 
-// Modify updateDashboard to handle participants
-const originalUpdateDashboard = updateDashboard;
-updateDashboard = function(data) {
-    originalUpdateDashboard(data);
-    
-    const alarm = data.alarm;
-    if (data.mode === 'alarm' && alarm && alarm.incident_number) {
-        startParticipantsPolling(alarm.incident_number);
-    } else {
-        stopParticipantsPolling();
-    }
-};
-
 // Clean up on page unload
 window.addEventListener('beforeunload', stopParticipantsPolling);
