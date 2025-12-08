@@ -441,7 +441,10 @@ curl -s http://localhost:8000/health
 curl -s http://localhost:8000/api/alarm | python3 -m json.tool
 
 # API-Endpunkt testen (POST für neuen Alarm - nur zu Testzwecken)
-curl -X POST http://localhost:8000/api/alarm   -H "X-API-Key: <ihr-api-key>"   -H "Content-Type: application/json"   -d '{"incident_number":"TEST-001","keyword":"Test","location":"Testort"}'
+curl -X POST http://localhost:8000/api/alarm \
+  -H "X-API-Key: <ihr-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"incident_number":"TEST-001","keyword":"Test","location":"Testort"}'
 
 # alarm-mail Service Logs prüfen
 sudo journalctl -u alarm-mail --since "10 minutes ago"
