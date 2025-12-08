@@ -111,3 +111,42 @@ def test_load_config_reads_ors_api_key():
         app_config = config.load_config()
 
     assert app_config.ors_api_key == "secret-key"
+
+
+def test_load_config_reads_messenger_settings():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(
+        ALARM_DASHBOARD_MESSENGER_SERVER_URL="https://messenger.example.com",
+        ALARM_DASHBOARD_MESSENGER_API_KEY="test-api-key-123",
+    ):
+        app_config = config.load_config()
+
+    assert app_config.messenger_server_url == "https://messenger.example.com"
+    assert app_config.messenger_api_key == "test-api-key-123"
+
+
+def test_load_config_disables_messenger_without_api_key():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(
+        ALARM_DASHBOARD_MESSENGER_SERVER_URL="https://messenger.example.com",
+    ):
+        app_config = config.load_config()
+
+    # Should disable messenger if URL is set but API key is missing
+    assert app_config.messenger_server_url is None
+    assert app_config.messenger_api_key is None
+
+
+def test_load_config_messenger_defaults_to_none():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    app_config = config.load_config()
+
+    assert app_config.messenger_server_url is None
+    assert app_config.messenger_api_key is None
+

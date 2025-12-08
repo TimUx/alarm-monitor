@@ -330,3 +330,114 @@ def test_process_email_rejects_alarms_without_incident_number(
     assert history[0]["alarm"]["incident_number"] == "12345"
 
 
+def test_create_app_initializes_messenger_when_configured(tmp_path: Path) -> None:
+    """The app should initialize messenger when both URL and API key are provided."""
+    config = AppConfig(
+        mail=None,
+        messenger_server_url="https://messenger.example.com",
+        messenger_api_key="test-key-123",
+        history_file=str(tmp_path / "history.json"),
+    )
+
+    application = app_module.create_app(config)
+    messenger = application.config.get("ALARM_MESSENGER")
+
+    assert messenger is not None
+    assert messenger.config.server_url == "https://messenger.example.com"
+    assert messenger.config.api_key == "test-key-123"
+
+
+def test_create_app_does_not_initialize_messenger_without_url(tmp_path: Path) -> None:
+    """The app should not initialize messenger when URL is not provided."""
+    config = AppConfig(
+        mail=None,
+        messenger_server_url=None,
+        messenger_api_key="test-key-123",
+        history_file=str(tmp_path / "history.json"),
+    )
+
+    application = app_module.create_app(config)
+    messenger = application.config.get("ALARM_MESSENGER")
+
+    assert messenger is None
+
+
+def test_create_app_does_not_initialize_messenger_without_api_key(tmp_path: Path) -> None:
+    """The app should not initialize messenger when API key is not provided."""
+    config = AppConfig(
+        mail=None,
+        messenger_server_url="https://messenger.example.com",
+        messenger_api_key=None,
+        history_file=str(tmp_path / "history.json"),
+    )
+
+    application = app_module.create_app(config)
+    messenger = application.config.get("ALARM_MESSENGER")
+
+    assert messenger is None
+
+
+def test_process_email_sends_to_messenger_when_configured(
+    tmp_path: Path, dummy_fetcher: List[_DummyFetcher], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The app should send alarms to messenger when it's configured."""
+    import textwrap
+    from unittest.mock import Mock
+
+    history_path = tmp_path / "history.json"
+
+    # Create a mock messenger
+    mock_messenger = Mock()
+    mock_messenger.send_alarm.return_value = True
+
+    # Patch the create_messenger function
+    def _mock_create_messenger(url, key):
+        if url and key:
+            return mock_messenger
+        return None
+
+    monkeypatch.setattr(app_module, "create_messenger", _mock_create_messenger)
+
+    config = AppConfig(
+        mail=MailConfig(
+            host="imap.example.com",
+            port=993,
+            use_ssl=True,
+            username="user@example.com",
+            password="secret",
+            mailbox="INBOX",
+            search_criteria="UNSEEN",
+        ),
+        poll_interval=60,
+        history_file=str(history_path),
+        messenger_server_url="https://messenger.example.com",
+        messenger_api_key="test-key-123",
+    )
+
+    application = app_module.create_app(config)
+    assert len(dummy_fetcher) == 1
+    callback = dummy_fetcher[0].callback
+
+    # Send an alarm
+    raw_email = textwrap.dedent(
+        """
+        Subject: Test Alarm
+
+        <INCIDENT>
+          <ENR>12345</ENR>
+          <STICHWORT>F3Y</STICHWORT>
+          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
+          <ORT>Musterstadt</ORT>
+        </INCIDENT>
+        """
+    ).lstrip().encode("utf-8")
+
+    callback(raw_email)
+
+    # Verify messenger was called
+    assert mock_messenger.send_alarm.call_count == 1
+    call_args = mock_messenger.send_alarm.call_args[0][0]
+    assert "alarm" in call_args
+    assert call_args["alarm"]["incident_number"] == "12345"
+
+

@@ -54,6 +54,8 @@ class AppConfig:
     ors_api_key: Optional[str] = None
     app_version: str = "dev-main"
     app_version_url: Optional[str] = None
+    messenger_server_url: Optional[str] = None
+    messenger_api_key: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -176,6 +178,21 @@ def load_config() -> AppConfig:
 
     ors_api_key = _get_env("ORS_API_KEY") or None
 
+    # Alarm messenger configuration
+    messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
+    messenger_api_key = _get_env("MESSENGER_API_KEY") or None
+
+    if messenger_server_url and not messenger_api_key:
+        LOGGER.warning(
+            "MESSENGER_SERVER_URL is set but MESSENGER_API_KEY is missing. "
+            "Alarm messenger integration will be disabled."
+        )
+        messenger_server_url = None
+    elif messenger_server_url:
+        LOGGER.info(
+            "Alarm messenger integration enabled: %s", messenger_server_url
+        )
+
     default_version = "dev-main"
     app_version = _get_env("APP_VERSION") or default_version
     app_version_url = _get_env("APP_VERSION_URL") or None
@@ -207,7 +224,10 @@ def load_config() -> AppConfig:
         ors_api_key=ors_api_key,
         app_version=app_version,
         app_version_url=app_version_url,
+        messenger_server_url=messenger_server_url,
+        messenger_api_key=messenger_api_key,
     )
+
 
 
 __all__ = [

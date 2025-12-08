@@ -13,6 +13,7 @@ from flask import Flask, jsonify, render_template, request, url_for
 from .config import AppConfig, load_config
 from .geocode import geocode_location
 from .mail_checker import AlarmMailFetcher
+from .messenger import create_messenger
 from .parser import parse_alarm
 from .storage import AlarmStore
 from .weather import fetch_weather
@@ -41,6 +42,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     app.config["ALARM_STORE"] = store
     app.config["APP_CONFIG"] = config
     app.config["MAIL_FETCHER"] = None
+
+    # Initialize alarm messenger if configured
+    messenger = create_messenger(
+        config.messenger_server_url, config.messenger_api_key
+    )
+    app.config["ALARM_MESSENGER"] = messenger
 
     def process_email(raw_email: bytes) -> None:
         alarm = parse_alarm(raw_email)
@@ -129,6 +136,13 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "weather": weather,
         }
         store.update(alarm_payload)
+
+        # Send notification to alarm messenger if configured
+        if messenger:
+            try:
+                messenger.send_alarm(alarm_payload)
+            except Exception as exc:  # pragma: no cover - best effort
+                LOGGER.error("Failed to send alarm to messenger: %s", exc)
 
     fetcher: Optional[AlarmMailFetcher] = None
 
