@@ -1,7 +1,38 @@
-# Alarm-Messenger Integration
+# 📱 Alarm-Messenger Integration
 
-Dieses Dokument beschreibt die Integration zwischen dem Alarm-Monitor und dem [Alarm-Messenger System](https://github.com/TimUx/alarm-messenger).
+Dieses Dokument beschreibt die Integration zwischen dem Alarm-Monitor und dem [Alarm-Messenger System](https://github.com/TimUx/alarm-messenger) für mobile Push-Benachrichtigungen und Teilnehmerrückmeldungen.
 
+---
+
+## Inhaltsverzeichnis
+
+- [Überblick](#überblick)
+- [Systemübersicht](#systemübersicht)
+- [Datenfluss](#datenfluss)
+- [Installation](#installation)
+- [Konfiguration](#konfiguration)
+- [API-Endpunkte](#api-endpunkte)
+- [Payload-Formate](#payload-formate)
+- [Teilnehmerrückmeldungen](#teilnehmerrückmeldungen)
+- [Fehlerbehandlung](#fehlerbehandlung)
+- [Testen](#testen)
+- [Sicherheit](#sicherheit)
+
+---
+
+## Überblick
+
+Der **alarm-messenger** ist eine **optionale** Komponente, die folgende Funktionen bietet:
+
+✅ **Push-Benachrichtigungen**: Mobile Alarmierung auf iOS und Android  
+✅ **Teilnehmerrückmeldungen**: Zusagen/Absagen von Einsatzkräften  
+✅ **Qualifikationen**: Anzeige von Qualifikationen (Atemschutz, Maschinist, etc.)  
+✅ **Führungsrollen**: Kennzeichnung von Zugführern, Gruppenführern, etc.  
+✅ **Gruppenfilterung**: Gezielte Benachrichtigung nach TME-Codes
+
+**Wichtig**: Das System funktioniert **vollständig ohne** alarm-messenger. Diese Integration ist optional.
+
+---
 
 ## Systemübersicht
 
@@ -30,7 +61,102 @@ Die Messenger-Integration verbindet drei Komponenten:
 **Hinweis:** Der alarm-messenger ist optional. Ohne ihn funktioniert das System 
 vollständig, zeigt aber keine Teilnehmerrückmeldungen an.
 
+---
+
+## Datenfluss
+
+### Kompletter Ablauf mit alarm-messenger
+
+```
+1. Leitstelle sendet Alarm-E-Mail
+          ↓
+2. alarm-mail empfängt und parst E-Mail
+          ↓
+3. alarm-mail sendet parallel an:
+   ├─▶ alarm-monitor (Dashboard)
+   └─▶ alarm-messenger (Push-Service)
+          ↓
+4. alarm-messenger sendet Push-Notifications
+   ├─▶ iOS-Geräte (via APNs)
+   └─▶ Android-Geräte (via FCM)
+          ↓
+5. Teilnehmer öffnen App und geben Rückmeldung:
+   ├─ Zusage (accepted)
+   ├─ Absage (declined)
+   └─ Optional: Kommentar
+          ↓
+6. alarm-monitor fragt Teilnehmerliste ab
+   GET /api/emergencies/{id}/participants
+          ↓
+7. Dashboard zeigt Rückmeldungen in Echtzeit
+   - Wer hat zugesagt?
+   - Qualifikationen verfügbar?
+   - Führungskräfte dabei?
+```
+
+---
+
+## Installation
+
+### Voraussetzungen
+
+- Docker und Docker Compose
+- Firebase-Projekt (für Push-Notifications)
+- Firebase Admin SDK JSON-Datei
+
+### Schritt 1: Repository klonen
+
+```bash
+git clone https://github.com/TimUx/alarm-messenger.git
+cd alarm-messenger
+```
+
+### Schritt 2: Firebase einrichten
+
+1. Gehen Sie zur [Firebase Console](https://console.firebase.google.com/)
+2. Erstellen Sie ein neues Projekt oder wählen Sie ein bestehendes
+3. Aktivieren Sie **Cloud Messaging**
+4. Erstellen Sie einen Service Account:
+   - Projekteinstellungen → Service Accounts → Neuen privaten Schlüssel generieren
+5. Laden Sie die JSON-Datei herunter und speichern Sie sie als `firebase-adminsdk.json`
+
+### Schritt 3: Konfiguration erstellen
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+**Minimal-Konfiguration**:
+```bash
+# API Secret Key (für Authentifizierung)
+API_SECRET_KEY=<generieren-mit-openssl-rand-hex-32>
+
+# Firebase Admin SDK Pfad
+FIREBASE_ADMIN_SDK_PATH=/app/firebase-adminsdk.json
+
+# Server-Port
+PORT=3000
+```
+
+### Schritt 4: Service starten
+
+```bash
+# Firebase-Datei kopieren
+cp /pfad/zu/firebase-adminsdk.json firebase-adminsdk.json
+
+# Container starten
+docker compose up -d
+
+# Logs prüfen
+docker compose logs -f
+```
+
+---
+
 ## Konfiguration
+
+### alarm-monitor konfigurieren
 
 Fügen Sie die folgenden Umgebungsvariablen zu Ihrer `.env`-Datei hinzu:
 
@@ -42,7 +168,29 @@ ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
 ALARM_DASHBOARD_MESSENGER_API_KEY=your-secret-api-key-here
 ```
 
-**Wichtig:** Der API-Key muss mit dem Wert übereinstimmen, der im Alarm-Messenger als `API_SECRET_KEY` konfiguriert ist.
+**Wichtig**: 
+- Der `ALARM_DASHBOARD_MESSENGER_API_KEY` muss **identisch** mit dem `API_SECRET_KEY` im alarm-messenger sein
+- Nach Änderungen Container neu starten: `docker compose restart`
+
+### alarm-mail konfigurieren
+
+Damit alarm-mail Alarme auch an den Messenger sendet:
+
+```bash
+# In alarm-mail/.env hinzufügen:
+ALARM_MAIL_MESSENGER_URL=http://alarm-messenger:3000
+ALARM_MAIL_MESSENGER_API_KEY=<derselbe-api-key>
+```
+
+**Docker-Netzwerk**: Wenn alle Services im selben Docker-Netzwerk laufen, verwenden Sie die Container-Namen als Hostnamen (`alarm-messenger`, `alarm-monitor`).
+
+**Verschiedene Hosts**: Verwenden Sie IP-Adressen oder Domainnamen:
+```bash
+ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+ALARM_MAIL_MESSENGER_URL=https://messenger.example.com
+```
+
+---
 
 ## Funktionsweise
 
@@ -168,6 +316,101 @@ Beispiel:
 - Alarm-Monitor erhält TME-Codes: `["WIL26", "WIL41"]`
 - Wird gesendet als: `"groups": "WIL26,WIL41"`
 - Messenger benachrichtigt nur Geräte in Gruppe WIL26 oder WIL41
+
+---
+
+## Teilnehmerrückmeldungen
+
+### Dashboard-Anzeige
+
+Wenn Teilnehmer auf ihren Geräten Rückmeldung geben, werden diese im Dashboard angezeigt:
+
+**Anzeige-Elemente**:
+```
+┌─────────────────────────────────────────────────────┐
+│ Teilnehmerrückmeldungen                             │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ ✓ Max Mustermann                                   │
+│   Atemschutzgeräteträger, Maschinist               │
+│   Zugführer                                         │
+│                                                     │
+│ ✓ Erika Musterfrau                                 │
+│   Atemschutzgeräteträger                           │
+│                                                     │
+│ ✗ Hans Beispiel                                    │
+│   "Im Urlaub"                                       │
+│                                                     │
+│ 2 Zusagen • 1 Absage • 5 Ausstehend               │
+└─────────────────────────────────────────────────────┘
+```
+
+### Response-Typen
+
+| Typ | Bedeutung | Symbol im Dashboard |
+|-----|-----------|---------------------|
+| `accepted` | Zusage | ✓ (grün) |
+| `declined` | Absage | ✗ (rot) |
+| `pending` | Noch keine Rückmeldung | ⏳ (grau) |
+
+### Polling-Mechanismus
+
+Das Dashboard fragt Teilnehmerrückmeldungen **aktiv ab** (Polling):
+
+```javascript
+// Automatisches Polling alle 10 Sekunden
+setInterval(() => {
+  if (alarmActive && messengerEnabled) {
+    fetchParticipants(incidentNumber);
+  }
+}, 10000);
+```
+
+**Vorteile**:
+- Einfache Implementierung
+- Kompatibel mit allen Browsern
+- Keine permanente Verbindung nötig
+
+**Nachteil**:
+- Verzögerung bis zu 10 Sekunden
+
+**Geplant**: WebSocket-Support für Echtzeit-Updates ohne Polling.
+
+### Qualifikationen
+
+Der alarm-messenger unterstützt folgende Standard-Qualifikationen:
+
+- **Atemschutzgeräteträger** (AGT)
+- **Maschinist**
+- **Truppführer** (TF)
+- **Gruppenführer** (GF)
+- **Zugführer** (ZF)
+- **Sanitäter**
+- **Notfallsanitäter**
+- **Weitere...** (konfigurierbar)
+
+Qualifikationen werden im Dashboard **unter dem Namen** angezeigt.
+
+### Führungsrollen
+
+Führungskräfte werden **hervorgehoben** dargestellt:
+
+```html
+<div class="participant leader">
+  <span class="name">Max Mustermann</span>
+  <span class="role">Zugführer</span>
+</div>
+```
+
+CSS:
+```css
+.participant.leader {
+  border-left: 4px solid #f39c12;
+  font-weight: bold;
+}
+```
+
+---
 
 ## Fehlerbehandlung
 

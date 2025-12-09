@@ -1,14 +1,93 @@
-# Feuerwehr Alarm Monitor
+# 🚒 Feuerwehr Alarm Monitor
 
-Dieses Projekt stellt ein webbasiertes Dashboard bereit, das Alarm-E-Mails
-von einer Leitstelle automatisiert verarbeitet und einsatzrelevante
-Informationen inklusive Karten- und Wetteranzeige darstellt. Es eignet sich
-für Installationen im lokalen Netzwerk, bei denen ein Gerät als Server
-fungiert und weitere Geräte das Dashboard im Vollbildmodus anzeigen. Als
-Server oder Client können sowohl Raspberry Pis als auch klassische PCs,
-Notebooks oder Smart-Displays eingesetzt werden.
+> Webbasiertes Dashboard zur automatischen Verarbeitung und Darstellung von Feuerwehr-Alarmen mit Echtzeit-Anzeige, Kartendarstellung und Wetterinformationen.
 
-## Screenshots
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
+
+---
+
+## 📋 Inhaltsverzeichnis
+
+- [Überblick](#überblick)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Systemarchitektur](#systemarchitektur)
+- [Schnellstart](#schnellstart)
+- [Installation](#installation)
+- [Konfiguration](#konfiguration)
+- [Verwendung](#verwendung)
+- [Integration mit alarm-mail und alarm-messenger](#integration)
+- [Dokumentation](#dokumentation)
+- [Entwicklung](#entwicklung)
+- [Lizenz](#lizenz)
+
+---
+
+## 🎯 Überblick
+
+Der **Feuerwehr Alarm Monitor** ist ein modernes, webbasiertes Dashboard-System zur automatischen Verarbeitung und Darstellung von Alarm-Meldungen. Das System wurde speziell für Feuerwehren entwickelt und eignet sich für Installationen im lokalen Netzwerk, bei denen ein Server-Gerät die Alarmverarbeitung übernimmt und mehrere Client-Geräte die Informationen in verschiedenen Ansichten darstellen.
+
+### Einsatzszenarien
+
+- **Wachenzentrale**: Großbildschirm im Vollbildmodus (Kiosk-Modus)
+- **Fahrzeughalle**: Zusätzliche Displays für schnelle Informationen
+- **Mobile Endgeräte**: Smartphone-optimierte Ansicht mit Navigationsfunktion
+- **Einsatzleitung**: Desktop-Ansicht mit Historie und Detailinformationen
+
+### Systemkomponenten
+
+Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollständige Alarm-Management-Lösung bilden:
+
+1. **[alarm-mail](https://github.com/TimUx/alarm-mail)** – E-Mail-Überwachung und Parsing
+2. **alarm-monitor** (dieses Repository) – Dashboard und Datenverarbeitung
+3. **[alarm-messenger](https://github.com/TimUx/alarm-messenger)** (optional) – Mobile Push-Benachrichtigungen und Rückmeldungen
+
+---
+
+## ✨ Features
+
+### Alarmverarbeitung
+- ✅ **API-basierter Empfang** – Authentifizierte REST-API für sichere Alarmübermittlung
+- ✅ **Duplikatserkennung** – Automatische Erkennung bereits verarbeiteter Alarme
+- ✅ **Gruppenfilterung** – Optionale Filterung nach TME-Codes oder Gruppennamen
+- ✅ **Persistente Speicherung** – Alle Alarme werden in einer Historie gespeichert
+
+### Geodaten & Kartendarstellung
+- 🗺️ **Automatische Geokodierung** – Koordinaten-Ermittlung über OpenStreetMap (Nominatim)
+- 🗺️ **Interaktive Karte** – Einsatzort-Darstellung mit Leaflet und OpenStreetMap
+- 🗺️ **Navigation** – Dedizierte Navigationsseite mit Routenplanung (optional mit OpenRouteService)
+- 🗺️ **Mobile Navigation** – Direkte Links zu Apple Karten / Google Maps
+
+### Wetter & Umgebungsinformationen
+- 🌤️ **Aktuelle Wetterdaten** – Temperatur, Niederschlag, Wind über Open-Meteo API
+- 🌤️ **Wettervorhersage** – Stündliche Vorhersage für Einsatzplanung
+- 🌤️ **Standort-Wetter** – Wetterdaten für Einsatzort in Alarmansicht
+- 🌤️ **Idle-Wetter** – Lokales Wetter in der Standardansicht
+
+### Dashboard-Ansichten
+- 📺 **Alarm-Ansicht** – Vollbildanzeige mit allen Einsatzinformationen
+- 📺 **Idle-Ansicht** – Uhrzeit, Wetter und letzter Einsatz im Ruhezustand
+- 📺 **Mobile-Ansicht** – Optimiert für Smartphones und Tablets
+- 📺 **Historien-Ansicht** – Tabellarische Übersicht aller vergangenen Einsätze
+- 📺 **Navigations-Ansicht** – Routenplanung zum Einsatzort
+
+### Messenger-Integration (optional)
+- 📱 **Push-Benachrichtigungen** – Mobile Alarmierung über alarm-messenger
+- 📱 **Teilnehmerrückmeldungen** – Echtzeit-Anzeige von Zusagen/Absagen
+- 📱 **Qualifikationen** – Anzeige von Qualifikationen der Teilnehmer
+- 📱 **Führungsrollen** – Kennzeichnung von Führungskräften
+
+### Anpassbarkeit
+- 🎨 **Branding** – Anpassbare Feuerwehrnamen und Logos
+- 🎨 **Farbschema** – CSS-Variablen für individuelle Farbgestaltung
+- 🎨 **Anzeigedauer** – Konfigurierbare Dauer der Alarmanzeige
+- 🎨 **Standortdaten** – Individuelle Standardkoordinaten und Standortnamen
+
+---
+
+## 📸 Screenshots
 
 ### Dashboard – Alarmansicht
 Bei einem aktiven Einsatz zeigt das Dashboard alle relevanten Informationen wie Stichwort, Einsatzort, alarmierte Fahrzeuge und Wetterdaten an.
@@ -16,550 +95,792 @@ Bei einem aktiven Einsatz zeigt das Dashboard alle relevanten Informationen wie 
 ![Dashboard Alarmansicht](docs/screenshots/dashboard-alarm.png)
 
 ### Dashboard – Teilnehmerrückmeldungen
-Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldungen der Einsatzkräfte in Echtzeit an (Zusagen, Qualifikationen und Führungsrollen).
+Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldungen der Einsatzkräfte in Echtzeit an.
 
 ![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-feedback.png)
 
 ### Dashboard – Standardansicht (Idle)
-Die Standardansicht zeigt Uhrzeit, Datum, aktuelles Wetter und den letzten Einsatz an.
+Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, aktuelles Wetter und den letzten Einsatz.
 
 ![Dashboard Standardansicht](docs/screenshots/dashboard-idle.png)
 
 ### Einsatzhistorie
-Die Historie zeigt alle vergangenen Einsätze in einer übersichtlichen Tabelle.
+Übersichtliche Darstellung aller vergangenen Einsätze mit Filterfunktion.
 
 ![Einsatzhistorie](docs/screenshots/history-alarm.png)
 
 ### Mobile Ansicht
-Die mobile Ansicht ist für Smartphones und Tablets optimiert.
+Optimiert für Smartphones und Tablets mit Touch-Bedienung und direkter Navigation.
 
 ![Mobile Ansicht](docs/screenshots/mobile-idle.png)
 
-## Funktionsumfang
+---
 
-* **API-basierter Alarmempfang** – Empfängt Alarme vom alarm-mail Service 
-  über einen authentifizierten REST-API-Endpunkt.
-* **Datenspeicherung & Historie** – Speichert alle Alarme persistent und 
-  stellt eine durchsuchbare Einsatzhistorie bereit.
-* **Geokodierung** – Ermittelt Koordinaten über OpenStreetMap (Nominatim), 
-  falls nicht in den Alarmdaten enthalten.
-* **Interaktive Karte** – Zeigt den Einsatzort auf einer OpenStreetMap-Karte 
-  mittels Leaflet an.
-* **Wetterdaten** – Ruft aktuelle Wetterdaten über die Open-Meteo API ab.
-* **Gruppenfilterung** – Filtert Alarme optional nach TME-Codes oder 
-  Gruppennamen.
-* **Dashboard** – Webbasierte Oberfläche optimiert für Kiosk-/Vollbildmodus.
-* **Idle-Ansicht** – Automatischer Wechsel auf Standardanzeige mit Uhrzeit, 
-  Lokalwetter und Vereinswappen nach konfigurierbarer Anzeigedauer 
-  (Standard: 30 Minuten).
-* **Letzter Einsatz** – Darstellung des zuletzt eingegangenen Einsatzes in 
-  der Idle-Ansicht.
-* **Einsatzhistorie** – Abrufbare Liste aller vergangenen Einsätze über 
-  Dashboard-Button oder REST-API.
-* **Mobile Ansicht** – Separate mobilfreundliche Ansicht unter `/mobile` für 
-  Smartphones und Tablets mit direktem Navigations-Button (Apple Karten / 
-  Google Maps).
-* **Navigation** – Dedizierte Navigationsseite mit Routenplanung (optional 
-  mit OpenRouteService).
-* **Messenger-Integration** – Optional: Anzeige von Teilnehmerrückmeldungen 
-  vom alarm-messenger System.
-
-## Architekturüberblick
+## 🏗️ Systemarchitektur
 
 ```
-+------------------+         +-------------------+         +----------------------+        +-------------------+
-|  IMAP Postfach   | ---->   |  alarm-mail       | ---->   |  alarm-monitor       | ---->  |  Browser Clients  |
-|  (Leitstelle)    |         |  Service          |         |  (Dashboard)         |        |  Endgeräte        |
-+------------------+         +-------------------+         +----------------------+        +-------------------+
-                                     |                               |                              |
-                                     v                               v                              v
-                              E-Mail Parsing              Geokodierung & Wetter             Leaflet Dashboard
-                              XML → JSON                  Speicherung & API
-                                     |
-                                     v
-                            +-------------------+
-                            | alarm-messenger   |
-                            | (optional)        |
-                            +-------------------+
-                                     |
-                                     v
-                            Teilnehmerrückmeldungen
-                            Mobile Benachrichtigungen
+┌─────────────────────┐
+│  IMAP Postfach      │  ← Leitstelle sendet Alarm-E-Mails
+│  (Leitstelle)       │
+└──────────┬──────────┘
+           │
+           │ E-Mails mit XML-Inhalt
+           ↓
+┌─────────────────────┐
+│  alarm-mail         │  ← Überwacht Postfach, parst E-Mails
+│  Service            │     (separater Microservice)
+└──────────┬──────────┘
+           │
+           ├──────────────────────┬─────────────────────┐
+           │                      │                     │
+           │ POST /api/alarm      │ POST /api/emergencies (optional)
+           ↓                      ↓                     ↓
+┌─────────────────────┐    ┌──────────────────┐   ┌─────────────────────┐
+│  alarm-monitor      │    │  alarm-messenger │   │  Browser Clients    │
+│  (Dashboard)        │◄───│  (optional)      │   │  - Desktop          │
+│                     │    │                  │   │  - Mobile           │
+│  - Empfängt Alarme  │    │  - Push-Benachri-│   │  - Tablets          │
+│  - Geokodierung     │    │    chtigungen    │   │  - Kiosk-Displays   │
+│  - Wetterabfrage    │    │  - Teilnehmer-   │   └─────────────────────┘
+│  - Speicherung      │    │    rückmeldungen │            │
+│  - Dashboard-API    │    └──────────────────┘            │
+└──────────┬──────────┘                                    │
+           │                                               │
+           │ GET /api/emergencies/{id}/participants        │
+           │ (Teilnehmerrückmeldungen abrufen)            │
+           │                                               │
+           └───────────────────────────────────────────────┘
+                    HTTP/HTTPS (Web-Interface)
 ```
 
-Das System besteht aus mehreren entkoppelten Komponenten:
+### Datenfluss
 
-1. **alarm-mail Service** – Ein separater Microservice, der regelmäßig das
-   IMAP-Postfach der Leitstelle abfragt, E-Mails parst (XML → JSON) und
-   validierte Alarme über eine REST-API an den alarm-monitor sendet.
+1. **E-Mail-Empfang**: Die Leitstelle sendet Alarm-E-Mails mit XML-Inhalt an ein IMAP-Postfach
+2. **Parsing**: Der `alarm-mail` Service prüft regelmäßig das Postfach, parst die E-Mails und extrahiert die Alarmdaten
+3. **Übermittlung**: Alarme werden via REST-API an `alarm-monitor` gesendet (und optional an `alarm-messenger`)
+4. **Verarbeitung**: Der `alarm-monitor` reichert Alarme mit Geodaten und Wetterdaten an
+5. **Speicherung**: Alarme werden persistent in der Historie gespeichert
+6. **Darstellung**: Browser-Clients zeigen Alarme in verschiedenen Ansichten an
+7. **Rückmeldung** (optional): `alarm-messenger` sendet Push-Benachrichtigungen und sammelt Teilnehmerrückmeldungen
 
-2. **alarm-monitor (Dashboard)** – Empfängt Alarme über einen
-   authentifizierten API-Endpunkt, reichert sie mit Geodaten und Wetter an,
-   speichert sie und stellt sie über ein webbasiertes Dashboard dar.
+### Komponenten-Details
 
-3. **alarm-messenger (optional)** – Ein optionaler Service für mobile
-   Push-Benachrichtigungen und Teilnehmerrückmeldungen. Wird von alarm-mail
-   über neue Alarme informiert und stellt Rückmeldedaten für alarm-monitor
-   bereit.
+#### alarm-mail Service (separat)
+- **Funktion**: IMAP-Postfach-Überwachung und E-Mail-Parsing
+- **Repository**: [github.com/TimUx/alarm-mail](https://github.com/TimUx/alarm-mail)
+- **Technologie**: Python, IMAP, XML-Parsing
+- **Aufgaben**:
+  - Regelmäßige Prüfung des IMAP-Postfachs
+  - Parsing von XML-Alarm-Daten
+  - Validierung und Transformation
+  - REST-API Übermittlung an alarm-monitor
 
-Diese Architektur ermöglicht eine klare Trennung der Verantwortlichkeiten,
-einfachere Wartbarkeit und flexible Skalierung der einzelnen Komponenten.
+#### alarm-monitor (dieses Repository)
+- **Funktion**: Zentrale Dashboard-Anwendung
+- **Technologie**: Python, Flask, SQLite/JSON
+- **Aufgaben**:
+  - Empfang von Alarmen über REST-API
+  - Geokodierung über Nominatim
+  - Wetterabfrage über Open-Meteo
+  - Persistente Speicherung
+  - Web-Dashboard mit mehreren Ansichten
+  - API für externe Clients
 
-## Funktionsweise im Überblick
+#### alarm-messenger (optional)
+- **Funktion**: Mobile Push-Benachrichtigungen und Teilnehmerverwaltung
+- **Repository**: [github.com/TimUx/alarm-messenger](https://github.com/TimUx/alarm-messenger)
+- **Technologie**: Node.js, Express, Push-Notifications
+- **Aufgaben**:
+  - Empfang von Alarmen vom alarm-mail Service
+  - Versand von Push-Benachrichtigungen an registrierte Geräte
+  - Sammlung von Teilnehmerrückmeldungen
+  - Bereitstellung von Rückmeldedaten für alarm-monitor
 
-1. **E-Mail-Empfang (alarm-mail Service)** – Der alarm-mail Service verbindet 
-   sich in konfigurierbaren Intervallen mit dem IMAP-Postfach der Leitstelle 
-   und sucht nach neuen, ungelesenen Nachrichten.
-   
-2. **Parsing & Validierung (alarm-mail Service)** – E-Mails im erwarteten 
-   XML-Format werden geparst. Relevante Felder (z. B. Stichworte, Adresse, 
-   Einsatzmittel) werden extrahiert und in JSON umgewandelt.
-   
-3. **API-Übermittlung** – Der alarm-mail Service sendet die validierten 
-   Alarmdaten via HTTP POST an den `/api/alarm` Endpunkt des alarm-monitor. 
-   Die Authentifizierung erfolgt über einen API-Key im `X-API-Key` Header.
-   
-4. **Anreicherung (alarm-monitor)** – Der alarm-monitor empfängt den Alarm, 
-   prüft auf Duplikate und Gruppenfilter. Falls keine Koordinaten mitgeliefert 
-   werden, wird der Einsatzort per Nominatim geokodiert. Anschließend werden 
-   passende Wetterdaten über Open-Meteo abgerufen.
-   
-5. **Speicherung & Benachrichtigung** – Der Alarm wird in der Historie 
-   gespeichert. Optional wird das alarm-messenger System informiert, um 
-   mobile Push-Benachrichtigungen an registrierte Geräte zu senden.
-   
-6. **Visualisierung** – Das Flask-Backend stellt die Daten über verschiedene 
-   Routen bereit: Dashboard (`/`), Mobile-Ansicht (`/mobile`), Navigation 
-   (`/navigation`) und Historie (`/history`). Browser-Clients können die 
-   Daten in Echtzeit abrufen und anzeigen.
+---
 
-## Installation
+## 🚀 Schnellstart
 
-Die Anwendung kann sowohl klassisch in einer lokalen Python-Umgebung als
-auch containerisiert mit Docker beziehungsweise Docker Compose betrieben
-werden. In beiden Varianten erfolgt die Konfiguration komfortabel über
-Environment-Variablen, die beispielsweise in einer `.env` Datei
-gespeichert werden.
+### Voraussetzungen
 
-### Native Installation (Python)
+- Docker und Docker Compose installiert **ODER**
+- Python 3.9+ für native Installation
+- Netzwerkverbindung zu OpenStreetMap und Open-Meteo
+- Zugriff auf IMAP-Postfach (für alarm-mail Service)
 
-1. **System vorbereiten**
-   ```bash
-   sudo apt update
-   sudo apt install python3 python3-venv python3-pip
-   ```
-
-2. **Projekt klonen und Umgebung erstellen**
-   ```bash
-   git clone <repo-url>
-   cd alarm-dashboard
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Konfiguration festlegen**
-
-   Passen Sie `.env.example` an und speichern Sie die Datei als `.env`.
-   Alternativ können die Variablen direkt exportiert werden:
-
-   ```bash
-   # API-Key für Alarmempfang (erforderlich)
-   # SICHERHEITSHINWEIS: Generieren Sie den Key separat, um ihn nicht in der Shell-History zu speichern
-   openssl rand -hex 32  # Kopieren Sie den Output
-   export ALARM_DASHBOARD_API_KEY=<eingefügter-key>
-   
-   # Optionale Anzeigeeinstellungen
-   export ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME="Feuerwehr Musterstadt"
-   export ALARM_DASHBOARD_DEFAULT_LATITUDE=52.52
-   export ALARM_DASHBOARD_DEFAULT_LONGITUDE=13.405
-   export ALARM_DASHBOARD_DEFAULT_LOCATION_NAME="Feuerwache Musterstadt"
-   export ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
-   ```
-
-   **Wichtig:** 
-   - Notieren Sie sich den generierten API-Key sicher (z. B. in einem Passwort-Manager)
-   - Der API-Key wird für die Konfiguration des alarm-mail Service benötigt
-   - Verwenden Sie für produktive Umgebungen immer `.env`-Dateien statt Export-Befehlen
-   
-   Weitere optionale Variablen wie `ALARM_DASHBOARD_GRUPPEN`,
-   `ALARM_DASHBOARD_NOMINATIM_URL` oder `ALARM_DASHBOARD_WEATHER_PARAMS`
-   können bei Bedarf gesetzt werden (siehe Abschnitt "Konfiguration über
-   Environment-Variablen").
-
-4. **Anwendung starten**
-   ```bash
-   flask --app alarm_dashboard.app run --host 0.0.0.0 --port 8000
-   ```
-
-   Alternativ kann `python -m alarm_dashboard.app` genutzt werden.
-
-5. **Dashboard anzeigen**
-
-   Öffnen Sie im lokalen Netzwerk `http://<server-ip>:8000` im Browser der
-   gewünschten Anzeige-Geräte (z. B. Raspberry Pi, PC, Notebook, Tablet)
-   und aktivieren Sie bei Bedarf den Kiosk- oder Vollbildmodus.
-
-### Container Deployment (Docker)
-
-1. **.env vorbereiten**
-
-   ```bash
-   cp .env.example .env
-   # Datei bearbeiten und Zugangsdaten eintragen
-   ```
-
-2. **Container bauen und starten**
-
-   ```bash
-   docker compose up --build
-   ```
-
-   `compose.yaml` liest die Variablen aus `.env` ein und startet den
-   Container auf Port `8000`. Das lokale Verzeichnis `./instance` wird in
-   den Container gemountet, sodass die Datei `instance/alarm_history.json`
-   auch nach dem Neuerstellen des Containers erhalten bleibt. Bei Bedarf
-   können zusätzliche Environment-Variablen direkt in der Compose-Datei
-   oder beim Aufruf (`docker compose run -e ...`) gesetzt werden.
-
-3. **Log- und Health-Prüfung**
-
-   ```bash
-   docker compose logs -f
-   docker compose ps
-   ```
-
-   Der Container verfügt über einen Healthcheck (`/health` Endpoint).
-
-4. **Stoppen & Aktualisieren**
-
-   ```bash
-   docker compose down
-   ```
-
-   Nach Code- oder Konfigurationsänderungen genügt ein erneutes
-   `--build`, um das Image zu aktualisieren.
-
-5. **Skalierung im LAN**
-
-   Für weitere Anzeige-Clients reicht ein Browser, der auf
-   `http://<server-ip>:8000` (Desktop) bzw. `http://<server-ip>:8000/mobile`
-   zeigt. Containerisierte Clients können denselben Compose-Stack nutzen
-   oder mittels Reverse-Proxy auf das Dashboard zugreifen.
-
-### Einrichtung des alarm-mail Service
-
-Der alarm-monitor empfängt Alarme über eine REST-API. Dazu wird der
-**alarm-mail Service** benötigt, der das IMAP-Postfach überwacht und
-Alarm-E-Mails an den Monitor weiterleitet.
-
-1. **alarm-mail Repository klonen**
-   ```bash
-   git clone https://github.com/TimUx/alarm-mail.git
-   cd alarm-mail
-   ```
-
-2. **Konfiguration erstellen**
-   ```bash
-   cp .env.example .env
-   nano .env
-   ```
-
-   Tragen Sie folgende Werte ein:
-   ```bash
-   # IMAP-Konfiguration (für E-Mail-Abruf)
-   ALARM_MAIL_IMAP_HOST=imap.example.com
-   ALARM_MAIL_IMAP_PORT=993
-   ALARM_MAIL_IMAP_USE_SSL=true
-   ALARM_MAIL_IMAP_USERNAME=alarm@feuerwehr.de
-   ALARM_MAIL_IMAP_PASSWORD=geheim
-   ALARM_MAIL_IMAP_MAILBOX=INBOX
-   ALARM_MAIL_POLL_INTERVAL=60
-   
-   # alarm-monitor Integration (Ziel-API)
-   # Hinweis: HTTP ist für interne Docker-Netzwerke akzeptabel.
-   # Für Produktivumgebungen über das Internet verwenden Sie HTTPS.
-   ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
-   ALARM_MAIL_MONITOR_API_KEY=<der-generierte-api-key>
-   
-   # Optional: alarm-messenger Integration
-   # ALARM_MAIL_MESSENGER_URL=http://alarm-messenger:3000
-   # ALARM_MAIL_MESSENGER_API_KEY=<messenger-api-key>
-   ```
-
-3. **Service starten**
-   ```bash
-   docker compose up -d
-   ```
-
-Der alarm-mail Service ruft nun regelmäßig das IMAP-Postfach ab, parst
-eingehende Alarm-E-Mails und sendet sie automatisch an den alarm-monitor.
-
-**Hinweis:** Für eine gemeinsame Docker-Compose-Installation können beide
-Services in einer einzigen `compose.yaml` definiert werden. Siehe dazu die
-Dokumentation im alarm-mail Repository.
-
-### Konfiguration über Environment-Variablen
-
-Alle Variablen tragen den Präfix `ALARM_DASHBOARD_`. Pflichtfelder sind
-markiert.
-
-| Variable | Pflicht | Beschreibung |
-| --- | --- | --- |
-| `API_KEY` | ja | API-Schlüssel für den Empfang von Alarmen vom alarm-mail Service. Generieren mit `openssl rand -hex 32`. |
-| `GRUPPEN` | nein | Kommagetrennte Liste von TME-Codes oder Gruppennamen; filtert Einsätze auf bestimmte Gruppen. |
-| `DISPLAY_DURATION_MINUTES` | nein (Default `30`) | Dauer, wie lange ein Alarm sichtbar bleibt, bevor die Standardansicht erscheint. |
-| `FIRE_DEPARTMENT_NAME` | nein (Default `Alarm-Monitor`) | Anzeigename, der in Kopfzeile und Idle-Ansicht erscheint. |
-| `DEFAULT_LATITUDE` / `DEFAULT_LONGITUDE` | nein | Koordinaten für Wetter- und Kartendaten in der Idle-Ansicht, wenn kein Alarm aktiv ist. |
-| `DEFAULT_LOCATION_NAME` | nein | Beschriftung der Idle-Ansicht (z. B. Standort der Wache). |
-| `NOMINATIM_URL` | nein (Default `https://nominatim.openstreetmap.org/search`) | Basis-URL für die Geokodierung. |
-| `WEATHER_URL` | nein (Default `https://api.open-meteo.com/v1/forecast`) | Basis-URL für Wetterabfragen. |
-| `WEATHER_PARAMS` | nein | Query-Parameter für die Wetter-API (z. B. welche Felder geladen werden). |
-| `ORS_API_KEY` | nein | API-Key für OpenRouteService, falls Navigation mit Routenführung verwendet werden soll. |
-| `MESSENGER_SERVER_URL` | nein | Basis-URL des Alarm-Messenger-Servers für mobile Benachrichtigungen. |
-| `MESSENGER_API_KEY` | nein | API-Key/Token zur Authentifizierung beim Alarm-Messenger-Server. |
-| `HISTORY_FILE` | nein | Pfad zur JSON-Datei, in der Historien-Daten persistiert werden. Standard: `instance/alarm_history.json`. |
-| `APP_VERSION` | nein (Default `dev-main`) | Versionskennung, die im Footer angezeigt und zur Release-Verlinkung genutzt wird. |
-| `APP_VERSION_URL` | nein | Überschreibt den Link auf die GitHub-Release-Seite (Standard: automatisch anhand der Version). |
-
-Eine befüllte `.env` könnte beispielsweise so aussehen:
+### In 5 Minuten einsatzbereit
 
 ```bash
-# API-Key für Alarmempfang (erforderlich)
-ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...  # Generiert mit: openssl rand -hex 32
+# 1. Repository klonen
+git clone https://github.com/TimUx/alarm-monitor.git
+cd alarm-monitor
 
-# Anzeigeeinstellungen
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
+# 2. Konfiguration erstellen
+cp .env.example .env
+nano .env  # API-Key eintragen: openssl rand -hex 32
+
+# 3. Container starten
+docker compose up -d
+
+# 4. Dashboard öffnen
+# Browser: http://localhost:8000
+```
+
+**Fertig!** Das Dashboard läuft jetzt und wartet auf Alarme vom alarm-mail Service.
+
+### Nächste Schritte
+
+1. **alarm-mail Service einrichten** – Siehe [Integration mit alarm-mail](#integration-mit-alarm-mail)
+2. **Konfiguration anpassen** – Siehe [Konfiguration](#konfiguration)
+3. **alarm-messenger einrichten** (optional) – Siehe [Integration mit alarm-messenger](#integration-mit-alarm-messenger)
+
+---
+
+## 📦 Installation
+
+### Option 1: Docker (empfohlen)
+
+Docker ist die einfachste und empfohlene Methode für Produktion.
+
+```bash
+# Voraussetzungen installieren
+sudo apt update
+sudo apt install docker.io docker-compose -y
+
+# Repository klonen
+git clone https://github.com/TimUx/alarm-monitor.git
+cd alarm-monitor
+
+# Konfiguration erstellen
+cp .env.example .env
+
+# API-Key generieren und eintragen
+openssl rand -hex 32  # Kopieren Sie den Output
+nano .env             # Tragen Sie den API-Key ein
+
+# Container bauen und starten
+docker compose up --build -d
+
+# Status prüfen
+docker compose ps
+docker compose logs -f
+
+# Health-Check
+curl http://localhost:8000/health
+```
+
+**Hinweis**: Die Datei `instance/alarm_history.json` wird automatisch gemountet und bleibt bei Container-Updates erhalten.
+
+### Option 2: Native Python-Installation
+
+Für Entwicklung oder wenn Docker nicht verfügbar ist.
+
+```bash
+# System vorbereiten
+sudo apt update
+sudo apt install python3 python3-venv python3-pip git -y
+
+# Repository klonen
+git clone https://github.com/TimUx/alarm-monitor.git
+cd alarm-monitor
+
+# Virtuelle Umgebung erstellen
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Abhängigkeiten installieren
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Konfiguration
+cp .env.example .env
+openssl rand -hex 32  # API-Key generieren
+nano .env             # Konfiguration anpassen
+
+# Anwendung starten
+flask --app alarm_dashboard.app run --host 0.0.0.0 --port 8000
+
+# Oder mit Gunicorn für Produktion
+gunicorn --bind 0.0.0.0:8000 --workers 2 'alarm_dashboard.app:create_app()'
+```
+
+### Systemd-Service (Autostart)
+
+Für native Installation mit automatischem Start:
+
+```bash
+sudo nano /etc/systemd/system/alarm-monitor.service
+```
+
+```ini
+[Unit]
+Description=Feuerwehr Alarm Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/alarm-monitor
+Environment="PATH=/home/pi/alarm-monitor/.venv/bin"
+ExecStart=/home/pi/alarm-monitor/.venv/bin/gunicorn \
+    --bind 0.0.0.0:8000 \
+    --workers 2 \
+    --worker-class gthread \
+    --threads 4 \
+    'alarm_dashboard.app:create_app()'
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable alarm-monitor
+sudo systemctl start alarm-monitor
+sudo systemctl status alarm-monitor
+```
+
+### Raspberry Pi Kiosk-Modus
+
+Für dedizierte Anzeigegeräte im Vollbildmodus:
+
+```bash
+# Autostart-Skript erstellen
+mkdir -p ~/.config/autostart
+
+cat > ~/.config/autostart/alarm-dashboard.desktop << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Alarm Dashboard Kiosk
+Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble http://SERVER-IP:8000
+EOF
+
+# Bildschirmschoner deaktivieren
+sudo nano /etc/xdg/lxsession/LXDE-pi/autostart
+# Folgende Zeilen hinzufügen:
+# @xset s off
+# @xset -dpms
+# @xset s noblank
+```
+
+---
+
+## ⚙️ Konfiguration
+
+Die Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei.
+
+### Pflichtparameter
+
+```bash
+# API-Key für Alarmempfang (ERFORDERLICH)
+# Generieren mit: openssl rand -hex 32
+ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+```
+
+**Wichtig**: Dieser API-Key muss im `alarm-mail` Service als `ALARM_MAIL_MONITOR_API_KEY` konfiguriert werden.
+
+### Grundeinstellungen
+
+```bash
+# Feuerwehr-Name für Anzeige
+ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+
+# Anzeigedauer eines Alarms in Minuten (danach Wechsel zu Idle-Ansicht)
 ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
+
+# Standardkoordinaten für Idle-Ansicht (Wetter und Standort)
 ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
 ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Wache Beispielstadt
+ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
+```
 
-# Optional: Gruppenfilter (TME-Codes)
-ALARM_DASHBOARD_GRUPPEN=
+### Gruppenfilterung
 
-# Optional: Navigation und Versionierung
-ALARM_DASHBOARD_ORS_API_KEY=
-ALARM_DASHBOARD_APP_VERSION=v1.2.3
-ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/TimUx/alarm-monitor/releases/tag/v1.2.3
+```bash
+# Kommagetrennte Liste von TME-Codes für Alarmfilterung
+# Leer = alle Alarme werden angezeigt
+# Mit Werten = nur Alarme mit diesen TME-Codes werden angezeigt
+ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
+```
 
-# Optional: Alarm-Messenger Integration für Teilnehmerrückmeldungen
+### Externe Dienste (optional)
+
+```bash
+# Nominatim für Geokodierung (Standard: OSM)
+# ALARM_DASHBOARD_NOMINATIM_URL=https://nominatim.openstreetmap.org/search
+
+# Open-Meteo für Wetter (Standard: Open-Meteo API)
+# ALARM_DASHBOARD_WEATHER_URL=https://api.open-meteo.com/v1/forecast
+# ALARM_DASHBOARD_WEATHER_PARAMS=current_weather=true&hourly=precipitation,precipitation_probability
+
+# OpenRouteService für Navigation (optional)
+# ALARM_DASHBOARD_ORS_API_KEY=your-ors-api-key-here
+```
+
+### alarm-messenger Integration (optional)
+
+```bash
+# Messenger-Server URL und API-Key
 ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
 ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 ```
 
-#### Integration mit Alarm-Messenger
+**Hinweis**: Ohne diese Konfiguration funktioniert das System vollständig, zeigt aber keine Teilnehmerrückmeldungen an.
 
-Der Alarm-Monitor kann eingehende Einsätze automatisch an einen externen
-Alarm-Messenger-Server weiterleiten, um mobile Endgeräte zu benachrichtigen.
-Die Integration ist optional und wird aktiviert, sobald die entsprechenden
-Umgebungsvariablen gesetzt sind:
+### Erweiterte Einstellungen
 
-* `ALARM_DASHBOARD_MESSENGER_SERVER_URL` – Basis-URL des Alarm-Messenger-Servers
-  (z. B. `https://messenger.example.com`)
-* `ALARM_DASHBOARD_MESSENGER_API_KEY` – API-Key oder Token zur Authentifizierung
+```bash
+# Pfad zur Historie-Datei (Standard: instance/alarm_history.json)
+# ALARM_DASHBOARD_HISTORY_FILE=/custom/path/to/history.json
 
-Sobald beide Variablen konfiguriert sind, werden alle verarbeiteten Alarme
-als JSON-Payload via HTTP POST an den Endpunkt `/api/alarm` des
-Messenger-Servers übermittelt. Die Authentifizierung erfolgt über einen
-`Authorization: Bearer <token>` Header. Bei Fehlern oder Timeouts werden
-diese geloggt, beeinträchtigen jedoch nicht die Hauptfunktion des Dashboards.
-
-Wird die Messenger-URL nicht gesetzt oder fehlt der API-Key, bleibt die
-Funktion deaktiviert, und Alarme werden ausschließlich lokal gespeichert
-und im Dashboard angezeigt.
+# Version und Release-Link
+# ALARM_DASHBOARD_APP_VERSION=v1.0.0
+# ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/TimUx/alarm-monitor/releases/tag/v1.0.0
 ```
 
-#### Alarmaktivierung über Gruppenfilter
+### Vollständiges Konfigurationsbeispiel
 
-Über die Variable `ALARM_DASHBOARD_GRUPPEN` lassen sich die anzuzeigenden
-Alarme auf bestimmte TME-Gruppen einschränken. Hinterlegen Sie eine
-kommagetrennte Liste (z. B. `ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41`). Das
-Dashboard reagiert nur dann auf eingehende Meldungen, wenn mindestens einer
-dieser Codes im Abschnitt `<TME>` der Einsatzmaßnahmen vorkommt. Wird kein
-Filter gesetzt, werden weiterhin alle eingehenden Alarme dargestellt.
+```bash
+# ==============================================
+# Feuerwehr Alarm Monitor - Konfiguration
+# ==============================================
 
-Die maximale Dauer, wie lange ein Alarm aktiv sichtbar bleibt, kann über
-`ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES` angepasst werden. Standardmäßig
-kehrt das Dashboard nach 30 Minuten ohne neue Meldung in die Standardansicht
-zurück. Setzen Sie bei Bedarf z. B. `ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=45`.
+# --- PFLICHTFELDER ---
+ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
-## Speicherung von Alarmen und Historie
+# --- GRUNDEINSTELLUNGEN ---
+ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Willingshausen
+ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
+ALARM_DASHBOARD_DEFAULT_LATITUDE=50.9345
+ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.2834
+ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Willingshausen
 
-Eingehende Einsätze werden in der Klasse `AlarmStore` gespeichert
-(`alarm_dashboard/storage.py`). Die Komponente hält den zuletzt
-eingegangenen Alarm im Speicher bereit, verwaltet eine Historie und
-persistiert die Daten optional als JSON-Datei. Standardmäßig wird der
-Pfad `instance/alarm_history.json` innerhalb des Flask
-`instance`-Verzeichnisses genutzt. Das Verzeichnis liegt außerhalb des
-Repositorys, ist beschreibbar und wird beim Anwendungsstart automatisch
-angelegt.
+# --- GRUPPENFILTER ---
+# Leer = alle Alarme, oder TME-Codes kommagetrennt
+ALARM_DASHBOARD_GRUPPEN=
 
-Der Speicherort lässt sich über die Konfiguration anpassen:
+# --- MESSENGER-INTEGRATION (optional) ---
+# Für Teilnehmerrückmeldungen und Push-Benachrichtigungen
+# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.feuerwehr-beispiel.de
+# ALARM_DASHBOARD_MESSENGER_API_KEY=messenger-api-key-hier
 
-* Setzen Sie die Umgebungsvariable `ALARM_DASHBOARD_HISTORY_FILE` (z. B.
-  in `.env`), um einen absoluten oder relativen Pfad vorzugeben.
-* Alternativ kann `history_file` beim Erstellen einer `AppConfig`
-  übergeben werden.
+# --- NAVIGATION (optional) ---
+# OpenRouteService API-Key für Routenplanung
+# ALARM_DASHBOARD_ORS_API_KEY=ors-api-key-hier
 
-Sobald ein eigener Pfad gesetzt ist, schreibt `AlarmStore` die Daten
-direkt dorthin. Bei einem Neustart der Anwendung wird die Datei wieder
-eingelesen, sodass der letzte Alarm und die Historie erhalten bleiben.
-
-## Einsatzhistorie & Standardansicht
-
-Sobald kein aktueller Alarm vorliegt oder der letzte Alarm älter als die
-eingestellte Anzeigedauer ist, wechselt das Dashboard automatisch in die
-Standardansicht.
-Diese zeigt neben Uhrzeit, Wetter und Wappen auch kompakt den zuletzt
-eingegangenen Einsatz (Datum/Uhrzeit und Stichwort) an. Über den Button
-"Historie ansehen" führt ein Link zur tabellarischen Übersicht der
-letzten Einsätze, die sowohl vom großen Dashboard als auch aus der
-mobilen Ansicht erreichbar ist.
-
-Die tabellarische Übersicht ist direkt unter `http://<server>/history`
-erreichbar. Die zugrunde liegenden Daten können außerdem per API
-abgefragt werden:
-
-* `GET /api/history` – liefert die gespeicherten Einsätze (neuester zuerst).
-  Optional kann mit dem Query-Parameter `limit` die Anzahl der Einträge
-  begrenzt werden (maximal 500). Jedes Element enthält u.a. Zeitstempel,
-  Stichwort, Ort, Diagnose/Beschreibung, Bemerkungen und alarmierte Fahrzeuge.
-* `GET /api/alarm` – wie bisher, ergänzt im Idle-Fall um das Feld
-  `last_alarm`, das die wichtigsten Informationen des letzten Einsatzes
-  enthält und für die kompakte Anzeige genutzt wird.
-
-Für einfache mobile Zugriffe ohne native App stehen die mobiloptimierte Route `/mobile` sowie die JSON-API `GET /api/mobile/alarm` zur Verfügung. Beide Varianten greifen auf dieselben Alarm- und Historieninformationen wie das Hauptdashboard zu und aktualisieren sich automatisch.
-
-Die mobile Oberfläche blendet zusätzlich einen Button "Navigation starten" ein, der je nach Endgerät Apple Karten oder Google Maps mit den übermittelten Koordinaten bzw. Adressdaten öffnet, sodass die Anfahrt direkt begonnen werden kann.
-
-## Standardansicht & Gestaltung
-
-* In Ruhephasen blendet das Dashboard eine großformatige Uhr, das lokale
-  Wetter sowie das Gemeindewappen ein. Die Ansicht greift dabei auf die
-  konfigurierten Standardkoordinaten zurück.
-* Läuft ein Alarm länger als die konfigurierte Anzeigedauer, wird
-  automatisch in die Standardansicht gewechselt, um Fehlinterpretationen
-  zu vermeiden.
-
-Das Design kann an eigene Bedürfnisse angepasst werden:
-
-1. **Feuerwehrname konfigurieren** – Hinterlegen Sie den gewünschten Namen
-   über `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` in Ihrer `.env`. Der Wert
-   erscheint prominent in der Kopfzeile sowie in der Standardansicht.
-2. **Wappen oder Logo austauschen** – Ersetzen Sie die Datei
-   `alarm_dashboard/static/img/crest.png` durch ein eigenes Bild (PNG mit
-   transparentem Hintergrund empfohlen). Verwenden Sie entweder denselben
-   Dateinamen oder passen Sie in `alarm_dashboard/app.py` den Pfad im Aufruf
-   `url_for("static", filename="img/crest.png")` an, falls Sie einen anderen
-   Dateinamen nutzen möchten.
-3. **Farbschema anpassen** – Die zentralen Farben sind als CSS-Variablen in
-   `alarm_dashboard/static/css/dashboard.css` definiert (Abschnitt `:root`
-   für den Alarmmodus, `body.mode-idle` für die Standardansicht). Weitere
-   Ansichten verwenden `history.css` und `mobile.css`. Durch Anpassen der
-   Variablen `--accent`, `--background`, `--surface` usw. lässt sich das
-   Erscheinungsbild schnell auf die eigenen Hausfarben abstimmen.
-
-## Option: Betrieb auf dem Raspberry Pi
-
-* Aktivieren Sie den Autostart der Flask-App via `systemd`-Service.
-* Nutzen Sie `chromium-browser --kiosk http://<server-ip>:8000` oder
-  `firefox --kiosk` auf dem Raspberry Pi, wenn dieser als Anzeige-Client
-  dient.
-* Stellen Sie sicher, dass die Geräte im gleichen LAN sind und der Server
-  ausgehende Verbindungen zu IMAP, Nominatim und Open-Meteo aufbauen darf.
-* Aus Sicherheitsgründen sollten keine Portweiterleitungen ins Internet
-  eingerichtet werden.
-
-## Entwicklung
-
-* Konfigurationsdateien liegen unter `alarm_dashboard/config.py`.
-* Der Mail-Polling-Thread ist in `alarm_dashboard/mail_checker.py`
-  implementiert.
-* Parsing-Logik befindet sich in `alarm_dashboard/parser.py`.
-* Die Flask-App wird in `alarm_dashboard/app.py` erzeugt.
-* Statische Assets (CSS/JS) liegen unter `alarm_dashboard/static/`.
-
-### Beispiel-Alarm und Auswertung
-
-Ein typischer Alarm trifft als XML im Format `<INCIDENT>` ein. Das
-folgenden Beispiel nutzt vollständig anonymisierte Werte:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<INCIDENT>
-  <STICHWORT>F3Y</STICHWORT>
-  <ESTICHWORT_1>F3Y</ESTICHWORT_1>
-  <ESTICHWORT_2>Personen in Gefahr</ESTICHWORT_2>
-  <ENR>7850001123</ENR>
-  <FENR>F7850005120</FENR>
-  <EBEGINN>24.07.2026 18:42:11</EBEGINN>
-  <DIAGNOSE>Brand in Wohngebäudekomplex</DIAGNOSE>
-  <EO_BEMERKUNG>Mehrere Anrufe, starke Rauchentwicklung</EO_BEMERKUNG>
-  <ORT>Musterstadt</ORT>
-  <ORTSTEIL>Nordviertel</ORTSTEIL>
-  <STRASSE>Wehrgasse</STRASSE>
-  <OBJEKT>Hausnummernblock 12-16</OBJEKT>
-  <UNTEROBJEKT>Aufgang C</UNTEROBJEKT>
-  <ORTSZUSATZ>Rückseite über Innenhof</ORTSZUSATZ>
-  <GMA></GMA>
-  <HAUSNUMMER>14</HAUSNUMMER>
-  <KOORDINATE_LAT>51.245678</KOORDINATE_LAT>
-  <KOORDINATE_LON>9.845321</KOORDINATE_LON>
-  <KOORDINATE_UTM>32UNB1234567890</KOORDINATE_UTM>
-  <EOZUSATZ>Anfahrt über Haupttor, Schlüssel im Depot</EOZUSATZ>
-  <INFOTEXT>Bewohner werden evakuiert</INFOTEXT>
-  <INFEKTION></INFEKTION>
-  <ANFAHRTSHINWEIS>Zufahrt über Ringstraße</ANFAHRTSHINWEIS>
-  <AAO>LF Musterstadt 1;DLK Musterstadt;ELW Musterstadt</AAO>
-  <EINSATZMASSNAHMEN>
-    <FME>
-      <BEZEICHNUNG>MUS Zugführung (FME M120)</BEZEICHNUNG><AUSFUE_ZEIT>20260724184410</AUSFUE_ZEIT>
-      <BEZEICHNUNG>MUS Löschzug (FME M118)</BEZEICHNUNG><AUSFUE_ZEIT>20260724184410</AUSFUE_ZEIT>
-    </FME>
-    <TME>
-      <BEZEICHNUNG>MUS Nord 1 (TME MUS11)</BEZEICHNUNG><AUSFUE_ZEIT>20260724184430</AUSFUE_ZEIT>
-      <BEZEICHNUNG>MUS Innenstadt (TME MUS05)</BEZEICHNUNG><AUSFUE_ZEIT>20260724184502</AUSFUE_ZEIT>
-    </TME>
-  </EINSATZMASSNAHMEN>
-</INCIDENT>
+# --- VERSION ---
+ALARM_DASHBOARD_APP_VERSION=v1.0.0
 ```
 
-Der Parser ordnet die Felder wie folgt zu und stellt sie im Dashboard dar:
+---
 
-* **Alarm-Header** – `ESTICHWORT_1` liefert die Überschrift. Ein
-  vorhandenes `ESTICHWORT_2` wird als Untertitel eingeblendet. `EBEGINN`
-  erscheint als Zeitstempel neben dem Stichwort.
-* **Detailkarte und Adresse** – `ORT`, `ORTSTEIL`, `STRASSE`,
-  `HAUSNUMMER`, `OBJEKT` und `ORTSZUSATZ` bilden den Adressblock unterhalb
-  der Karte. `KOORDINATE_LAT`/`KOORDINATE_LON` positionieren den Marker
-  und dienen der Wetterabfrage. Liegen keine Koordinaten vor, wird anhand
-  der Adressdaten geokodiert.
-* **Diagnose & Hinweise** – `DIAGNOSE`, `EO_BEMERKUNG`, `INFOTEXT` und
-  `EOZUSATZ` erscheinen in den hervorgehobenen Textboxen. `EO_BEMERKUNG`
-  wird rot markiert, um kritische Zusatzinfos hervorzuheben.
-* **AAO & Einheiten** – `AAO` speist die Liste der alarmierten Fahrzeuge
-  in der rechten Spalte. Die Abschnitte `<FME>` und `<TME>` werden
-  einzeln aufgeführt; optional filtert `ALARM_DASHBOARD_GRUPPEN` auf
-  bestimmte TME-Codes. Anzeige erfolgt in den Tabellen „Funkmeldeempfänger“
-  und „Telefonmeldeempfänger“.
-* **Historie & API** – `ENR`/`FENR` sowie sämtliche Kerninformationen
-  werden persistent gespeichert und erscheinen in der Einsatzhistorie
-  (`/history`) sowie in den API-Endpunkten (`/api/alarm`, `/api/history`).
+## 🔧 Verwendung
 
-Fehlen einzelne Felder, bleiben die entsprechenden Bereiche leer bzw.
-werden mit `-` gekennzeichnet. Liegen Koordinaten vor, wird keine
-zusätzliche Geokodierung mehr benötigt.
+### Dashboard-Ansichten
 
-### Tests und lokale Entwicklung
+#### Haupt-Dashboard (`/`)
+Das Hauptdashboard zeigt entweder den aktuellen Alarm oder die Idle-Ansicht an.
 
-Für lokale Tests können Beispiel-E-Mails als `.eml` Datei abgelegt und
-über ein kleines Skript in den Store eingelesen werden. Die Anwendung
-ist so ausgelegt, dass der Mail-Poller auch deaktiviert werden kann,
-indem die `AlarmMailFetcher`-Instanz nicht gestartet wird. Nutzen Sie z.B.
-Postman oder `curl`, um die API unter `http://localhost:8000/api/alarm`
-anzufragen.
+**Alarmansicht** (bei aktivem Alarm):
+- Einsatzstichwort und Unterstichwort
+- Zeitstempel des Alarms
+- Interaktive Karte mit Einsatzort
+- Vollständige Adressinformationen
+- Aktuelle Wetterdaten am Einsatzort
+- Diagnose und Bemerkungen
+- Alarmierte Fahrzeuge (AAO)
+- Funkmeldeempfänger (FME)
+- Telefonmeldeempfänger (TME)
+- Teilnehmerrückmeldungen (wenn alarm-messenger aktiv)
 
-## Lizenz
+**Idle-Ansicht** (kein aktiver Alarm):
+- Große Uhr mit Datum
+- Lokales Wetter am Standort
+- Vereinswappen
+- Kompakte Anzeige des letzten Einsatzes
 
-Dieses Projekt steht unter der MIT-Lizenz.
+#### Mobile-Ansicht (`/mobile`)
+Optimiert für Smartphones und Tablets:
+- Touch-freundliche Bedienung
+- Kompakte Informationsdarstellung
+- Direkte Navigation zu Apple Karten / Google Maps
+- Automatische Aktualisierung
+
+#### Historien-Ansicht (`/history`)
+Tabellarische Übersicht aller Einsätze:
+- Chronologische Sortierung (neueste zuerst)
+- Zeitstempel, Stichwort, Ort
+- Diagnose und Bemerkungen
+- Alarmierte Fahrzeuge
+- Filterbare Tabelle
+
+#### Navigations-Ansicht (`/navigation`)
+Dedizierte Seite für Routenplanung:
+- Karte mit Einsatzort
+- Routenplanung mit OpenRouteService (optional)
+- Entfernungs- und Zeitberechnung
+
+### API-Endpunkte
+
+#### Alarm-Empfang
+```bash
+POST /api/alarm
+Content-Type: application/json
+X-API-Key: <ihr-api-key>
+
+{
+  "incident_number": "2024-001",
+  "keyword": "F3Y",
+  "description": "Brand in Wohngebäude",
+  "location": "Musterstraße 1",
+  "latitude": 51.2345,
+  "longitude": 9.8765,
+  ...
+}
+```
+
+#### Aktuellen Alarm abrufen
+```bash
+GET /api/alarm
+
+# Antwort bei aktivem Alarm:
+{
+  "active": true,
+  "alarm": { ... },
+  "last_alarm": { ... }
+}
+
+# Antwort bei Idle:
+{
+  "active": false,
+  "last_alarm": { ... }
+}
+```
+
+#### Historie abrufen
+```bash
+GET /api/history?limit=50
+
+# Antwort:
+{
+  "history": [
+    { ... },
+    { ... }
+  ],
+  "count": 50
+}
+```
+
+#### Mobile-Alarm abrufen
+```bash
+GET /api/mobile/alarm
+
+# Optimierte Antwort für mobile Clients
+```
+
+#### Health-Check
+```bash
+GET /health
+
+# Antwort:
+{"status": "ok"}
+```
+
+### Anpassung des Erscheinungsbilds
+
+#### Wappen/Logo austauschen
+
+```bash
+# Eigenes Wappen ersetzen (PNG mit transparentem Hintergrund empfohlen)
+cp mein-wappen.png alarm_dashboard/static/img/crest.png
+
+# Container neu starten (Docker)
+docker compose restart
+```
+
+#### Farbschema anpassen
+
+Farben sind als CSS-Variablen definiert und können einfach angepasst werden:
+
+```bash
+# Datei bearbeiten
+nano alarm_dashboard/static/css/dashboard.css
+```
+
+Relevante CSS-Variablen:
+```css
+:root {
+  --accent: #e74c3c;      /* Hauptfarbe (Rot) */
+  --accent-dark: #c0392b;
+  --background: #1a1a1a;  /* Hintergrund */
+  --surface: #2d2d2d;     /* Karten-Hintergrund */
+  --text: #ffffff;        /* Textfarbe */
+  --text-secondary: #b0b0b0;
+}
+
+body.mode-idle {
+  --idle-accent: #3498db; /* Farbe in Idle-Ansicht */
+  --idle-bg: #0f0f0f;
+}
+```
+
+---
+
+## 🔗 Integration
+
+### Integration mit alarm-mail
+
+Der `alarm-mail` Service ist **erforderlich** um Alarme aus dem IMAP-Postfach zu empfangen.
+
+#### Installation alarm-mail
+
+```bash
+# Repository klonen
+git clone https://github.com/TimUx/alarm-mail.git
+cd alarm-mail
+
+# Konfiguration erstellen
+cp .env.example .env
+nano .env
+```
+
+#### Konfiguration alarm-mail
+
+```bash
+# --- IMAP-Postfach ---
+ALARM_MAIL_IMAP_HOST=imap.example.com
+ALARM_MAIL_IMAP_PORT=993
+ALARM_MAIL_IMAP_USE_SSL=true
+ALARM_MAIL_IMAP_USERNAME=alarm@feuerwehr.de
+ALARM_MAIL_IMAP_PASSWORD=IhrSicheresPasswort
+ALARM_MAIL_IMAP_MAILBOX=INBOX
+ALARM_MAIL_POLL_INTERVAL=60
+
+# --- alarm-monitor Integration ---
+# Wichtig: API-Key muss mit alarm-monitor übereinstimmen!
+ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
+ALARM_MAIL_MONITOR_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+```
+
+#### Starten alarm-mail
+
+```bash
+# Docker
+docker compose up -d
+
+# Oder nativ
+python -m alarm_mail.app
+```
+
+#### Gemeinsame Docker-Compose Installation
+
+Für eine gemeinsame Installation können beide Services in einer `compose.yaml` kombiniert werden:
+
+```yaml
+services:
+  alarm-monitor:
+    build: ./alarm-monitor
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./alarm-monitor/.env
+    volumes:
+      - ./alarm-monitor/instance:/app/instance
+
+  alarm-mail:
+    build: ./alarm-mail
+    depends_on:
+      - alarm-monitor
+    env_file:
+      - ./alarm-mail/.env
+    environment:
+      - ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
+```
+
+### Integration mit alarm-messenger
+
+Der `alarm-messenger` Service ist **optional** und ermöglicht mobile Push-Benachrichtigungen und Teilnehmerrückmeldungen.
+
+#### Installation alarm-messenger
+
+```bash
+# Repository klonen
+git clone https://github.com/TimUx/alarm-messenger.git
+cd alarm-messenger
+
+# Konfiguration
+cp .env.example .env
+nano .env  # API_SECRET_KEY setzen
+
+# Starten
+docker compose up -d
+```
+
+#### Konfiguration alarm-monitor
+
+```bash
+# In alarm-monitor .env hinzufügen:
+ALARM_DASHBOARD_MESSENGER_SERVER_URL=http://alarm-messenger:3000
+ALARM_DASHBOARD_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
+```
+
+#### Konfiguration alarm-mail
+
+```bash
+# In alarm-mail .env hinzufügen:
+ALARM_MAIL_MESSENGER_URL=http://alarm-messenger:3000
+ALARM_MAIL_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
+```
+
+#### Datenfluss mit alarm-messenger
+
+1. `alarm-mail` empfängt Alarm und sendet an beide Services
+2. `alarm-messenger` sendet Push-Benachrichtigungen an registrierte Geräte
+3. Teilnehmer geben Rückmeldung in ihrer App
+4. `alarm-monitor` fragt Teilnehmerliste vom `alarm-messenger` ab
+5. Dashboard zeigt Rückmeldungen in Echtzeit an
+
+Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION.md)
+
+---
+
+## 📚 Dokumentation
+
+- **[Betriebshandbuch](Betriebshandbuch.md)** – Ausführliche Anleitung für Installation, Betrieb und Wartung
+- **[Messenger-Integration](docs/MESSENGER_INTEGRATION.md)** – Details zur Integration mit alarm-messenger
+- **[alarm-mail Repository](https://github.com/TimUx/alarm-mail)** – E-Mail-Überwachung und Parsing
+- **[alarm-messenger Repository](https://github.com/TimUx/alarm-messenger)** – Mobile Benachrichtigungen
+
+### Weitere Ressourcen
+
+- **Externe Dienste**:
+  - [Nominatim API](https://nominatim.org/release-docs/latest/api/Search/) – Geokodierung
+  - [Open-Meteo API](https://open-meteo.com/en/docs) – Wetterdaten
+  - [OpenRouteService](https://openrouteservice.org/) – Routenplanung
+  - [Leaflet](https://leafletjs.com/) – Kartendarstellung
+
+---
+
+## 🛠️ Entwicklung
+
+### Projektstruktur
+
+```
+alarm-monitor/
+├── alarm_dashboard/           # Hauptanwendung
+│   ├── app.py                # Flask-Anwendung
+│   ├── config.py             # Konfiguration
+│   ├── storage.py            # Alarm-Speicherung
+│   ├── geocode.py            # Geokodierung
+│   ├── weather.py            # Wetterabfrage
+│   ├── messenger.py          # Messenger-Integration
+│   ├── static/               # CSS, JS, Bilder
+│   │   ├── css/
+│   │   ├── js/
+│   │   └── img/
+│   └── templates/            # HTML-Templates
+│       ├── dashboard.html
+│       ├── mobile.html
+│       ├── history.html
+│       └── navigation.html
+├── tests/                    # Unit-Tests
+├── docs/                     # Dokumentation
+│   ├── screenshots/
+│   └── MESSENGER_INTEGRATION.md
+├── instance/                 # Persistente Daten (nicht im Repo)
+│   └── alarm_history.json
+├── .env.example              # Beispiel-Konfiguration
+├── requirements.txt          # Python-Abhängigkeiten
+├── Dockerfile                # Container-Image
+├── compose.yaml              # Docker Compose
+└── README.md                 # Diese Datei
+```
+
+### Lokale Entwicklung
+
+```bash
+# Repository klonen und Setup
+git clone https://github.com/TimUx/alarm-monitor.git
+cd alarm-monitor
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Entwicklungsserver starten
+export FLASK_APP=alarm_dashboard.app
+export FLASK_ENV=development
+flask run --debug --host 0.0.0.0 --port 8000
+
+# Tests ausführen
+pytest
+
+# Test-Alarm senden
+curl -X POST http://localhost:8000/api/alarm \
+  -H "X-API-Key: $(grep ALARM_DASHBOARD_API_KEY .env | cut -d= -f2)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "incident_number": "TEST-001",
+    "keyword": "F3Y",
+    "keyword_sub": "Brand",
+    "location": "Teststraße 1, 12345 Teststadt",
+    "latitude": 51.2345,
+    "longitude": 9.8765,
+    "description": "Test-Alarm für Entwicklung"
+  }'
+```
+
+### Code-Qualität
+
+```bash
+# Code-Formatierung
+black alarm_dashboard/
+
+# Linting
+flake8 alarm_dashboard/
+pylint alarm_dashboard/
+
+# Type-Checking
+mypy alarm_dashboard/
+```
+
+### Beitragen
+
+Beiträge sind willkommen! Bitte:
+1. Forken Sie das Repository
+2. Erstellen Sie einen Feature-Branch (`git checkout -b feature/amazing-feature`)
+3. Committen Sie Ihre Änderungen (`git commit -m 'Add amazing feature'`)
+4. Pushen Sie den Branch (`git push origin feature/amazing-feature`)
+5. Öffnen Sie einen Pull Request
+
+---
+
+## 📝 Lizenz
+
+Dieses Projekt steht unter der **MIT-Lizenz**. Siehe [LICENSE](LICENSE) Datei für Details.
+
+---
+
+## 👥 Kontakt & Support
+
+- **GitHub Issues**: [https://github.com/TimUx/alarm-monitor/issues](https://github.com/TimUx/alarm-monitor/issues)
+- **E-Mail**: t.braun@feuerwehr-willingshausen.de
+
+---
+
+## 🙏 Danksagungen
+
+- **OpenStreetMap** für Kartendaten und Nominatim-Geokodierung
+- **Open-Meteo** für kostenlose Wetterdaten
+- **Leaflet** für die Kartenbibliothek
+- Alle Beitragenden und Tester
+
+---
+
+<div align="center">
+
+**Mit ❤️ entwickelt für Feuerwehren**
+
+[⬆ Zurück nach oben](#-feuerwehr-alarm-monitor)
+
+</div>
