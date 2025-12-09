@@ -349,7 +349,7 @@ Bei UI-Änderungen:
 - [ ] `error-404.png` – 404-Fehlerseite
 - [ ] `error-500.png` – 500-Fehlerseite
 - [ ] `dashboard-alarm-no-weather.png` – Alarm ohne Wetter
-- [ ] `dashboard-alarm-geocoded.png` – Alarm mit nachträglich geocodierter Adresse
+- [ ] `dashboard-alarm-geocoded.png` – Alarm mit nachträglich geokodierter Adresse
 - [ ] `history-empty.png` – Leere Historie
 - [ ] `mobile-history.png` – Historie auf Mobile
 
