@@ -1,8 +1,8 @@
-# Betriebshandbuch – Feuerwehr Alarm Monitor
+# 📖 Betriebshandbuch – Feuerwehr Alarm Monitor
 
-Dieses Betriebshandbuch beschreibt die Einrichtung, den Betrieb und die
-Wartung des Feuerwehr Alarm Monitors. Es richtet sich an Administratoren
-und technisch versierte Anwender.
+Dieses Betriebshandbuch beschreibt die Einrichtung, den Betrieb und die Wartung des Feuerwehr Alarm Monitors. Es richtet sich an Administratoren und technisch versierte Anwender, die das System in ihrer Feuerwehr oder Organisation betreiben möchten.
+
+---
 
 ## Inhaltsverzeichnis
 
@@ -12,9 +12,24 @@ und technisch versierte Anwender.
 4. [Inbetriebnahme](#inbetriebnahme)
 5. [Betrieb](#betrieb)
 6. [Wartung](#wartung)
-7. [Fehlerbehebung](#fehlerbehebung)
-8. [Sicherheitshinweise](#sicherheitshinweise)
-9. [Backup und Wiederherstellung](#backup-und-wiederherstellung)
+7. [Monitoring](#monitoring)
+8. [Fehlerbehebung](#fehlerbehebung)
+9. [Sicherheitshinweise](#sicherheitshinweise)
+10. [Backup und Wiederherstellung](#backup-und-wiederherstellung)
+11. [Performance-Optimierung](#performance-optimierung)
+12. [Anhang](#anhang)
+
+---
+
+## Dokumentation
+
+**Weitere Ressourcen**:
+- **[README.md](README.md)** – Projekt-Überblick und Features
+- **[Quick Start Guide](docs/QUICK_START.md)** – Schnelleinstieg in 15 Minuten
+- **[Architecture](docs/ARCHITECTURE.md)** – Technische Systemarchitektur
+- **[FAQ](docs/FAQ.md)** – Häufig gestellte Fragen
+- **[Messenger-Integration](docs/MESSENGER_INTEGRATION.md)** – Push-Benachrichtigungen
+- **[Contributing](CONTRIBUTING.md)** – Beiträge zum Projekt
 
 ---
 
@@ -382,7 +397,172 @@ docker compose logs -f
 
 ---
 
+## Monitoring
+
+### Health-Checks
+
+Der alarm-monitor bietet einen Health-Check-Endpunkt für Monitoring-Systeme.
+
+```bash
+# Health-Check abfragen
+curl http://localhost:8000/health
+
+# Erwartete Antwort:
+{"status": "ok"}
+
+# Status-Code: 200 = OK, 503 = Service Unavailable
+```
+
+### Docker Health-Check
+
+Im `compose.yaml` ist bereits ein Health-Check konfiguriert:
+
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  interval: 30s
+  timeout: 5s
+  start_period: 30s
+  retries: 3
+```
+
+**Status prüfen**:
+```bash
+docker compose ps
+# Zeigt "healthy" oder "unhealthy"
+```
+
+### Log-Monitoring
+
+**Docker-Logs**:
+```bash
+# Live-Logs anzeigen
+docker compose logs -f
+
+# Logs der letzten Stunde
+docker compose logs --since 1h
+
+# Nur Fehler
+docker compose logs | grep -i error
+```
+
+**Systemd-Logs** (native Installation):
+```bash
+# Live-Logs
+sudo journalctl -u alarm-monitor -f
+
+# Logs seit Systemstart
+sudo journalctl -u alarm-monitor -b
+
+# Fehler der letzten 24h
+sudo journalctl -u alarm-monitor --since "24 hours ago" | grep -i error
+```
+
+### Uptime-Monitoring
+
+**Externes Monitoring** (z.B. UptimeRobot, Pingdom):
+- URL: `http://server-ip:8000/health`
+- Intervall: 5 Minuten
+- Timeout: 30 Sekunden
+- Benachrichtigung: E-Mail/SMS bei Ausfall
+
+**Eigenes Monitoring-Skript**:
+```bash
+#!/bin/bash
+# health-check.sh
+
+URL="http://localhost:8000/health"
+EXPECTED="\"status\":\"ok\""
+
+RESPONSE=$(curl -s $URL)
+
+if echo "$RESPONSE" | grep -q "$EXPECTED"; then
+  echo "OK: Service is healthy"
+  exit 0
+else
+  echo "CRITICAL: Service is not responding correctly"
+  echo "Response: $RESPONSE"
+  exit 2
+fi
+```
+
+```bash
+# Cronjob einrichten (alle 5 Minuten)
+*/5 * * * * /usr/local/bin/health-check.sh
+```
+
+### Metriken sammeln
+
+**Basis-Metriken**:
+```bash
+# Anzahl Alarme in Historie
+jq '.history | length' ~/alarm-monitor/instance/alarm_history.json
+
+# Letzter Alarm (Zeitstempel)
+jq -r '.history[0].timestamp' ~/alarm-monitor/instance/alarm_history.json
+
+# Dateigröße Historie
+du -h ~/alarm-monitor/instance/alarm_history.json
+```
+
+**Container-Ressourcen**:
+```bash
+# CPU/Memory-Nutzung
+docker stats alarm-dashboard --no-stream
+
+# Disk-Nutzung
+docker system df
+```
+
+### Alarmierung bei Problemen
+
+**E-Mail-Benachrichtigung**:
+```bash
+#!/bin/bash
+# alert-on-failure.sh
+
+if ! curl -sf http://localhost:8000/health > /dev/null; then
+  echo "Alarm Monitor ist nicht erreichbar!" | \
+    mail -s "ALARM: Monitor Down" admin@example.com
+fi
+```
+
+**Telegram-Bot** (optional):
+```bash
+# Via Telegram-Bot benachrichtigen
+BOT_TOKEN="your-bot-token"
+CHAT_ID="your-chat-id"
+
+MESSAGE="⚠️ Alarm Monitor ist down!"
+curl -s -X POST \
+  "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+  -d "chat_id=$CHAT_ID" \
+  -d "text=$MESSAGE"
+```
+
+---
+
 ## Fehlerbehebung
+
+### Diagnosebefehle
+
+**Schnell-Diagnose**:
+```bash
+# Alle Services prüfen
+docker compose ps
+
+# Netzwerk testen
+curl -I http://localhost:8000
+
+# Logs auf Fehler prüfen
+docker compose logs | grep -iE "error|critical|fail"
+
+# Disk Space prüfen
+df -h
+
+# Memory prüfen
+free -h
+```
 
 ### Häufige Probleme
 
@@ -528,6 +708,198 @@ cp /backup/alarm-dashboard/alarm_history.YYYYMMDD.json instance/alarm_history.js
 
 # Service neu starten
 sudo systemctl restart alarm-dashboard
+```
+
+---
+
+## Performance-Optimierung
+
+### Hardware-Optimierung
+
+**Raspberry Pi**:
+```bash
+# GPU-Memory reduzieren (für Headless-Betrieb)
+sudo nano /boot/config.txt
+# Hinzufügen:
+gpu_mem=16
+
+# Overclock (optional, auf eigene Gefahr)
+over_voltage=2
+arm_freq=1750
+
+# Reboot erforderlich
+sudo reboot
+```
+
+**SSD statt SD-Karte**: Deutlich bessere I/O-Performance
+
+**Kühlkörper**: Verhindert Thermal-Throttling
+
+### Software-Optimierung
+
+**Gunicorn-Worker anpassen**:
+```bash
+# Für Raspberry Pi 4 (4 Cores)
+gunicorn --workers 2 --threads 4 \
+  --worker-class gthread \
+  'alarm_dashboard.app:create_app()'
+
+# Regel: workers = (2 × CPU_CORES) + 1
+# Threads: 2-4 pro Worker
+```
+
+**Docker-Ressourcen limitieren**:
+```yaml
+# compose.yaml
+services:
+  alarm-monitor:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+```
+
+### Caching
+
+**Nginx Reverse-Proxy** (für statische Assets):
+```nginx
+server {
+    listen 80;
+    server_name alarm-monitor.local;
+
+    location /static/ {
+        alias /app/alarm_dashboard/static/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+**Browser-Caching** (für Clients):
+Bereits implementiert via Flask's `send_from_directory`.
+
+### Datenbankoptimierung
+
+**JSON-Datei** (aktuell):
+- Gut für < 1000 Alarme
+- Einfach, keine Abhängigkeiten
+- Performance sinkt bei großen Dateien
+
+**Migration zu SQLite** (geplant):
+```python
+# Zukünftige Implementierung
+CREATE TABLE alarms (
+    id INTEGER PRIMARY KEY,
+    incident_number TEXT UNIQUE,
+    timestamp DATETIME,
+    keyword TEXT,
+    location TEXT,
+    data JSON
+);
+
+CREATE INDEX idx_incident_number ON alarms(incident_number);
+CREATE INDEX idx_timestamp ON alarms(timestamp DESC);
+```
+
+**Workaround bei großen Historien**:
+```bash
+# Alte Alarme archivieren (älter als 1 Jahr)
+DATE_CUTOFF=$(date -d '1 year ago' +%Y-%m-%d)
+
+# Backup erstellen
+cp instance/alarm_history.json instance/alarm_history_backup.json
+
+# Mit jq filtern
+jq --arg date "$DATE_CUTOFF" \
+  '{history: [.history[] | select(.timestamp >= $date)]}' \
+  instance/alarm_history.json > instance/alarm_history_filtered.json
+
+mv instance/alarm_history_filtered.json instance/alarm_history.json
+```
+
+### Netzwerk-Optimierung
+
+**Lokale Nominatim-Instanz** (für viele Geocoding-Anfragen):
+```yaml
+# compose.yaml
+services:
+  nominatim:
+    image: mediagis/nominatim:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - PBF_URL=https://download.geofabrik.de/europe/germany-latest.osm.pbf
+```
+
+```bash
+# In alarm-monitor .env:
+ALARM_DASHBOARD_NOMINATIM_URL=http://nominatim:8080/search
+```
+
+**CDN für externe Libraries** (optional):
+```html
+<!-- Leaflet von CDN statt lokal -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9/dist/leaflet.js"></script>
+```
+
+### Frontend-Optimierung
+
+**Lazy Loading** (für Bilder):
+```html
+<img src="wappen.png" loading="lazy" alt="Wappen">
+```
+
+**CSS/JS Minification**:
+```bash
+# Mit Terser (JavaScript)
+npm install -g terser
+terser alarm_dashboard/static/js/dashboard.js \
+  -o alarm_dashboard/static/js/dashboard.min.js
+
+# Mit cssnano (CSS)
+npm install -g cssnano-cli
+cssnano alarm_dashboard/static/css/dashboard.css \
+  alarm_dashboard/static/css/dashboard.min.css
+```
+
+### Monitoring-Overhead reduzieren
+
+**Polling-Intervall anpassen**:
+```javascript
+// dashboard.js
+// Standard: 5 Sekunden
+const POLL_INTERVAL = 10000; // 10 Sekunden
+
+// Messenger-Polling
+const MESSENGER_POLL_INTERVAL = 30000; // 30 Sekunden
+```
+
+### Performance-Messungen
+
+**Backend-Response-Times**:
+```bash
+# Mit curl
+time curl -s http://localhost:8000/api/alarm > /dev/null
+
+# Mit Apache Bench
+ab -n 100 -c 10 http://localhost:8000/api/alarm
+```
+
+**Frontend Load-Times**:
+```javascript
+// In Browser-Console
+performance.timing.loadEventEnd - performance.timing.navigationStart
 ```
 
 ---
