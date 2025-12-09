@@ -401,14 +401,29 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         if "fire_department_name" in data:
             updates["fire_department_name"] = str(data["fire_department_name"]).strip()
         
-        if "default_latitude" in data and "default_longitude" in data:
+        # Handle coordinates - require both or neither
+        has_lat = "default_latitude" in data and data["default_latitude"]
+        has_lon = "default_longitude" in data and data["default_longitude"]
+        
+        if has_lat and has_lon:
             try:
-                lat = float(data["default_latitude"]) if data["default_latitude"] else None
-                lon = float(data["default_longitude"]) if data["default_longitude"] else None
+                lat = float(data["default_latitude"])
+                lon = float(data["default_longitude"])
+                # Validate coordinate ranges
+                if not (-90 <= lat <= 90):
+                    return jsonify({"error": "Latitude must be between -90 and 90"}), 400
+                if not (-180 <= lon <= 180):
+                    return jsonify({"error": "Longitude must be between -180 and 180"}), 400
                 updates["default_latitude"] = lat
                 updates["default_longitude"] = lon
             except (ValueError, TypeError):
-                return jsonify({"error": "Invalid latitude or longitude"}), 400
+                return jsonify({"error": "Invalid latitude or longitude format"}), 400
+        elif has_lat or has_lon:
+            return jsonify({"error": "Both latitude and longitude must be provided together"}), 400
+        elif "default_latitude" in data and not data["default_latitude"] and "default_longitude" in data and not data["default_longitude"]:
+            # Allow clearing both coordinates
+            updates["default_latitude"] = None
+            updates["default_longitude"] = None
         
         if "default_location_name" in data:
             updates["default_location_name"] = str(data["default_location_name"]).strip() if data["default_location_name"] else None

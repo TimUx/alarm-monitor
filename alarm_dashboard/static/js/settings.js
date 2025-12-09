@@ -44,6 +44,46 @@
             activation_groups: formData.get('activation_groups'),
         };
 
+        // Client-side validation
+        if (!settings.fire_department_name || settings.fire_department_name.trim() === '') {
+            showMessage('Feuerwehr-Name ist erforderlich', 'error');
+            return;
+        }
+
+        // Validate coordinates if provided
+        if (settings.default_latitude || settings.default_longitude) {
+            const lat = parseFloat(settings.default_latitude);
+            const lon = parseFloat(settings.default_longitude);
+
+            if (settings.default_latitude && isNaN(lat)) {
+                showMessage('Breitengrad muss eine Zahl sein', 'error');
+                return;
+            }
+
+            if (settings.default_longitude && isNaN(lon)) {
+                showMessage('Längengrad muss eine Zahl sein', 'error');
+                return;
+            }
+
+            // Check if both are provided
+            if ((settings.default_latitude && !settings.default_longitude) || 
+                (!settings.default_latitude && settings.default_longitude)) {
+                showMessage('Bitte beide Koordinaten angeben oder beide leer lassen', 'error');
+                return;
+            }
+
+            // Validate ranges
+            if (settings.default_latitude && (lat < -90 || lat > 90)) {
+                showMessage('Breitengrad muss zwischen -90 und 90 liegen', 'error');
+                return;
+            }
+
+            if (settings.default_longitude && (lon < -180 || lon > 180)) {
+                showMessage('Längengrad muss zwischen -180 und 180 liegen', 'error');
+                return;
+            }
+        }
+
         fetch('/api/settings', {
             method: 'POST',
             headers: {
