@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
-from alarm_dashboard.config import AppConfig, MailConfig
+from alarm_dashboard.config import AppConfig
 from alarm_dashboard import app as app_module
 
 
