@@ -747,8 +747,19 @@ Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION
 
 ## 📚 Dokumentation
 
-- **[Betriebshandbuch](Betriebshandbuch.md)** – Ausführliche Anleitung für Installation, Betrieb und Wartung
-- **[Messenger-Integration](docs/MESSENGER_INTEGRATION.md)** – Details zur Integration mit alarm-messenger
+### Haupt-Dokumentation
+- **[📚 Dokumentations-Index](docs/INDEX.md)** – Übersicht aller Dokumentation
+- **[🚀 Quick Start Guide](docs/QUICK_START.md)** – 15-Minuten Schnelleinstieg
+- **[📖 Betriebshandbuch](Betriebshandbuch.md)** – Ausführliche Anleitung für Installation, Betrieb und Wartung
+- **[🏗️ Architecture](docs/ARCHITECTURE.md)** – Technische Systemarchitektur
+- **[❓ FAQ](docs/FAQ.md)** – Häufig gestellte Fragen
+
+### Spezial-Dokumentation
+- **[📱 Messenger-Integration](docs/MESSENGER_INTEGRATION.md)** – Details zur Integration mit alarm-messenger
+- **[📸 Screenshots](docs/SCREENSHOTS.md)** – Visuelle Dokumentation aller Ansichten
+- **[🤝 Contributing](CONTRIBUTING.md)** – Beiträge zum Projekt
+
+### Externe Repositorys
 - **[alarm-mail Repository](https://github.com/TimUx/alarm-mail)** – E-Mail-Überwachung und Parsing
 - **[alarm-messenger Repository](https://github.com/TimUx/alarm-messenger)** – Mobile Benachrichtigungen
 
