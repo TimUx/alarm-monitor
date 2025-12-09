@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstellungen</title>
+    <link rel="stylesheet" href="/static/css/settings.css">
+</head>
+<body>
+    <div class="settings-app">
+        <div class="settings-topline" aria-hidden="true"></div>
+        <header class="settings-header">
+            <div class="settings-brand">
+                <h1>
+                    Feuerwehr
+                    <span>{{ department_name }}</span>
+                </h1>
+            </div>
+            <img src="{{ crest_url }}" alt="Gemeindewappen" class="settings-crest">
+        </header>
+        <main class="settings-main">
+            <section class="settings-section" aria-labelledby="settings-title">
+                <h2 id="settings-title" class="settings-section-title">Einstellungen</h2>
+                <div class="settings-form-wrap">
+                    <form id="settings-form" class="settings-form">
+                        <div class="form-group">
+                            <label for="fire_department_name">Feuerwehr Name</label>
+                            <input 
+                                type="text" 
+                                id="fire_department_name" 
+                                name="fire_department_name" 
+                                placeholder="z.B. Willingshausen"
+                                required
+                            >
+                            <small class="form-hint">Der Name Ihrer Feuerwehr, der in allen Ansichten angezeigt wird.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="default_latitude">Standard Breitengrad</label>
+                            <input 
+                                type="number" 
+                                id="default_latitude" 
+                                name="default_latitude" 
+                                step="0.000001"
+                                placeholder="z.B. 51.2345"
+                            >
+                            <small class="form-hint">Breitengrad für die Wetter-Anzeige im Ruhezustand.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="default_longitude">Standard Längengrad</label>
+                            <input 
+                                type="number" 
+                                id="default_longitude" 
+                                name="default_longitude" 
+                                step="0.000001"
+                                placeholder="z.B. 9.8765"
+                            >
+                            <small class="form-hint">Längengrad für die Wetter-Anzeige im Ruhezustand.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="default_location_name">Standard Standortname</label>
+                            <input 
+                                type="text" 
+                                id="default_location_name" 
+                                name="default_location_name" 
+                                placeholder="z.B. Feuerwache Willingshausen"
+                            >
+                            <small class="form-hint">Standortname für die Anzeige im Ruhezustand.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activation_groups">Gruppen-Filter (TME-Codes)</label>
+                            <input 
+                                type="text" 
+                                id="activation_groups" 
+                                name="activation_groups" 
+                                placeholder="z.B. WIL26,WIL41,WIL52"
+                            >
+                            <small class="form-hint">Kommagetrennte Liste von TME-Codes. Leer lassen für alle Alarme.</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Speichern</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-btn">Abbrechen</button>
+                        </div>
+
+                        <div id="message" class="message" style="display: none;"></div>
+                    </form>
+                </div>
+            </section>
+        </main>
+        <nav class="bottom-nav" aria-label="Hauptnavigation">
+            <a href="/" class="bottom-nav__item" aria-label="Zurück zum Dashboard">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M13 5 6 12l7 7 1.5-1.5L9 12l5.5-5.5z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Zurück</span>
+            </a>
+            <a href="/settings" class="bottom-nav__item bottom-nav__item--active">
+                <span class="bottom-nav__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" role="presentation">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Einstellungen</span>
+            </a>
+            <div class="bottom-nav__meta" role="contentinfo">
+                <span class="bottom-nav__credit">
+                    © <a
+                        href="mailto:t.braun@feuerwehr-willingshausen.de"
+                        class="bottom-nav__credit-link"
+                    >Timo Braun</a>
+                </span>
+                {% if app_version %}
+                    {% if app_version_url %}
+                        <a
+                            href="{{ app_version_url }}"
+                            class="bottom-nav__version"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >Version {{ app_version }}</a>
+                    {% else %}
+                        <span class="bottom-nav__version">Version {{ app_version }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+    <script src="/static/js/settings.js"></script>
+</body>
+</html>

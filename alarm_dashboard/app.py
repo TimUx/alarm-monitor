@@ -13,7 +13,7 @@ from flask import Flask, jsonify, render_template, request, url_for
 from .config import AppConfig, load_config
 from .geocode import geocode_location
 from .messenger import create_messenger
-from .storage import AlarmStore
+from .storage import AlarmStore, SettingsStore
 from .weather import fetch_weather
 
 LOGGER = logging.getLogger(__name__)
@@ -39,6 +39,22 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     store = AlarmStore(persistence_path=persistence_path)
     app.config["ALARM_STORE"] = store
     app.config["APP_CONFIG"] = config
+
+    # Initialize settings store
+    settings_path = Path(app.instance_path) / "settings.json"
+    settings_store = SettingsStore(persistence_path=settings_path)
+    app.config["SETTINGS_STORE"] = settings_store
+
+    def get_effective_settings() -> Dict[str, Any]:
+        """Get effective settings merging stored values with config defaults."""
+        stored = settings_store.get_all()
+        return {
+            "fire_department_name": stored.get("fire_department_name", config.fire_department_name),
+            "default_latitude": stored.get("default_latitude", config.default_latitude),
+            "default_longitude": stored.get("default_longitude", config.default_longitude),
+            "default_location_name": stored.get("default_location_name", config.default_location_name),
+            "activation_groups": stored.get("activation_groups", config.activation_groups),
+        }
 
     # Initialize alarm messenger if configured
     messenger = create_messenger(
@@ -68,7 +84,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             )
             return
 
-        activation_filters = config.activation_groups
+        # Get effective activation groups from settings
+        effective_settings = get_effective_settings()
+        activation_filters = effective_settings.get("activation_groups", [])
         if activation_filters:
             dispatch_codes = set()
             for code in alarm.get("dispatch_group_codes") or []:
@@ -168,10 +186,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/")
     def dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
+        effective_settings = get_effective_settings()
         return render_template(
             "dashboard.html",
             crest_url=crest_url,
-            department_name=config.fire_department_name,
+            department_name=effective_settings["fire_department_name"],
             display_duration_minutes=config.display_duration_minutes,
             app_version=config.app_version,
             app_version_url=config.app_version_url,
@@ -180,13 +199,14 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/navigation")
     def navigation_page() -> str:
         crest_url = url_for("static", filename="img/crest.png")
+        effective_settings = get_effective_settings()
         return render_template(
             "navigation.html",
             crest_url=crest_url,
-            department_name=config.fire_department_name,
-            default_latitude=config.default_latitude,
-            default_longitude=config.default_longitude,
-            default_location_name=config.default_location_name,
+            department_name=effective_settings["fire_department_name"],
+            default_latitude=effective_settings["default_latitude"],
+            default_longitude=effective_settings["default_longitude"],
+            default_location_name=effective_settings["default_location_name"],
             ors_api_key=config.ors_api_key,
             app_version=config.app_version,
             app_version_url=config.app_version_url,
@@ -214,11 +234,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 "display_time": display_time,
             })
         crest_url = url_for("static", filename="img/crest.png")
+        effective_settings = get_effective_settings()
         return render_template(
             "history.html",
             entries=decorated,
             crest_url=crest_url,
-            department_name=config.fire_department_name,
+            department_name=effective_settings["fire_department_name"],
             app_version=config.app_version,
             app_version_url=config.app_version_url,
         )
@@ -226,10 +247,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/mobile")
     def mobile_dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
+        effective_settings = get_effective_settings()
         return render_template(
             "mobile.html",
             crest_url=crest_url,
-            department_name=config.fire_department_name,
+            department_name=effective_settings["fire_department_name"],
             app_version=config.app_version,
             app_version_url=config.app_version_url,
         )
@@ -260,17 +282,18 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
 
     def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        effective_settings = get_effective_settings()
         weather = None
         if (
-            config.default_latitude is not None
-            and config.default_longitude is not None
+            effective_settings["default_latitude"] is not None
+            and effective_settings["default_longitude"] is not None
         ):
             try:
                 weather = fetch_weather(
                     config.weather_base_url,
                     config.weather_params,
-                    config.default_latitude,
-                    config.default_longitude,
+                    effective_settings["default_latitude"],
+                    effective_settings["default_longitude"],
                 )
             except Exception as exc:  # pragma: no cover - best effort
                 LOGGER.warning("Failed to fetch idle weather: %s", exc)
@@ -282,7 +305,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "mode": "idle",
             "alarm": None,
             "weather": weather,
-            "location": config.default_location_name,
+            "location": effective_settings["default_location_name"],
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "last_alarm": last_alarm_entry,
         }
@@ -350,6 +373,73 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/api/mobile/alarm")
     def api_mobile_alarm():
         return api_alarm()
+
+    @app.route("/api/settings", methods=["GET"])
+    def api_get_settings():
+        """Get current settings."""
+        effective_settings = get_effective_settings()
+        # Convert activation_groups list to comma-separated string for UI
+        groups_str = ",".join(effective_settings.get("activation_groups", []))
+        return jsonify({
+            "fire_department_name": effective_settings["fire_department_name"],
+            "default_latitude": effective_settings["default_latitude"],
+            "default_longitude": effective_settings["default_longitude"],
+            "default_location_name": effective_settings["default_location_name"],
+            "activation_groups": groups_str,
+        })
+
+    @app.route("/api/settings", methods=["POST"])
+    def api_update_settings():
+        """Update settings."""
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid request"}), 400
+
+        # Validate and prepare settings
+        updates = {}
+        
+        if "fire_department_name" in data:
+            updates["fire_department_name"] = str(data["fire_department_name"]).strip()
+        
+        if "default_latitude" in data and "default_longitude" in data:
+            try:
+                lat = float(data["default_latitude"]) if data["default_latitude"] else None
+                lon = float(data["default_longitude"]) if data["default_longitude"] else None
+                updates["default_latitude"] = lat
+                updates["default_longitude"] = lon
+            except (ValueError, TypeError):
+                return jsonify({"error": "Invalid latitude or longitude"}), 400
+        
+        if "default_location_name" in data:
+            updates["default_location_name"] = str(data["default_location_name"]).strip() if data["default_location_name"] else None
+        
+        if "activation_groups" in data:
+            # Parse comma-separated string to list
+            groups_str = str(data["activation_groups"]).strip()
+            if groups_str:
+                groups = [g.strip().upper() for g in groups_str.split(",") if g.strip()]
+            else:
+                groups = []
+            updates["activation_groups"] = groups
+        
+        # Update settings
+        settings_store.update(updates)
+        LOGGER.info("Settings updated: %s", updates)
+        
+        return jsonify({"status": "ok", "settings": updates})
+
+    @app.route("/settings")
+    def settings_page() -> str:
+        """Settings configuration page."""
+        crest_url = url_for("static", filename="img/crest.png")
+        effective_settings = get_effective_settings()
+        return render_template(
+            "settings.html",
+            crest_url=crest_url,
+            department_name=effective_settings["fire_department_name"],
+            app_version=config.app_version,
+            app_version_url=config.app_version_url,
+        )
 
     @app.route("/health")
     def health():
