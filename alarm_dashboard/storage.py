@@ -171,4 +171,68 @@ class AlarmStore:
         return restored
 
 
-__all__ = ["AlarmStore"]
+class SettingsStore:
+    """Thread-safe storage for user-configurable settings with persistence."""
+
+    def __init__(self, persistence_path: Optional[PathType] = None) -> None:
+        self._lock = threading.Lock()
+        self._settings: Dict[str, Any] = {}
+        self._persistence_path = Path(persistence_path) if persistence_path else None
+
+        if self._persistence_path is not None:
+            self._persistence_path.parent.mkdir(parents=True, exist_ok=True)
+            self._load_persisted_settings()
+
+    def get_all(self) -> Dict[str, Any]:
+        """Return all stored settings."""
+        with self._lock:
+            return dict(self._settings)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a specific setting value."""
+        with self._lock:
+            return self._settings.get(key, default)
+
+    def update(self, settings: Dict[str, Any]) -> None:
+        """Update settings with new values."""
+        with self._lock:
+            self._settings.update(settings)
+            self._persist_locked()
+
+    def _load_persisted_settings(self) -> None:
+        if self._persistence_path is None:
+            return
+        if not self._persistence_path.exists():
+            return
+
+        try:
+            with self._persistence_path.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+            if isinstance(data, dict):
+                self._settings = data
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.warning(
+                "Failed to read persisted settings from %s: %s",
+                self._persistence_path,
+                exc,
+            )
+
+    def _persist_locked(self) -> None:
+        if self._persistence_path is None:
+            return
+
+        tmp_path = self._persistence_path.with_suffix(".tmp")
+        try:
+            with tmp_path.open("w", encoding="utf-8") as handle:
+                json.dump(self._settings, handle, ensure_ascii=False, indent=2)
+            tmp_path.replace(self._persistence_path)
+        except Exception as exc:  # pragma: no cover - defensive
+            LOGGER.warning(
+                "Failed to persist settings to %s: %s",
+                self._persistence_path,
+                exc,
+            )
+            tmp_path.unlink(missing_ok=True)
+
+
+__all__ = ["AlarmStore", "SettingsStore"]

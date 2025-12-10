@@ -85,6 +85,13 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 🎨 **Anzeigedauer** – Konfigurierbare Dauer der Alarmanzeige
 - 🎨 **Standortdaten** – Individuelle Standardkoordinaten und Standortnamen
 
+### Web-basierte Einstellungen
+- ⚙️ **Einstellungs-Oberfläche** – Webbasierte Konfiguration ohne Neustart
+- ⚙️ **Feuerwehr-Name** – Dynamische Anpassung des angezeigten Namens
+- ⚙️ **Standortkonfiguration** – Einstellung von Standardkoordinaten und Standortnamen
+- ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche
+- ⚙️ **Persistente Speicherung** – Einstellungen bleiben über Neustarts hinweg erhalten
+
 ---
 
 ## 📸 Screenshots
@@ -113,6 +120,11 @@ Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, aktuelles Wetter und den letz
 Optimiert für Smartphones und Tablets mit Touch-Bedienung und direkter Navigation.
 
 ![Mobile Ansicht](docs/screenshots/mobile-idle.png)
+
+### Einstellungen
+Webbasierte Konfigurationsoberfläche für zentrale Einstellungen wie Feuerwehr-Name, Standort und Gruppenfilter. Änderungen werden sofort übernommen und persistent gespeichert.
+
+![Einstellungen](docs/screenshots/settings-page.png)
 
 ---
 
@@ -368,7 +380,21 @@ sudo nano /etc/xdg/lxsession/LXDE-pi/autostart
 
 ## ⚙️ Konfiguration
 
-Die Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei.
+Die Konfiguration erfolgt über zwei Wege:
+
+1. **Web-Oberfläche (empfohlen)**: Zentrale Einstellungen können direkt in der Web-Oberfläche unter `/settings` konfiguriert werden
+2. **Umgebungsvariablen**: Als Fallback für initiale Konfiguration oder wenn keine Web-UI verfügbar ist
+
+### Web-basierte Einstellungen
+
+Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert werden (erreichbar über den Einstellungen-Button im Menü):
+
+- **Feuerwehr-Name**: Name der Feuerwehr, der in allen Ansichten angezeigt wird
+- **Standard Breitengrad/Längengrad**: Koordinaten für Wetter-Anzeige im Ruhezustand
+- **Standard Standortname**: Bezeichnung des Standorts (z.B. "Feuerwache Willingshausen")
+- **Gruppen-Filter (TME-Codes)**: Kommagetrennte Liste von TME-Codes zur Alarmfilterung
+
+**Hinweis**: Web-basierte Einstellungen haben Vorrang vor Umgebungsvariablen und werden persistent gespeichert.
 
 ### Pflichtparameter
 
@@ -380,28 +406,28 @@ ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
 **Wichtig**: Dieser API-Key muss im `alarm-mail` Service als `ALARM_MAIL_MONITOR_API_KEY` konfiguriert werden.
 
-### Grundeinstellungen
+### Grundeinstellungen (optional, können auch über Web-UI gesetzt werden)
 
 ```bash
-# Feuerwehr-Name für Anzeige
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+# Feuerwehr-Name für Anzeige (kann in Web-UI geändert werden)
+# ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
 
 # Anzeigedauer eines Alarms in Minuten (danach Wechsel zu Idle-Ansicht)
 ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 
-# Standardkoordinaten für Idle-Ansicht (Wetter und Standort)
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
+# Standardkoordinaten für Idle-Ansicht (können in Web-UI geändert werden)
+# ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
+# ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
+# ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
 ```
 
-### Gruppenfilterung
+### Gruppenfilterung (kann in Web-UI konfiguriert werden)
 
 ```bash
-# Kommagetrennte Liste von TME-Codes für Alarmfilterung
+# Kommagetrennte Liste von TME-Codes für Alarmfilterung (kann in Web-UI geändert werden)
 # Leer = alle Alarme werden angezeigt
 # Mit Werten = nur Alarme mit diesen TME-Codes werden angezeigt
-ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
+# ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
 ```
 
 ### Externe Dienste (optional)
@@ -521,6 +547,15 @@ Dedizierte Seite für Routenplanung:
 - Routenplanung mit OpenRouteService (optional)
 - Entfernungs- und Zeitberechnung
 
+#### Einstellungs-Ansicht (`/settings`)
+Webbasierte Konfigurationsoberfläche:
+- **Feuerwehr-Name**: Anpassung des angezeigten Namens
+- **Standortkonfiguration**: Eingabe von Breitengrad, Längengrad und Standortname
+- **Gruppenfilter**: Konfiguration der TME-Codes (kommagetrennt)
+- **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
+- **Persistente Speicherung**: Einstellungen bleiben über Neustarts erhalten
+- Erreichbar über den Einstellungen-Button in der Navigation aller Seiten
+
 ### API-Endpunkte
 
 #### Alarm-Empfang
@@ -577,6 +612,40 @@ GET /api/history?limit=50
 GET /api/mobile/alarm
 
 # Optimierte Antwort für mobile Clients
+```
+
+#### Einstellungen abrufen
+```bash
+GET /api/settings
+
+# Antwort:
+{
+  "fire_department_name": "Feuerwehr Willingshausen",
+  "default_latitude": 51.2345,
+  "default_longitude": 9.8765,
+  "default_location_name": "Feuerwache Willingshausen",
+  "activation_groups": "WIL26,WIL41,WIL52"
+}
+```
+
+#### Einstellungen aktualisieren
+```bash
+POST /api/settings
+Content-Type: application/json
+
+{
+  "fire_department_name": "Feuerwehr Musterstadt",
+  "default_latitude": 50.1234,
+  "default_longitude": 8.5678,
+  "default_location_name": "Hauptwache",
+  "activation_groups": "MST10,MST20"
+}
+
+# Antwort:
+{
+  "status": "ok",
+  "settings": { ... }
+}
 ```
 
 #### Health-Check
