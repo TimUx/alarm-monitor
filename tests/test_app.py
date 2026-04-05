@@ -436,8 +436,8 @@ def test_post_alarm_notifies_sse_subscribers(client, flask_app) -> None:
             pass
 
 
-def test_sse_subscriber_not_notified_for_invalid_alarm(client, flask_app) -> None:
-    """An alarm rejected by process_alarm (missing incident_number) must not notify subscribers."""
+def test_sse_subscriber_not_notified_for_dropped_alarm(client, flask_app) -> None:
+    """An alarm silently dropped by process_alarm (missing incident_number) must not notify subscribers."""
     evt = threading.Event()
     flask_app.config["SSE_SUBSCRIBERS"].append(evt)
     try:

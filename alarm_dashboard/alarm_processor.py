@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def process_alarm(
     effective_settings = get_settings()
     activation_filters = effective_settings.get("activation_groups", [])
     if activation_filters:
-        dispatch_codes: set = set()
+        dispatch_codes: Set[str] = set()
         for code in alarm.get("dispatch_group_codes") or []:
             if isinstance(code, str):
                 dispatch_codes.add(code.upper())

@@ -55,13 +55,14 @@ class AlarmStore:
     ) -> None:
         """Update coordinates and weather for an existing alarm entry by incident number."""
         with self._lock:
-            if self._alarm is not None and (self._alarm.get("alarm") or {}).get(
-                "incident_number"
-            ) == incident_number:
-                self._alarm["coordinates"] = coordinates
-                self._alarm["weather"] = weather
+            if self._alarm is not None:
+                alarm_inner = self._alarm.get("alarm")
+                if isinstance(alarm_inner, dict) and alarm_inner.get("incident_number") == incident_number:
+                    self._alarm["coordinates"] = coordinates
+                    self._alarm["weather"] = weather
             for entry in self._history:
-                if (entry.get("alarm") or {}).get("incident_number") == incident_number:
+                alarm_inner = entry.get("alarm")
+                if isinstance(alarm_inner, dict) and alarm_inner.get("incident_number") == incident_number:
                     entry["coordinates"] = coordinates
                     entry["weather"] = weather
                     break
