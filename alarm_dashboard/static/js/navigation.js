@@ -320,7 +320,12 @@ async function requestRoute(start, destination) {
         end_lon: destination.lon,
     });
 
-    const response = await fetch(`/api/route?${params}`);
+    let response;
+    try {
+        response = await fetch(`/api/route?${params}`);
+    } catch (networkError) {
+        throw new Error('Routing-Dienst nicht erreichbar.');
+    }
 
     let data = null;
     try {

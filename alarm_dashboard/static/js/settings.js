@@ -103,7 +103,7 @@
                 return response.json();
             })
             .then(data => {
-                submitBtn.disabled = false;
+                if (submitBtn) { submitBtn.disabled = false; }
                 showMessage('Gespeichert ✓', 'success', true);
                 // Reload after a short delay to show updated header
                 setTimeout(() => {
@@ -111,7 +111,7 @@
                 }, 1500);
             })
             .catch(error => {
-                submitBtn.disabled = false;
+                if (submitBtn) { submitBtn.disabled = false; }
                 console.error('Error saving settings:', error);
                 showMessage('Fehler beim Speichern: ' + error.message, 'error', false);
             });

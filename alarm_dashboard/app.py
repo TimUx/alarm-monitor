@@ -183,9 +183,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
             if not match_found:
                 LOGGER.info(
-                    "Ignoring alarm without configured groups: filters=%s, codes=%s",
+                    "Ignoring alarm without configured groups: filters=%s",
                     activation_filters,
-                    sorted(dispatch_codes),
                 )
                 return
         location = alarm.get("location")
@@ -563,7 +562,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
         try:
             data = ors_response.json()
-        except Exception:
+        except Exception as exc:
+            LOGGER.warning("Failed to parse ORS response: %s", exc)
             data = {}
 
         resp = jsonify(data)
