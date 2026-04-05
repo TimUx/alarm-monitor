@@ -1,9 +1,10 @@
-"""Tests for the Flask application factory."""
+"""Tests for the Flask application factory (API endpoint architecture)."""
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Callable, List
+from unittest.mock import patch
 
 import sys
 
@@ -15,159 +16,204 @@ from alarm_dashboard.config import AppConfig
 from alarm_dashboard import app as app_module
 
 
-class _DummyFetcher:
-    """Simple stand-in for ``AlarmMailFetcher`` used in tests."""
-
-    def __init__(self, config: MailConfig, callback: Callable[[bytes], None], poll_interval: int) -> None:
-        self.config = config
-        self.callback = callback
-        self.poll_interval = poll_interval
-        self.started = 0
-        self.stopped = 0
-        self.raise_on_start: Exception | None = None
-
-    def start(self) -> None:
-        if self.raise_on_start is not None:
-            raise self.raise_on_start
-        self.started += 1
-
-    def stop(self) -> None:  # pragma: no cover - defensive
-        self.stopped += 1
+API_KEY = "test-secret-key"
 
 
 @pytest.fixture
-def dummy_fetcher(monkeypatch: pytest.MonkeyPatch) -> List[_DummyFetcher]:
-    """Patch the mail fetcher with a dummy implementation and track instances."""
-
-    created: List[_DummyFetcher] = []
-
-    def _factory(config: MailConfig, callback: Callable[[bytes], None], poll_interval: int) -> _DummyFetcher:
-        instance = _DummyFetcher(config, callback, poll_interval)
-        created.append(instance)
-        return instance
-
-    monkeypatch.setattr(app_module, "AlarmMailFetcher", _factory)
-    return created
-
-
-def test_create_app_without_mail_skips_fetcher(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The factory should not construct a mail fetcher when configuration is absent."""
-
-    config = AppConfig(mail=None)
-
-    def _fail_factory(*_args, **_kwargs):
-        raise AssertionError("Fetcher should not be constructed when mail config is missing")
-
-    monkeypatch.setattr(app_module, "AlarmMailFetcher", _fail_factory)
-
-    flask_app = app_module.create_app(config)
-
-    assert flask_app.config["MAIL_FETCHER"] is None
-
-
-def test_create_app_starts_fetcher_immediately(dummy_fetcher: List[_DummyFetcher]) -> None:
-    """The mail fetcher should be constructed and started during app creation."""
-
-    config = AppConfig(
-        mail=MailConfig(host="imap.example", username="user", password="secret"),
+def config(tmp_path: Path) -> AppConfig:
+    """Return an AppConfig with a known API key and temp history file."""
+    return AppConfig(
+        api_key=API_KEY,
+        history_file=str(tmp_path / "history.json"),
+        display_duration_minutes=30,
     )
 
-    flask_app = app_module.create_app(config)
 
-    assert len(dummy_fetcher) == 1
-    assert flask_app.config["MAIL_FETCHER"] is dummy_fetcher[0]
-    assert dummy_fetcher[0].started == 1
+@pytest.fixture
+def flask_app(config: AppConfig):
+    """Create a Flask test application."""
+    application = app_module.create_app(config)
+    application.config["TESTING"] = True
+    return application
 
 
-def test_create_app_stops_fetcher_on_teardown(dummy_fetcher: List[_DummyFetcher]) -> None:
-    """The fetcher should be stopped when the application context tears down."""
+@pytest.fixture
+def client(flask_app):
+    """Return a Flask test client."""
+    return flask_app.test_client()
 
-    config = AppConfig(
-        mail=MailConfig(host="imap.example", username="user", password="secret"),
+
+# ---------------------------------------------------------------------------
+# POST /api/alarm – authentication
+# ---------------------------------------------------------------------------
+
+
+def test_post_alarm_with_correct_api_key_stores_alarm(client, flask_app) -> None:
+    """POST /api/alarm with correct API key should accept and store the alarm."""
+    alarm_data = {
+        "incident_number": "12345",
+        "keyword": "F3Y",
+        "location": "Musterstraße 1, Musterstadt",
+    }
+
+    response = client.post(
+        "/api/alarm",
+        json=alarm_data,
+        headers={"X-API-Key": API_KEY},
     )
-
-    flask_app = app_module.create_app(config)
-
-    with flask_app.app_context():
-        assert dummy_fetcher[0].stopped == 0
-
-    assert dummy_fetcher[0].stopped == 0
-
-    cleanup = flask_app.config.get("MAIL_FETCHER_CLEANUP")
-    assert callable(cleanup)
-
-    cleanup()
-
-    assert dummy_fetcher[0].stopped == 1
-
-
-def test_fetcher_continues_running_after_request(dummy_fetcher: List[_DummyFetcher]) -> None:
-    """Issuing a request should not stop the background mail fetcher."""
-
-    config = AppConfig(
-        mail=MailConfig(host="imap.example", username="user", password="secret"),
-    )
-
-    flask_app = app_module.create_app(config)
-
-    with flask_app.test_client() as client:
-        response = client.get("/health")
 
     assert response.status_code == 200
-    assert flask_app.config["MAIL_FETCHER"] is dummy_fetcher[0]
-    assert dummy_fetcher[0].stopped == 0
+    data = response.get_json()
+    assert data["status"] == "ok"
+
+    store = flask_app.config["ALARM_STORE"]
+    history = store.history()
+    assert len(history) == 1
+    assert history[0]["alarm"]["incident_number"] == "12345"
 
 
-def test_create_app_logs_and_discards_fetcher_when_start_fails(
-    monkeypatch: pytest.MonkeyPatch, dummy_fetcher: List[_DummyFetcher]
-) -> None:
-    """If starting the fetcher raises, the failure should be reported and ignored."""
+def test_post_alarm_with_wrong_api_key_returns_401(client) -> None:
+    """POST /api/alarm with an incorrect API key should return 401."""
+    alarm_data = {"incident_number": "99999", "keyword": "F1"}
 
-    config = AppConfig(
-        mail=MailConfig(host="imap.example", username="user", password="secret"),
+    response = client.post(
+        "/api/alarm",
+        json=alarm_data,
+        headers={"X-API-Key": "wrong-key"},
     )
 
-    def _factory(
-        config: MailConfig, callback: Callable[[bytes], None], poll_interval: int
-    ) -> _DummyFetcher:
-        instance = _DummyFetcher(config, callback, poll_interval)
-        instance.raise_on_start = RuntimeError("boom")
-        dummy_fetcher.append(instance)
-        return instance
+    assert response.status_code == 401
+    data = response.get_json()
+    assert "error" in data
 
-    monkeypatch.setattr(app_module, "AlarmMailFetcher", _factory)
 
-    flask_app = app_module.create_app(config)
+def test_post_alarm_with_missing_api_key_returns_401(client) -> None:
+    """POST /api/alarm without X-API-Key header should return 401."""
+    alarm_data = {"incident_number": "99999", "keyword": "F1"}
 
-    assert flask_app.config["MAIL_FETCHER"] is None
-    assert dummy_fetcher[0].started == 0
+    response = client.post("/api/alarm", json=alarm_data)
+
+    assert response.status_code == 401
+    data = response.get_json()
+    assert "error" in data
+
+
+# ---------------------------------------------------------------------------
+# POST /api/alarm – business logic
+# ---------------------------------------------------------------------------
+
+
+def test_post_alarm_duplicate_incident_number_rejected(client, flask_app) -> None:
+    """A second alarm with the same incident_number should be silently dropped."""
+    alarm_data = {"incident_number": "12345", "keyword": "F3Y"}
+
+    client.post("/api/alarm", json=alarm_data, headers={"X-API-Key": API_KEY})
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "12345", "keyword": "F4Y"},
+        headers={"X-API-Key": API_KEY},
+    )
+
+    assert response.status_code == 200
+    store = flask_app.config["ALARM_STORE"]
+    history = store.history()
+    assert len(history) == 1
+    assert history[0]["alarm"]["keyword"] == "F3Y"
+
+
+def test_post_alarm_without_incident_number_rejected(client, flask_app) -> None:
+    """An alarm payload missing incident_number should be accepted at the HTTP level
+    but not stored (process_alarm silently drops it)."""
+    alarm_data = {"keyword": "F3Y", "location": "Somewhere"}
+
+    response = client.post(
+        "/api/alarm",
+        json=alarm_data,
+        headers={"X-API-Key": API_KEY},
+    )
+
+    assert response.status_code == 200
+    store = flask_app.config["ALARM_STORE"]
+    assert store.history() == []
+
+
+# ---------------------------------------------------------------------------
+# GET /api/alarm – idle / alarm modes
+# ---------------------------------------------------------------------------
+
+
+def test_get_alarm_returns_idle_when_no_alarm(client) -> None:
+    """GET /api/alarm should return mode=idle when no alarm has been stored."""
+    response = client.get("/api/alarm")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["mode"] == "idle"
+    assert data["alarm"] is None
+
+
+def test_get_alarm_returns_alarm_data_when_active(client, flask_app) -> None:
+    """GET /api/alarm should return mode=alarm while the alarm is within the display window."""
+    alarm_data = {"incident_number": "77777", "keyword": "F3Y"}
+
+    client.post("/api/alarm", json=alarm_data, headers={"X-API-Key": API_KEY})
+
+    response = client.get("/api/alarm")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["mode"] == "alarm"
+    assert data["alarm"]["incident_number"] == "77777"
+
+
+def test_get_alarm_returns_idle_after_display_duration_expires(
+    client, flask_app, config: AppConfig
+) -> None:
+    """GET /api/alarm should return mode=idle once the display_duration has passed."""
+    alarm_data = {"incident_number": "55555", "keyword": "B2"}
+
+    client.post("/api/alarm", json=alarm_data, headers={"X-API-Key": API_KEY})
+
+    store = flask_app.config["ALARM_STORE"]
+    past_time = datetime.now(timezone.utc) - timedelta(minutes=config.display_duration_minutes + 1)
+    with store._lock:
+        store._alarm["received_at"] = past_time
+        store._history[0]["received_at"] = past_time
+
+    response = client.get("/api/alarm")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["mode"] == "idle"
+
+
+# ---------------------------------------------------------------------------
+# Misc / integration
+# ---------------------------------------------------------------------------
 
 
 def test_create_app_uses_instance_history_path() -> None:
     """A default history file should be created inside the instance folder."""
-
-    config = AppConfig(mail=None, history_file=None)
-
-    flask_app = app_module.create_app(config)
+    cfg = AppConfig(api_key=None, history_file=None)
+    flask_app = app_module.create_app(cfg)
 
     store = flask_app.config["ALARM_STORE"]
     expected_path = Path(flask_app.instance_path) / "alarm_history.json"
 
     assert store._persistence_path == expected_path  # type: ignore[attr-defined]
-    assert config.history_file == str(expected_path)
+    assert cfg.history_file == str(expected_path)
 
 
-def test_history_persists_between_app_instances(tmp_path) -> None:
-    """Entries written by one app instance should load in subsequent ones."""
-
+def test_history_persists_between_app_instances(tmp_path: Path) -> None:
+    """Entries written by one app instance should be visible in a new instance."""
     history_file = tmp_path / "history.json"
-    config = AppConfig(mail=None, history_file=str(history_file))
+    cfg = AppConfig(api_key=API_KEY, history_file=str(history_file))
 
-    first_app = app_module.create_app(config)
+    first_app = app_module.create_app(cfg)
     first_store = first_app.config["ALARM_STORE"]
-    first_store.update({"alarm": {"keyword": "Persist"}})
+    first_store.update({"alarm": {"keyword": "Persist", "incident_number": "1"}})
 
-    second_app = app_module.create_app(config)
+    second_app = app_module.create_app(cfg)
     second_store = second_app.config["ALARM_STORE"]
 
     history = second_store.history()
@@ -175,171 +221,16 @@ def test_history_persists_between_app_instances(tmp_path) -> None:
     assert history[0]["alarm"]["keyword"] == "Persist"
 
 
-def test_process_email_ignores_duplicates_by_incident_number(
-    tmp_path: Path, dummy_fetcher: List[_DummyFetcher]
-) -> None:
-    """The app should ignore alarms with duplicate incident numbers."""
-    import textwrap
-
-    history_path = tmp_path / "history.json"
-    config = AppConfig(
-        mail=MailConfig(
-            host="imap.example.com",
-            port=993,
-            use_ssl=True,
-            username="user@example.com",
-            password="secret",
-            mailbox="INBOX",
-            search_criteria="UNSEEN",
-        ),
-        poll_interval=60,
-        history_file=str(history_path),
-    )
-
-    application = app_module.create_app(config)
-    store = application.config["ALARM_STORE"]
-    assert len(dummy_fetcher) == 1
-    
-    callback = dummy_fetcher[0].callback
-    
-    # First alarm with incident number 12345
-    raw_email_1 = textwrap.dedent(
-        """
-        Subject: Alarm 1
-
-        <INCIDENT>
-          <ENR>12345</ENR>
-          <STICHWORT>F3Y</STICHWORT>
-          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-    
-    callback(raw_email_1)
-    
-    history = store.history()
-    assert len(history) == 1
-    assert history[0]["alarm"]["incident_number"] == "12345"
-    
-    # Second alarm with same incident number (should be ignored)
-    raw_email_2 = textwrap.dedent(
-        """
-        Subject: Alarm 2 (Duplicate)
-
-        <INCIDENT>
-          <ENR>12345</ENR>
-          <STICHWORT>F4Y</STICHWORT>
-          <EBEGINN>24.07.2026 19:00:00</EBEGINN>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-    
-    callback(raw_email_2)
-    
-    # Should still have only one entry
-    history = store.history()
-    assert len(history) == 1
-    assert history[0]["alarm"]["incident_number"] == "12345"
-    # Should be the first one (not updated)
-    assert history[0]["alarm"]["keyword_primary"] == "F3Y"
-    
-    # Third alarm with different incident number (should be added)
-    raw_email_3 = textwrap.dedent(
-        """
-        Subject: Alarm 3
-
-        <INCIDENT>
-          <ENR>67890</ENR>
-          <STICHWORT>F5Y</STICHWORT>
-          <EBEGINN>24.07.2026 20:00:00</EBEGINN>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-    
-    callback(raw_email_3)
-    
-    # Should now have two entries
-    history = store.history()
-    assert len(history) == 2
-    assert history[0]["alarm"]["incident_number"] == "67890"
-    assert history[1]["alarm"]["incident_number"] == "12345"
-
-
-def test_process_email_rejects_alarms_without_incident_number(
-    tmp_path: Path, dummy_fetcher: List[_DummyFetcher]
-) -> None:
-    """The app should reject alarms without incident number (ENR)."""
-    import textwrap
-
-    history_path = tmp_path / "history.json"
-    config = AppConfig(
-        mail=MailConfig(
-            host="imap.example.com",
-            port=993,
-            use_ssl=True,
-            username="user@example.com",
-            password="secret",
-            mailbox="INBOX",
-            search_criteria="UNSEEN",
-        ),
-        poll_interval=60,
-        history_file=str(history_path),
-    )
-
-    application = app_module.create_app(config)
-    store = application.config["ALARM_STORE"]
-    assert len(dummy_fetcher) == 1
-    callback = dummy_fetcher[0].callback
-    
-    # Alarm without incident number (should be rejected)
-    raw_email = textwrap.dedent(
-        """
-        Subject: Alarm without ENR
-
-        <INCIDENT>
-          <STICHWORT>F3Y</STICHWORT>
-          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-    
-    callback(raw_email)
-    
-    # Should have no entries
-    history = store.history()
-    assert len(history) == 0
-    
-    # Now send a valid alarm with incident number
-    raw_email_valid = textwrap.dedent(
-        """
-        Subject: Valid Alarm
-
-        <INCIDENT>
-          <ENR>12345</ENR>
-          <STICHWORT>F4Y</STICHWORT>
-          <EBEGINN>24.07.2026 19:00:00</EBEGINN>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-    
-    callback(raw_email_valid)
-    
-    # Should now have one entry
-    history = store.history()
-    assert len(history) == 1
-    assert history[0]["alarm"]["incident_number"] == "12345"
-
-
 def test_create_app_initializes_messenger_when_configured(tmp_path: Path) -> None:
     """The app should initialize messenger when both URL and API key are provided."""
-    config = AppConfig(
-        mail=None,
+    cfg = AppConfig(
+        api_key=API_KEY,
         messenger_server_url="https://messenger.example.com",
         messenger_api_key="test-key-123",
         history_file=str(tmp_path / "history.json"),
     )
 
-    application = app_module.create_app(config)
+    application = app_module.create_app(cfg)
     messenger = application.config.get("ALARM_MESSENGER")
 
     assert messenger is not None
@@ -349,14 +240,14 @@ def test_create_app_initializes_messenger_when_configured(tmp_path: Path) -> Non
 
 def test_create_app_does_not_initialize_messenger_without_url(tmp_path: Path) -> None:
     """The app should not initialize messenger when URL is not provided."""
-    config = AppConfig(
-        mail=None,
+    cfg = AppConfig(
+        api_key=API_KEY,
         messenger_server_url=None,
         messenger_api_key="test-key-123",
         history_file=str(tmp_path / "history.json"),
     )
 
-    application = app_module.create_app(config)
+    application = app_module.create_app(cfg)
     messenger = application.config.get("ALARM_MESSENGER")
 
     assert messenger is None
@@ -364,80 +255,16 @@ def test_create_app_does_not_initialize_messenger_without_url(tmp_path: Path) ->
 
 def test_create_app_does_not_initialize_messenger_without_api_key(tmp_path: Path) -> None:
     """The app should not initialize messenger when API key is not provided."""
-    config = AppConfig(
-        mail=None,
+    cfg = AppConfig(
+        api_key=API_KEY,
         messenger_server_url="https://messenger.example.com",
         messenger_api_key=None,
         history_file=str(tmp_path / "history.json"),
     )
 
-    application = app_module.create_app(config)
+    application = app_module.create_app(cfg)
     messenger = application.config.get("ALARM_MESSENGER")
 
     assert messenger is None
-
-
-def test_process_email_sends_to_messenger_when_configured(
-    tmp_path: Path, dummy_fetcher: List[_DummyFetcher], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The app should send alarms to messenger when it's configured."""
-    import textwrap
-    from unittest.mock import Mock
-
-    history_path = tmp_path / "history.json"
-
-    # Create a mock messenger
-    mock_messenger = Mock()
-    mock_messenger.send_alarm.return_value = True
-
-    # Patch the create_messenger function
-    def _mock_create_messenger(url, key):
-        if url and key:
-            return mock_messenger
-        return None
-
-    monkeypatch.setattr(app_module, "create_messenger", _mock_create_messenger)
-
-    config = AppConfig(
-        mail=MailConfig(
-            host="imap.example.com",
-            port=993,
-            use_ssl=True,
-            username="user@example.com",
-            password="secret",
-            mailbox="INBOX",
-            search_criteria="UNSEEN",
-        ),
-        poll_interval=60,
-        history_file=str(history_path),
-        messenger_server_url="https://messenger.example.com",
-        messenger_api_key="test-key-123",
-    )
-
-    application = app_module.create_app(config)
-    assert len(dummy_fetcher) == 1
-    callback = dummy_fetcher[0].callback
-
-    # Send an alarm
-    raw_email = textwrap.dedent(
-        """
-        Subject: Test Alarm
-
-        <INCIDENT>
-          <ENR>12345</ENR>
-          <STICHWORT>F3Y</STICHWORT>
-          <EBEGINN>24.07.2026 18:42:11</EBEGINN>
-          <ORT>Musterstadt</ORT>
-        </INCIDENT>
-        """
-    ).lstrip().encode("utf-8")
-
-    callback(raw_email)
-
-    # Verify messenger was called
-    assert mock_messenger.send_alarm.call_count == 1
-    call_args = mock_messenger.send_alarm.call_args[0][0]
-    assert "alarm" in call_args
-    assert call_args["alarm"]["incident_number"] == "12345"
 
 

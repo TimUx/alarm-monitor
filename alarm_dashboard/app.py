@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-import atexit
+import hmac
 import logging
+import os
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import requests as http_requests
 from flask import Flask, jsonify, render_template, request, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from .config import AppConfig, load_config
 from .geocode import geocode_location
@@ -18,17 +23,88 @@ from .weather import fetch_weather
 
 LOGGER = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Weather cache (module-level, shared across requests)
+# ---------------------------------------------------------------------------
+
+_weather_cache_lock = threading.Lock()
+_weather_cache: Dict[str, Any] = {}  # keys: lat, lon, data, fetched_at
+_WEATHER_CACHE_TTL = timedelta(minutes=5)
+
+
+def _get_cached_weather(
+    weather_base_url: str,
+    weather_params: str,
+    lat: float,
+    lon: float,
+) -> Optional[Any]:
+    """Return cached weather data if fresh, otherwise fetch in background and return stale/None."""
+    with _weather_cache_lock:
+        cached_lat = _weather_cache.get("lat")
+        cached_lon = _weather_cache.get("lon")
+        fetched_at = _weather_cache.get("fetched_at")
+        cached_data = _weather_cache.get("data")
+        coords_match = cached_lat == lat and cached_lon == lon
+        if coords_match and fetched_at and datetime.now(timezone.utc) - fetched_at < _WEATHER_CACHE_TTL:
+            return cached_data
+        stale = cached_data if coords_match else None
+
+    def _fetch():
+        try:
+            data = fetch_weather(weather_base_url, weather_params, lat, lon)
+            with _weather_cache_lock:
+                _weather_cache["lat"] = lat
+                _weather_cache["lon"] = lon
+                _weather_cache["data"] = data
+                _weather_cache["fetched_at"] = datetime.now(timezone.utc)
+        except Exception as exc:  # pragma: no cover - best effort
+            LOGGER.warning("Background weather fetch failed: %s", exc)
+
+    threading.Thread(target=_fetch, daemon=True).start()
+    return stale
+
+
+# ---------------------------------------------------------------------------
+# Module-level helper for effective settings
+# ---------------------------------------------------------------------------
+
+
+def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> Dict[str, Any]:
+    """Get effective settings merging stored values with config defaults."""
+    stored = settings_store.get_all()
+    return {
+        "fire_department_name": stored.get("fire_department_name", config.fire_department_name),
+        "default_latitude": stored.get("default_latitude", config.default_latitude),
+        "default_longitude": stored.get("default_longitude", config.default_longitude),
+        "default_location_name": stored.get("default_location_name", config.default_location_name),
+        "activation_groups": stored.get("activation_groups", config.activation_groups),
+    }
+
 
 def create_app(config: Optional[AppConfig] = None) -> Flask:
     """Application factory used by Flask."""
 
-    logging.basicConfig(level=logging.INFO)
+    if os.environ.get("ALARM_DASHBOARD_JSON_LOGGING", "").lower() == "true":
+        from pythonjsonlogger import jsonlogger  # type: ignore[import]
+        handler = logging.StreamHandler()
+        fmt = jsonlogger.JsonFormatter(
+            "%(asctime)s %(levelname)s %(name)s %(message)s",
+            rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger"},
+        )
+        handler.setFormatter(fmt)
+        logging.root.handlers = []
+        logging.root.addHandler(handler)
+        logging.root.setLevel(logging.INFO)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     if config is None:
         config = load_config()
 
     app = Flask(__name__, template_folder=str(Path(__file__).parent / "templates"))
     app.config["APP_VERSION"] = config.app_version
     app.config["APP_VERSION_URL"] = config.app_version_url
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 3600
 
     if config.history_file:
         persistence_path = Path(config.history_file)
@@ -45,16 +121,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     settings_store = SettingsStore(persistence_path=settings_path)
     app.config["SETTINGS_STORE"] = settings_store
 
-    def get_effective_settings() -> Dict[str, Any]:
-        """Get effective settings merging stored values with config defaults."""
-        stored = settings_store.get_all()
-        return {
-            "fire_department_name": stored.get("fire_department_name", config.fire_department_name),
-            "default_latitude": stored.get("default_latitude", config.default_latitude),
-            "default_longitude": stored.get("default_longitude", config.default_longitude),
-            "default_location_name": stored.get("default_location_name", config.default_location_name),
-            "activation_groups": stored.get("activation_groups", config.activation_groups),
-        }
+    def get_settings() -> Dict[str, Any]:
+        return get_effective_settings(settings_store, config)
+
+    # Rate limiter – keyed by client IP
+    limiter = Limiter(key_func=get_remote_address, app=app, default_limits=[])
 
     # Initialize alarm messenger if configured
     messenger = create_messenger(
@@ -85,7 +156,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             return
 
         # Get effective activation groups from settings
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         activation_filters = effective_settings.get("activation_groups", [])
         if activation_filters:
             dispatch_codes = set()
@@ -112,9 +183,8 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
             if not match_found:
                 LOGGER.info(
-                    "Ignoring alarm without configured groups: filters=%s, codes=%s",
+                    "Ignoring alarm without configured groups: filters=%s",
                     activation_filters,
-                    sorted(dispatch_codes),
                 )
                 return
         location = alarm.get("location")
@@ -159,11 +229,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     # API endpoint for receiving alarms from alarm-mail service
     @app.route("/api/alarm", methods=["POST"])
+    @limiter.limit("60 per minute")
     def receive_alarm():
         """Receive alarm data via API from alarm-mail service."""
-        # Verify API key
-        api_key = request.headers.get("X-API-Key")
-        if not config.api_key or api_key != config.api_key:
+        # Verify API key using constant-time comparison to prevent timing attacks
+        api_key = request.headers.get("X-API-Key") or ""
+        if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
             LOGGER.warning("Unauthorized API access attempt")
             return jsonify({"error": "Unauthorized"}), 401
         
@@ -175,7 +246,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         
         try:
             process_alarm(alarm_data)
-            return jsonify({"status": "ok"}), 200
+            response = jsonify({"status": "ok"})
+            response.headers["Cache-Control"] = "no-store"
+            return response, 200
         except Exception as exc:
             LOGGER.error("Error processing alarm: %s", exc)
             return jsonify({"error": "Internal server error"}), 500
@@ -186,7 +259,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/")
     def dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         return render_template(
             "dashboard.html",
             crest_url=crest_url,
@@ -199,7 +272,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/navigation")
     def navigation_page() -> str:
         crest_url = url_for("static", filename="img/crest.png")
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         return render_template(
             "navigation.html",
             crest_url=crest_url,
@@ -207,7 +280,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             default_latitude=effective_settings["default_latitude"],
             default_longitude=effective_settings["default_longitude"],
             default_location_name=effective_settings["default_location_name"],
-            ors_api_key=config.ors_api_key,
             app_version=config.app_version,
             app_version_url=config.app_version_url,
         )
@@ -234,7 +306,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 "display_time": display_time,
             })
         crest_url = url_for("static", filename="img/crest.png")
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         return render_template(
             "history.html",
             entries=decorated,
@@ -247,7 +319,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/mobile")
     def mobile_dashboard() -> str:
         crest_url = url_for("static", filename="img/crest.png")
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         return render_template(
             "mobile.html",
             crest_url=crest_url,
@@ -282,21 +354,17 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
 
     def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         weather = None
-        if (
-            effective_settings["default_latitude"] is not None
-            and effective_settings["default_longitude"] is not None
-        ):
-            try:
-                weather = fetch_weather(
-                    config.weather_base_url,
-                    config.weather_params,
-                    effective_settings["default_latitude"],
-                    effective_settings["default_longitude"],
-                )
-            except Exception as exc:  # pragma: no cover - best effort
-                LOGGER.warning("Failed to fetch idle weather: %s", exc)
+        lat = effective_settings["default_latitude"]
+        lon = effective_settings["default_longitude"]
+        if lat is not None and lon is not None:
+            weather = _get_cached_weather(
+                config.weather_base_url,
+                config.weather_params,
+                lat,
+                lon,
+            )
         last_alarm_entry: Optional[Dict[str, Any]] = None
         if last_alarm:
             last_alarm_entry = _serialize_history_entry(last_alarm)
@@ -314,7 +382,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     def api_alarm():
         alarm_payload = store.latest()
         if alarm_payload is None:
-            return jsonify(_build_idle_response(None))
+            resp = jsonify(_build_idle_response(None))
+            resp.headers["Cache-Control"] = "no-store"
+            return resp
 
         received_at = alarm_payload.get("received_at")
         if isinstance(received_at, str):
@@ -328,9 +398,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
         display_duration = max(1, config.display_duration_minutes)
         if received_at and received_at + timedelta(minutes=display_duration) < datetime.now(timezone.utc):
-            return jsonify(_build_idle_response(alarm_payload))
+            resp = jsonify(_build_idle_response(alarm_payload))
+            resp.headers["Cache-Control"] = "no-store"
+            return resp
 
-        response: Dict[str, Any] = {
+        payload: Dict[str, Any] = {
             "mode": "alarm",
             "alarm": alarm_payload.get("alarm"),
             "coordinates": alarm_payload.get("coordinates"),
@@ -339,7 +411,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 received_at.isoformat() if isinstance(received_at, datetime) else None
             ),
         }
-        return jsonify(response)
+        resp = jsonify(payload)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
 
     @app.route("/api/alarm/participants/<incident_number>")
     def api_participants(incident_number: str):
@@ -377,20 +451,28 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/api/settings", methods=["GET"])
     def api_get_settings():
         """Get current settings."""
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         # Convert activation_groups list to comma-separated string for UI
         groups_str = ",".join(effective_settings.get("activation_groups", []))
-        return jsonify({
+        resp = jsonify({
             "fire_department_name": effective_settings["fire_department_name"],
             "default_latitude": effective_settings["default_latitude"],
             "default_longitude": effective_settings["default_longitude"],
             "default_location_name": effective_settings["default_location_name"],
             "activation_groups": groups_str,
         })
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
 
     @app.route("/api/settings", methods=["POST"])
     def api_update_settings():
         """Update settings."""
+        # Verify API key using constant-time comparison
+        api_key = request.headers.get("X-API-Key") or ""
+        if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
+            LOGGER.warning("Unauthorized settings update attempt")
+            return jsonify({"error": "Unauthorized"}), 401
+
         data = request.get_json()
         if not data:
             return jsonify({"error": "Invalid request"}), 400
@@ -441,13 +523,59 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         settings_store.update(updates)
         LOGGER.info("Settings updated: %s", updates)
         
-        return jsonify({"status": "ok", "settings": updates})
+        resp = jsonify({"status": "ok", "settings": updates})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    @app.route("/api/route")
+    def api_route():
+        """Proxy routing requests to OpenRouteService to keep the ORS API key server-side."""
+        if not config.ors_api_key:
+            return jsonify({"error": "Routing not configured"}), 503
+
+        try:
+            start_lat = float(request.args["start_lat"])
+            start_lon = float(request.args["start_lon"])
+            end_lat = float(request.args["end_lat"])
+            end_lon = float(request.args["end_lon"])
+        except (KeyError, ValueError, TypeError):
+            return jsonify({"error": "start_lat, start_lon, end_lat, end_lon are required numeric parameters"}), 400
+
+        body = {
+            "coordinates": [[start_lon, start_lat], [end_lon, end_lat]],
+            "instructions": True,
+            "language": "de",
+        }
+        try:
+            ors_response = http_requests.post(
+                "https://api.openrouteservice.org/v2/directions/driving-car?geometry_format=geojson",
+                json=body,
+                headers={
+                    "Authorization": config.ors_api_key,
+                    "Content-Type": "application/json",
+                },
+                timeout=15,
+            )
+        except Exception as exc:
+            LOGGER.warning("ORS request failed: %s", exc)
+            return jsonify({"error": "Routing service unavailable"}), 502
+
+        try:
+            data = ors_response.json()
+        except Exception as exc:
+            LOGGER.warning("Failed to parse ORS response: %s", exc)
+            data = {}
+
+        resp = jsonify(data)
+        resp.status_code = ors_response.status_code
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
 
     @app.route("/settings")
     def settings_page() -> str:
         """Settings configuration page."""
         crest_url = url_for("static", filename="img/crest.png")
-        effective_settings = get_effective_settings()
+        effective_settings = get_settings()
         return render_template(
             "settings.html",
             crest_url=crest_url,

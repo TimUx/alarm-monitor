@@ -12,9 +12,15 @@ services:
       - TZ=Europe/Berlin
     volumes:
       - ./instance:/app/instance
+    networks:
+      - alarm-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 5s
       start_period: 30s
       retries: 3
+
+networks:
+  alarm-net:
+    driver: bridge

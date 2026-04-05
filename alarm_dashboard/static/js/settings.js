@@ -8,6 +8,7 @@
     const form = document.getElementById('settings-form');
     const messageEl = document.getElementById('message');
     const cancelBtn = document.getElementById('cancel-btn');
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
     // Load current settings on page load
     function loadSettings() {
@@ -46,7 +47,7 @@
 
         // Client-side validation
         if (!settings.fire_department_name || settings.fire_department_name.trim() === '') {
-            showMessage('Feuerwehr-Name ist erforderlich', 'error');
+            showMessage('Feuerwehr-Name ist erforderlich', 'error', false);
             return;
         }
 
@@ -56,33 +57,35 @@
             const lon = parseFloat(settings.default_longitude);
 
             if (settings.default_latitude && isNaN(lat)) {
-                showMessage('Breitengrad muss eine Zahl sein', 'error');
+                showMessage('Breitengrad muss eine Zahl sein', 'error', false);
                 return;
             }
 
             if (settings.default_longitude && isNaN(lon)) {
-                showMessage('Längengrad muss eine Zahl sein', 'error');
+                showMessage('Längengrad muss eine Zahl sein', 'error', false);
                 return;
             }
 
             // Check if both are provided
             if ((settings.default_latitude && !settings.default_longitude) || 
                 (!settings.default_latitude && settings.default_longitude)) {
-                showMessage('Bitte beide Koordinaten angeben oder beide leer lassen', 'error');
+                showMessage('Bitte beide Koordinaten angeben oder beide leer lassen', 'error', false);
                 return;
             }
 
             // Validate ranges
             if (settings.default_latitude && (lat < -90 || lat > 90)) {
-                showMessage('Breitengrad muss zwischen -90 und 90 liegen', 'error');
+                showMessage('Breitengrad muss zwischen -90 und 90 liegen', 'error', false);
                 return;
             }
 
             if (settings.default_longitude && (lon < -180 || lon > 180)) {
-                showMessage('Längengrad muss zwischen -180 und 180 liegen', 'error');
+                showMessage('Längengrad muss zwischen -180 und 180 liegen', 'error', false);
                 return;
             }
         }
+
+        if (submitBtn) { submitBtn.disabled = true; }
 
         fetch('/api/settings', {
             method: 'POST',
@@ -100,25 +103,43 @@
                 return response.json();
             })
             .then(data => {
-                showMessage('Einstellungen erfolgreich gespeichert', 'success');
+                if (submitBtn) { submitBtn.disabled = false; }
+                showMessage('Gespeichert ✓', 'success', true);
                 // Reload after a short delay to show updated header
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
             })
             .catch(error => {
+                if (submitBtn) { submitBtn.disabled = false; }
                 console.error('Error saving settings:', error);
-                showMessage('Fehler beim Speichern: ' + error.message, 'error');
+                showMessage('Fehler beim Speichern: ' + error.message, 'error', false);
             });
     }
 
     // Show message
-    function showMessage(text, type) {
-        messageEl.textContent = text;
+    function showMessage(text, type, autoDismiss) {
+        messageEl.textContent = '';
         messageEl.className = 'message message--' + type;
         messageEl.style.display = 'block';
 
-        if (type === 'success') {
+        const span = document.createElement('span');
+        span.textContent = text;
+        messageEl.appendChild(span);
+
+        if (type === 'error' && !autoDismiss) {
+            const retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.textContent = 'Erneut versuchen';
+            retryBtn.className = 'message__retry-btn';
+            retryBtn.addEventListener('click', () => {
+                messageEl.style.display = 'none';
+                form.dispatchEvent(new Event('submit'));
+            });
+            messageEl.appendChild(retryBtn);
+        }
+
+        if (autoDismiss) {
             setTimeout(() => {
                 messageEl.style.display = 'none';
             }, 3000);
