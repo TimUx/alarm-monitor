@@ -13,14 +13,21 @@ LOGGER = logging.getLogger(__name__)
 # https://operations.osmfoundation.org/policies/nominatim/
 DEFAULT_USER_AGENT = "AlarmDashboard/1.0"
 
+_session: requests.Session = requests.Session()
+
 
 class GeocodingError(RuntimeError):
     """Raised when the geocoding service returns an error."""
 
 
-def geocode_location(base_url: str, location: str) -> Optional[Dict[str, float]]:
+def geocode_location(
+    base_url: str,
+    location: str,
+    session: Optional[requests.Session] = None,
+) -> Optional[Dict[str, float]]:
     """Resolve a human readable location into latitude and longitude."""
 
+    _s = session if session is not None else _session
     params = {
         "q": location,
         "format": "json",
@@ -30,7 +37,7 @@ def geocode_location(base_url: str, location: str) -> Optional[Dict[str, float]]
         "User-Agent": DEFAULT_USER_AGENT,
     }
     LOGGER.debug("Geocoding location '%s' via %s", location, base_url)
-    response = requests.get(base_url, params=params, headers=headers, timeout=10)
+    response = _s.get(base_url, params=params, headers=headers, timeout=10)
     if response.status_code != 200:
         raise GeocodingError(
             f"Geocoding request failed with status {response.status_code}: {response.text}"

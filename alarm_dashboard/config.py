@@ -32,16 +32,18 @@ class AppConfig:
     fire_department_name: str = "Alarm-Monitor"
     nominatim_base_url: str = "https://nominatim.openstreetmap.org/search"
     weather_base_url: str = "https://api.open-meteo.com/v1/forecast"
-    weather_params: str = "current_weather=true"
+    weather_params: str = "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall&forecast_days=1"
     default_latitude: Optional[float] = None
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
     history_file: Optional[str] = None
+    settings_file: Optional[str] = None
     ors_api_key: Optional[str] = None
     app_version: str = "dev-main"
     app_version_url: Optional[str] = None
     messenger_server_url: Optional[str] = None
     messenger_api_key: Optional[str] = None
+    settings_password: Optional[str] = None
 
 
 class MissingConfiguration(RuntimeError):
@@ -82,6 +84,10 @@ def load_config() -> AppConfig:
             "API_KEY not set. The /api/alarm endpoint will reject all requests. "
             "Set ALARM_DASHBOARD_API_KEY to enable API-based alarm reception."
         )
+    elif api_key == "change-me-to-random-api-key":
+        LOGGER.critical(
+            "API_KEY is set to the example default value. Please change it immediately."
+        )
 
     activation_raw = _get_env("GRUPPEN")
     activation_groups: List[str] = []
@@ -113,7 +119,6 @@ def load_config() -> AppConfig:
         )
         or "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall&forecast_days=1"
     )
-
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
@@ -135,6 +140,8 @@ def load_config() -> AppConfig:
     )
 
     ors_api_key = _get_env("ORS_API_KEY") or None
+
+    settings_password = _get_env("SETTINGS_PASSWORD") or None
 
     # Alarm messenger configuration
     messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
@@ -186,8 +193,8 @@ def load_config() -> AppConfig:
         app_version_url=app_version_url,
         messenger_server_url=messenger_server_url,
         messenger_api_key=messenger_api_key,
+        settings_password=settings_password,
     )
-
 
 
 __all__ = [

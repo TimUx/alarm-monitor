@@ -7,12 +7,7 @@
     <meta name="theme-color" content="#cc0000">
     <title>Einsatz Dashboard</title>
     <link rel="stylesheet" href="/static/css/dashboard.css">
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossorigin="anonymous"
-    >
+    <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
 </head>
 <body class="mode-idle" data-alarm-display-minutes="{{ display_duration_minutes }}">
     <div id="app" class="app-shell">
@@ -28,10 +23,10 @@
             </div>
         </header>
         <main class="app-main">
-            <section class="panel view alarm-view hidden" id="alarm-view">
+            <section class="panel view alarm-view hidden" id="alarm-view" aria-live="assertive" aria-atomic="true">
                 <div class="alarm-header">
                     <div class="alarm-header-text">
-                        <h2 id="keyword">-</h2>
+                        <h2 id="keyword" role="alert">-</h2>
                         <div class="alarm-header-meta">
                             <p class="alarm-subtitle" id="keyword-secondary"></p>
                             <p class="alarm-remark" id="remark"></p>
@@ -184,12 +179,7 @@
             </div>
         </nav>
     </div>
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2Ta90d1b6axonFa6aZwMBs="
-        crossorigin="anonymous"
-        defer
-    ></script>
+    <script src="/static/vendor/leaflet/leaflet.js" defer></script>
     <script src="/static/js/dashboard.js" defer></script>
 </body>
 </html>
