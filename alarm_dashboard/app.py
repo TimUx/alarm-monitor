@@ -582,6 +582,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             department_name=effective_settings["fire_department_name"],
             app_version=config.app_version,
             app_version_url=config.app_version_url,
+            api_key=config.api_key or "",
         )
 
     @app.route("/health")
