@@ -19,6 +19,16 @@ from alarm_dashboard import app as app_module
 API_KEY = "test-secret-key"
 
 
+@pytest.fixture(autouse=True)
+def mock_network_calls():
+    """Prevent real network calls by patching geocode and weather helpers."""
+    with (
+        patch("alarm_dashboard.app.geocode_location", return_value=None),
+        patch("alarm_dashboard.app.fetch_weather", return_value=None),
+    ):
+        yield
+
+
 @pytest.fixture
 def config(tmp_path: Path) -> AppConfig:
     """Return an AppConfig with a known API key and temp history file."""
@@ -94,6 +104,19 @@ def test_post_alarm_with_missing_api_key_returns_401(client) -> None:
     response = client.post("/api/alarm", json=alarm_data)
 
     assert response.status_code == 401
+    data = response.get_json()
+    assert "error" in data
+
+
+def test_post_alarm_with_no_json_body_returns_400(client) -> None:
+    """POST /api/alarm with correct API key but empty JSON body should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={},
+        headers={"X-API-Key": API_KEY},
+    )
+
+    assert response.status_code == 400
     data = response.get_json()
     assert "error" in data
 

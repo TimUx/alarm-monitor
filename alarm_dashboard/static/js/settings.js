@@ -10,6 +10,31 @@
     const cancelBtn = document.getElementById('cancel-btn');
     const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
+    const LS_KEY = 'alarm_dashboard_api_key';
+
+    /**
+     * Return the API key to use for authenticated requests.
+     * Preference order:
+     *   1. <meta name="api-key"> rendered by the server (non-empty value)
+     *   2. Value previously entered by the user and saved in localStorage
+     *   3. Prompt the user, persist the answer in localStorage
+     */
+    function getApiKey() {
+        const metaEl = document.querySelector('meta[name="api-key"]');
+        if (metaEl && metaEl.content.trim() !== '') {
+            return metaEl.content;
+        }
+        const stored = localStorage.getItem(LS_KEY);
+        if (stored) {
+            return stored;
+        }
+        const entered = window.prompt('API-Schlüssel eingeben:');
+        if (entered) {
+            localStorage.setItem(LS_KEY, entered);
+        }
+        return entered || '';
+    }
+
     // Load current settings on page load
     function loadSettings() {
         fetch('/api/settings')
@@ -91,6 +116,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': getApiKey(),
             },
             body: JSON.stringify(settings),
         })
