@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -80,29 +79,15 @@ class TestAlarmMessenger:
         messenger = AlarmMessenger(messenger_config)
         assert messenger.config == messenger_config
 
-    @patch("alarm_dashboard.messenger.requests.post")
-    def test_register_emergency(self, messenger_config):
-        messenger = AlarmMessenger(messenger_config)
-        
-        messenger.register_emergency("12345", "emergency-uuid-123")
-        
-        assert messenger._emergency_id_cache.get("12345") == "emergency-uuid-123"
-
-    def test_register_emergency_with_empty_values(self, messenger_config):
-        messenger = AlarmMessenger(messenger_config)
-        
-        # Should not raise, but also should not cache
-        messenger.register_emergency("", "")
-        messenger.register_emergency(None, None)
-        
-        assert len(messenger._emergency_id_cache) == 0
-
-
     @patch("alarm_dashboard.messenger.requests.get")
     def test_get_participants_success(self, mock_get, messenger_config):
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        lookup_response = Mock()
+        lookup_response.status_code = 200
+        lookup_response.json.return_value = [{"id": "emergency-uuid-123"}]
+
+        participants_response = Mock()
+        participants_response.status_code = 200
+        participants_response.json.return_value = {
             "emergencyId": "emergency-uuid-123",
             "totalParticipants": 2,
             "participants": [
@@ -140,12 +125,9 @@ class TestAlarmMessenger:
                 },
             ],
         }
-        mock_get.return_value = mock_response
+        mock_get.side_effect = [lookup_response, participants_response]
 
         messenger = AlarmMessenger(messenger_config)
-        # Manually set cache entry
-        messenger._emergency_id_cache["12345"] = "emergency-uuid-123"
-
         participants = messenger.get_participants("12345")
 
         assert participants is not None
@@ -154,27 +136,52 @@ class TestAlarmMessenger:
         assert participants[0]["responder"]["leadershipRole"] == "groupLeader"
         assert participants[1]["responder"]["firstName"] == "Anna"
 
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
+        assert mock_get.call_count == 2
+        lookup_call = mock_get.call_args_list[0]
+        assert lookup_call[0][0] == "https://messenger.example.com/api/emergencies"
+        assert lookup_call[1]["params"] == {"emergencyNumber": "12345"}
+        assert lookup_call[1]["headers"]["X-API-Key"] == "test-api-key-123"
+
+        participants_call = mock_get.call_args_list[1]
         assert (
-            call_args[0][0]
+            participants_call[0][0]
             == "https://messenger.example.com/api/emergencies/emergency-uuid-123/participants"
         )
-        assert call_args[1]["headers"]["X-API-Key"] == "test-api-key-123"
+        assert participants_call[1]["headers"]["X-API-Key"] == "test-api-key-123"
 
-    def test_get_participants_no_cache(self, messenger_config):
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_not_found(self, mock_get, messenger_config):
+        lookup_response = Mock()
+        lookup_response.status_code = 200
+        lookup_response.json.return_value = []
+        mock_get.return_value = lookup_response
+
         messenger = AlarmMessenger(messenger_config)
         participants = messenger.get_participants("99999")
 
         assert participants is None
 
     @patch("alarm_dashboard.messenger.requests.get")
-    def test_get_participants_request_error(self, mock_get, messenger_config):
+    def test_get_participants_lookup_request_error(self, mock_get, messenger_config):
         mock_get.side_effect = requests.exceptions.RequestException("Network error")
 
         messenger = AlarmMessenger(messenger_config)
-        messenger._emergency_id_cache["12345"] = "emergency-uuid-123"
+        participants = messenger.get_participants("12345")
 
+        assert participants is None
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_request_error(self, mock_get, messenger_config):
+        lookup_response = Mock()
+        lookup_response.status_code = 200
+        lookup_response.json.return_value = [{"id": "emergency-uuid-123"}]
+
+        mock_get.side_effect = [
+            lookup_response,
+            requests.exceptions.RequestException("Network error"),
+        ]
+
+        messenger = AlarmMessenger(messenger_config)
         participants = messenger.get_participants("12345")
 
         assert participants is None
