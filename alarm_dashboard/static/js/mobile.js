@@ -404,7 +404,7 @@ setInterval(updateMobileClock, 1000);
 updateMobileClock();
 
 async function fetchMobileAlarm() {
-    const response = await fetch('/api/mobile/alarm');
+    const response = await fetch('/api/alarm');
     if (!response.ok) {
         throw new Error('API request failed');
     }

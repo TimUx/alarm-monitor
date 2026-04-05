@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import atexit
+import concurrent.futures
 import hmac
 import logging
 import os
-import threading
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -15,53 +17,18 @@ from flask import Flask, jsonify, render_template, request, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+from .alarm_processor import _serialize_history_entry, process_alarm
 from .config import AppConfig, load_config
-from .geocode import geocode_location
 from .messenger import create_messenger
 from .storage import AlarmStore, SettingsStore
-from .weather import fetch_weather
+from .weather_cache import get_cached_weather
 
 LOGGER = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Weather cache (module-level, shared across requests)
-# ---------------------------------------------------------------------------
+_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+atexit.register(_executor.shutdown, wait=False)
 
-_weather_cache_lock = threading.Lock()
-_weather_cache: Dict[str, Any] = {}  # keys: lat, lon, data, fetched_at
-_WEATHER_CACHE_TTL = timedelta(minutes=5)
-
-
-def _get_cached_weather(
-    weather_base_url: str,
-    weather_params: str,
-    lat: float,
-    lon: float,
-) -> Optional[Any]:
-    """Return cached weather data if fresh, otherwise fetch in background and return stale/None."""
-    with _weather_cache_lock:
-        cached_lat = _weather_cache.get("lat")
-        cached_lon = _weather_cache.get("lon")
-        fetched_at = _weather_cache.get("fetched_at")
-        cached_data = _weather_cache.get("data")
-        coords_match = cached_lat == lat and cached_lon == lon
-        if coords_match and fetched_at and datetime.now(timezone.utc) - fetched_at < _WEATHER_CACHE_TTL:
-            return cached_data
-        stale = cached_data if coords_match else None
-
-    def _fetch():
-        try:
-            data = fetch_weather(weather_base_url, weather_params, lat, lon)
-            with _weather_cache_lock:
-                _weather_cache["lat"] = lat
-                _weather_cache["lon"] = lon
-                _weather_cache["data"] = data
-                _weather_cache["fetched_at"] = datetime.now(timezone.utc)
-        except Exception as exc:  # pragma: no cover - best effort
-            LOGGER.warning("Background weather fetch failed: %s", exc)
-
-    threading.Thread(target=_fetch, daemon=True).start()
-    return stale
+_INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +84,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     app.config["APP_CONFIG"] = config
 
     # Initialize settings store
-    settings_path = Path(app.instance_path) / "settings.json"
+    if config.settings_file:
+        settings_path = Path(config.settings_file)
+    else:
+        settings_path = Path(app.instance_path) / "settings.json"
     settings_store = SettingsStore(persistence_path=settings_path)
     app.config["SETTINGS_STORE"] = settings_store
 
@@ -139,95 +109,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     )
     app.config["ALARM_MESSENGER"] = messenger
 
-    def process_alarm(alarm: Dict[str, Any]) -> None:
-        """Process incoming alarm data from API.
-        
-        Args:
-            alarm: Parsed alarm data from alarm-mail service
-        """
-        LOGGER.info("Processing alarm: %s", alarm.get("incident_number"))
-        
-        # Check for incident number (required field)
-        incident_number = alarm.get("incident_number")
-        if not incident_number:
-            LOGGER.warning("Ignoring alarm without incident number (ENR)")
-            return
-        
-        # Check for duplicate based on incident number
-        if store.has_incident_number(incident_number):
-            LOGGER.info(
-                "Ignoring duplicate alarm with incident number: %s",
-                incident_number,
-            )
-            return
-
-        # Get effective activation groups from settings
-        effective_settings = get_settings()
-        activation_filters = effective_settings.get("activation_groups", [])
-        if activation_filters:
-            dispatch_codes = set()
-            for code in alarm.get("dispatch_group_codes") or []:
-                if isinstance(code, str):
-                    dispatch_codes.add(code.upper())
-
-            dispatch_texts: List[str] = []
-            dispatch_groups = alarm.get("dispatch_groups")
-            if isinstance(dispatch_groups, list):
-                dispatch_texts = [str(item).upper() for item in dispatch_groups]
-            elif isinstance(dispatch_groups, str):
-                dispatch_texts = [dispatch_groups.upper()]
-
-            match_found = False
-            for target in activation_filters:
-                target_upper = target.upper()
-                if target_upper in dispatch_codes:
-                    match_found = True
-                    break
-                if any(target_upper in text for text in dispatch_texts):
-                    match_found = True
-                    break
-
-            if not match_found:
-                LOGGER.info(
-                    "Ignoring alarm without configured groups: filters=%s",
-                    activation_filters,
-                )
-                return
-        location = alarm.get("location")
-        coordinates = None
-        weather = None
-
-        lat = alarm.get("latitude")
-        lon = alarm.get("longitude")
-        if lat is not None and lon is not None:
-            try:
-                coordinates = {"lat": float(lat), "lon": float(lon)}
-            except (TypeError, ValueError):
-                coordinates = None
-
-        if coordinates is None and location:
-            try:
-                coordinates = geocode_location(config.nominatim_base_url, location)
-            except Exception as exc:  # pragma: no cover - best effort
-                LOGGER.warning("Failed to geocode location %s: %s", location, exc)
-
-        if coordinates:
-            try:
-                weather = fetch_weather(
-                    config.weather_base_url,
-                    config.weather_params,
-                    float(coordinates["lat"]),
-                    float(coordinates["lon"]),
-                )
-            except Exception as exc:  # pragma: no cover - best effort
-                LOGGER.warning("Failed to fetch weather: %s", exc)
-        alarm_payload: Dict[str, Any] = {
-            "alarm": alarm,
-            "coordinates": coordinates,
-            "weather": weather,
-        }
-        store.update(alarm_payload)
-
     # API endpoint for receiving alarms from alarm-mail service
     @app.route("/api/alarm", methods=["POST"])
     @limiter.limit("60 per minute")
@@ -238,24 +119,21 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
             LOGGER.warning("Unauthorized API access attempt")
             return jsonify({"error": "Unauthorized"}), 401
-        
+
         # Get alarm data from request
         alarm_data = request.get_json()
         if not alarm_data:
             LOGGER.warning("Received empty alarm data")
             return jsonify({"error": "Invalid request"}), 400
-        
+
         try:
-            process_alarm(alarm_data)
+            process_alarm(alarm_data, store, config, get_settings, _executor)
             response = jsonify({"status": "ok"})
             response.headers["Cache-Control"] = "no-store"
             return response, 200
         except Exception as exc:
             LOGGER.error("Error processing alarm: %s", exc)
             return jsonify({"error": "Internal server error"}), 500
-
-    # Remove email fetcher code - no longer needed
-    # Alarms are now received via API from alarm-mail service
 
     @app.route("/")
     def dashboard() -> str:
@@ -329,42 +207,18 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             app_version_url=config.app_version_url,
         )
 
-    def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
-        alarm = entry.get("alarm") or {}
-        received_at = entry.get("received_at")
-        if isinstance(received_at, datetime):
-            received_at_iso = received_at.isoformat()
-        elif isinstance(received_at, str):
-            received_at_iso = received_at
-        else:
-            received_at_iso = None
-
-        timestamp = alarm.get("timestamp") or received_at_iso
-
-        return {
-            "timestamp": timestamp,
-            "timestamp_display": alarm.get("timestamp_display"),
-            "received_at": received_at_iso,
-            "incident_number": alarm.get("incident_number"),
-            "keyword": alarm.get("keyword") or alarm.get("subject"),
-            "location": alarm.get("location"),
-            "description": alarm.get("diagnosis"),
-            "groups": alarm.get("groups"),
-            "aao_groups": alarm.get("aao_groups"),
-            "remark": alarm.get("remark"),
-        }
-
     def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         effective_settings = get_settings()
         weather = None
         lat = effective_settings["default_latitude"]
         lon = effective_settings["default_longitude"]
         if lat is not None and lon is not None:
-            weather = _get_cached_weather(
+            weather = get_cached_weather(
                 config.weather_base_url,
                 config.weather_params,
                 lat,
                 lon,
+                executor=_executor,
             )
         last_alarm_entry: Optional[Dict[str, Any]] = None
         if last_alarm:
@@ -417,8 +271,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         return resp
 
     @app.route("/api/alarm/participants/<incident_number>")
+    @limiter.limit("30 per minute")
     def api_participants(incident_number: str):
         """Get participants for an alarm by incident number."""
+        if not _INCIDENT_NUMBER_RE.match(incident_number):
+            return jsonify({"error": "Invalid incident number"}), 400
+
         if not messenger:
             return jsonify({"error": "Messenger not configured"}), 503
 
@@ -427,7 +285,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             return jsonify({"error": "Failed to fetch participants"}), 500
 
         return jsonify({"participants": participants})
-
 
     @app.route("/api/history")
     def api_history():
@@ -444,10 +301,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             _serialize_history_entry(entry) for entry in history_entries
         ]
         return jsonify({"history": history_payload})
-
-    @app.route("/api/mobile/alarm")
-    def api_mobile_alarm():
-        return api_alarm()
 
     @app.route("/api/settings", methods=["GET"])
     def api_get_settings():
@@ -468,9 +321,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     @app.route("/api/settings", methods=["POST"])
     def api_update_settings():
         """Update settings."""
-        # Verify API key using constant-time comparison
-        api_key = request.headers.get("X-API-Key") or ""
-        if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
+        # Verify settings password using constant-time comparison
+        provided = request.headers.get("X-Settings-Password") or ""
+        if not config.settings_password or not hmac.compare_digest(provided, config.settings_password):
             LOGGER.warning("Unauthorized settings update attempt")
             return jsonify({"error": "Unauthorized"}), 401
 
@@ -480,14 +333,14 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
         # Validate and prepare settings
         updates = {}
-        
+
         if "fire_department_name" in data:
             updates["fire_department_name"] = str(data["fire_department_name"]).strip()
-        
+
         # Handle coordinates - require both or neither
         has_lat = "default_latitude" in data and data["default_latitude"]
         has_lon = "default_longitude" in data and data["default_longitude"]
-        
+
         if has_lat and has_lon:
             try:
                 lat = float(data["default_latitude"])
@@ -507,10 +360,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             # Allow clearing both coordinates
             updates["default_latitude"] = None
             updates["default_longitude"] = None
-        
+
         if "default_location_name" in data:
             updates["default_location_name"] = str(data["default_location_name"]).strip() if data["default_location_name"] else None
-        
+
         if "activation_groups" in data:
             # Parse comma-separated string to list
             groups_str = str(data["activation_groups"]).strip()
@@ -519,16 +372,17 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             else:
                 groups = []
             updates["activation_groups"] = groups
-        
+
         # Update settings
         settings_store.update(updates)
         LOGGER.info("Settings updated: %s", updates)
-        
+
         resp = jsonify({"status": "ok", "settings": updates})
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
     @app.route("/api/route")
+    @limiter.limit("30 per minute")
     def api_route():
         """Proxy routing requests to OpenRouteService to keep the ORS API key server-side."""
         if not config.ors_api_key:
@@ -561,6 +415,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             LOGGER.warning("ORS request failed: %s", exc)
             return jsonify({"error": "Routing service unavailable"}), 502
 
+        if ors_response.status_code != 200:
+            LOGGER.warning("ORS returned non-200 status: %s", ors_response.status_code)
+            return jsonify({"error": "Routing service error"}), 502
+
         try:
             data = ors_response.json()
         except Exception as exc:
@@ -568,7 +426,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             data = {}
 
         resp = jsonify(data)
-        resp.status_code = ors_response.status_code
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
@@ -583,7 +440,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             department_name=effective_settings["fire_department_name"],
             app_version=config.app_version,
             app_version_url=config.app_version_url,
-            api_key=config.api_key or "",
+            api_key_configured=bool(config.api_key),
         )
 
     @app.route("/health")
@@ -599,6 +456,3 @@ def main() -> None:
     app = create_app()
     app.run(host="0.0.0.0", port=8000)
 
-
-if __name__ == "__main__":  # pragma: no cover
-    main()

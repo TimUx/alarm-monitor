@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+import urllib.parse
 from typing import Any, Dict, List, Optional
 
 import requests
 
 LOGGER = logging.getLogger(__name__)
+
+_session: requests.Session = requests.Session()
 
 
 class WeatherServiceError(RuntimeError):
@@ -19,26 +22,24 @@ def fetch_weather(
     params_query: str,
     lat: float,
     lon: float,
+    session: Optional[requests.Session] = None,
 ) -> Optional[Dict[str, float]]:
     """Fetch current weather data for the provided coordinates."""
 
-    params = {
+    _s = session if session is not None else _session
+
+    params: Dict[str, Any] = {
         "latitude": lat,
         "longitude": lon,
     }
-    for param in params_query.split("&"):
-        if not param:
-            continue
-        if "=" in param:
-            key, value = param.split("=", 1)
-            params[key] = value
-        else:
-            params[param] = "true"
+    parsed = urllib.parse.parse_qs(params_query, keep_blank_values=False)
+    for key, values in parsed.items():
+        params[key] = values[0]
 
     LOGGER.debug(
         "Fetching weather for lat=%s lon=%s via %s", lat, lon, base_url
     )
-    response = requests.get(base_url, params=params, timeout=10)
+    response = _s.get(base_url, params=params, timeout=10)
     if response.status_code != 200:
         raise WeatherServiceError(
             f"Weather API request failed with status {response.status_code}: {response.text}"

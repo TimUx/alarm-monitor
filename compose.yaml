@@ -20,6 +20,16 @@ services:
       timeout: 5s
       start_period: 30s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: '0.5'
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   alarm-net:

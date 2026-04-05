@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#cc0000">
-    <meta name="api-key" content="{{ api_key }}">
     <title>Einstellungen</title>
     <link rel="stylesheet" href="/static/css/settings.css">
 </head>
@@ -22,10 +21,27 @@
             <img src="{{ crest_url }}" alt="Gemeindewappen" class="settings-crest">
         </header>
         <main class="settings-main">
+            {% if not api_key_configured %}
+            <div class="settings-warning-banner" role="alert">
+                ⚠️ Kein API-Schlüssel konfiguriert. Das Empfangen von Alarmen ist deaktiviert.
+            </div>
+            {% endif %}
             <section class="settings-section" aria-labelledby="settings-title">
                 <h2 id="settings-title" class="settings-section-title">Einstellungen</h2>
                 <div class="settings-form-wrap">
                     <form id="settings-form" class="settings-form">
+                        <div class="form-group">
+                            <label for="settings_password">Einstellungs-Passwort</label>
+                            <input
+                                type="password"
+                                id="settings_password"
+                                name="settings_password"
+                                placeholder="Passwort eingeben"
+                                autocomplete="current-password"
+                            >
+                            <small class="form-hint">Passwort zum Speichern der Einstellungen (ALARM_DASHBOARD_SETTINGS_PASSWORD).</small>
+                        </div>
+
                         <div class="form-group">
                             <label for="fire_department_name">Feuerwehr Name</label>
                             <input 

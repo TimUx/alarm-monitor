@@ -17,14 +17,15 @@ from alarm_dashboard import app as app_module
 
 
 API_KEY = "test-secret-key"
+SETTINGS_PASSWORD = "test-settings-password"
 
 
 @pytest.fixture(autouse=True)
 def mock_network_calls():
     """Prevent real network calls by patching geocode and weather helpers."""
     with (
-        patch("alarm_dashboard.app.geocode_location", return_value=None),
-        patch("alarm_dashboard.app.fetch_weather", return_value=None),
+        patch("alarm_dashboard.geocode.geocode_location", return_value=None),
+        patch("alarm_dashboard.weather.fetch_weather", return_value=None),
     ):
         yield
 
@@ -34,7 +35,9 @@ def config(tmp_path: Path) -> AppConfig:
     """Return an AppConfig with a known API key and temp history file."""
     return AppConfig(
         api_key=API_KEY,
+        settings_password=SETTINGS_PASSWORD,
         history_file=str(tmp_path / "history.json"),
+        settings_file=str(tmp_path / "settings.json"),
         display_duration_minutes=30,
     )
 
@@ -291,3 +294,114 @@ def test_create_app_does_not_initialize_messenger_without_api_key(tmp_path: Path
     assert messenger is None
 
 
+
+
+# ---------------------------------------------------------------------------
+# GET /api/settings – returns defaults
+# ---------------------------------------------------------------------------
+
+
+def test_get_settings_returns_defaults(client) -> None:
+    """GET /api/settings should return the default setting values."""
+    response = client.get("/api/settings")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "fire_department_name" in data
+    assert "default_latitude" in data
+    assert "default_longitude" in data
+    assert "default_location_name" in data
+    assert "activation_groups" in data
+
+
+# ---------------------------------------------------------------------------
+# POST /api/settings – authentication and update
+# ---------------------------------------------------------------------------
+
+
+def test_post_settings_updates_values(client, flask_app) -> None:
+    """POST /api/settings with correct settings password should update the settings."""
+    payload = {
+        "fire_department_name": "Test Feuerwehr",
+        "activation_groups": "WIL26,WIL41",
+    }
+
+    response = client.post(
+        "/api/settings",
+        json=payload,
+        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "ok"
+
+    # Verify the settings were actually stored
+    get_response = client.get("/api/settings")
+    get_data = get_response.get_json()
+    assert get_data["fire_department_name"] == "Test Feuerwehr"
+
+
+def test_post_settings_unauthorized(client) -> None:
+    """POST /api/settings without or with wrong password should return 401."""
+    # No password
+    response = client.post("/api/settings", json={"fire_department_name": "Hacker"})
+    assert response.status_code == 401
+    assert "error" in response.get_json()
+
+    # Wrong password
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Hacker"},
+        headers={"X-Settings-Password": "wrong-password"},
+    )
+    assert response.status_code == 401
+    assert "error" in response.get_json()
+
+
+def test_post_settings_invalid_coordinates(client) -> None:
+    """POST /api/settings with default_latitude=999 should return 400."""
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test",
+            "default_latitude": 999,
+            "default_longitude": 9.0,
+        },
+        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+    )
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+
+
+# ---------------------------------------------------------------------------
+# GET /api/alarm/participants – incident_number validation (SEC-3)
+# ---------------------------------------------------------------------------
+
+
+def test_api_participants_invalid_incident_number_returns_400(client) -> None:
+    """GET /api/alarm/participants with special chars incident_number should return 400."""
+    response = client.get("/api/alarm/participants/bad!chars")
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["error"] == "Invalid incident number"
+
+
+def test_api_participants_too_long_incident_number_returns_400(client) -> None:
+    """GET /api/alarm/participants with overly long incident_number should return 400."""
+    long_number = "A" * 51
+    response = client.get(f"/api/alarm/participants/{long_number}")
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["error"] == "Invalid incident number"
+
+
+def test_api_participants_valid_incident_number_without_messenger(client) -> None:
+    """GET /api/alarm/participants with valid incident_number but no messenger returns 503."""
+    response = client.get("/api/alarm/participants/12345")
+
+    assert response.status_code == 503

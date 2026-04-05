@@ -47,12 +47,6 @@ class AlarmStore:
                 self._incident_numbers.add(str(incident_number))
             self._persist_locked()
 
-    def get(self) -> Optional[Dict[str, Any]]:
-        with self._lock:
-            if self._alarm is None:
-                return None
-            return dict(self._alarm)
-
     def latest(self) -> Optional[Dict[str, Any]]:
         """Return the most recent alarm payload if available."""
 
