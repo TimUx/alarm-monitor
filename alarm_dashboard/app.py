@@ -127,6 +127,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     # Rate limiter – keyed by client IP
     limiter = Limiter(key_func=get_remote_address, app=app, default_limits=[])
 
+    @app.after_request
+    def set_api_cache_headers(response):
+        if request.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store, no-cache"
+        return response
+
     # Initialize alarm messenger if configured
     messenger = create_messenger(
         config.messenger_server_url, config.messenger_api_key
