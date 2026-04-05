@@ -5,15 +5,17 @@ from __future__ import annotations
 import atexit
 import concurrent.futures
 import hmac
+import json
 import logging
 import os
 import re
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests as http_requests
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, Response, jsonify, render_template, request, stream_with_context, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -91,6 +93,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     settings_store = SettingsStore(persistence_path=settings_path)
     app.config["SETTINGS_STORE"] = settings_store
 
+    # SSE subscriber registry – one threading.Event per connected client
+    _subscribers: List[threading.Event] = []
+    _subscribers_lock = threading.Lock()
+    app.config["SSE_SUBSCRIBERS"] = _subscribers
+
     def get_settings() -> Dict[str, Any]:
         return get_effective_settings(settings_store, config)
 
@@ -127,7 +134,12 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             return jsonify({"error": "Invalid request"}), 400
 
         try:
-            process_alarm(alarm_data, store, config, get_settings, _executor)
+            stored = process_alarm(alarm_data, store, config, get_settings, _executor)
+            if stored:
+                # Notify all connected SSE clients
+                with _subscribers_lock:
+                    for evt in _subscribers:
+                        evt.set()
             response = jsonify({"status": "ok"})
             response.headers["Cache-Control"] = "no-store"
             return response, 200
@@ -268,6 +280,57 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         resp = jsonify(payload)
         resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    @app.route("/api/stream")
+    def api_stream():
+        """Server-Sent Events endpoint for real-time alarm updates.
+
+        Clients connect and receive:
+        - An immediate ``{"type": "connected"}`` event confirming the connection.
+        - A ``{"type": "alarm", ...}`` event whenever a new alarm is received.
+        - A heartbeat comment line every 30 seconds to keep the connection alive.
+        """
+
+        def generate():
+            evt = threading.Event()
+            with _subscribers_lock:
+                _subscribers.append(evt)
+            try:
+                # Immediately confirm the connection
+                yield "data: " + json.dumps({"type": "connected"}) + "\n\n"
+                while True:
+                    triggered = evt.wait(timeout=30)
+                    evt.clear()
+                    if triggered:
+                        alarm_payload = store.latest()
+                        if alarm_payload is not None:
+                            received_at = alarm_payload.get("received_at")
+                            if isinstance(received_at, datetime):
+                                received_at = received_at.isoformat()
+                            event_data = json.dumps({
+                                "type": "alarm",
+                                "alarm": alarm_payload.get("alarm"),
+                                "coordinates": alarm_payload.get("coordinates"),
+                                "weather": alarm_payload.get("weather"),
+                                "received_at": received_at,
+                            })
+                        else:
+                            event_data = json.dumps({"type": "idle"})
+                        yield "data: " + event_data + "\n\n"
+                    else:
+                        # Heartbeat comment keeps proxies and load balancers from
+                        # closing the idle connection.
+                        yield ": heartbeat\n\n"
+            finally:
+                with _subscribers_lock:
+                    try:
+                        _subscribers.remove(evt)
+                    except ValueError:
+                        pass
+
+        resp = Response(stream_with_context(generate()), mimetype="text/event-stream")
+        resp.headers["X-Accel-Buffering"] = "no"
         return resp
 
     @app.route("/api/alarm/participants/<incident_number>")

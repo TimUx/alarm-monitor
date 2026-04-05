@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -405,3 +406,50 @@ def test_api_participants_valid_incident_number_without_messenger(client) -> Non
     response = client.get("/api/alarm/participants/12345")
 
     assert response.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# GET /api/stream – Server-Sent Events
+# ---------------------------------------------------------------------------
+
+
+def test_api_stream_content_type(client) -> None:
+    """GET /api/stream should return 200 with text/event-stream content type."""
+    resp = client.get("/api/stream")
+    # Access headers without consuming the streaming body
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.content_type
+
+
+def test_post_alarm_notifies_sse_subscribers(client, flask_app) -> None:
+    """Posting a new alarm should set all registered SSE subscriber events."""
+    evt = threading.Event()
+    flask_app.config["SSE_SUBSCRIBERS"].append(evt)
+    try:
+        alarm_data = {"incident_number": "SSE-001", "keyword": "F3Y"}
+        client.post("/api/alarm", json=alarm_data, headers={"X-API-Key": API_KEY})
+        assert evt.is_set(), "SSE subscriber event was not set after alarm was received"
+    finally:
+        try:
+            flask_app.config["SSE_SUBSCRIBERS"].remove(evt)
+        except ValueError:
+            pass
+
+
+def test_sse_subscriber_not_notified_for_invalid_alarm(client, flask_app) -> None:
+    """An alarm rejected by process_alarm (missing incident_number) must not notify subscribers."""
+    evt = threading.Event()
+    flask_app.config["SSE_SUBSCRIBERS"].append(evt)
+    try:
+        # Alarm without incident_number is silently dropped by process_alarm
+        client.post(
+            "/api/alarm",
+            json={"keyword": "F3Y"},
+            headers={"X-API-Key": API_KEY},
+        )
+        assert not evt.is_set(), "SSE subscriber was notified for a dropped alarm"
+    finally:
+        try:
+            flask_app.config["SSE_SUBSCRIBERS"].remove(evt)
+        except ValueError:
+            pass

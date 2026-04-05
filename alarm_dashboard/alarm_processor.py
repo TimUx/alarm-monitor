@@ -43,7 +43,7 @@ def process_alarm(
     config: Any,
     get_settings: Callable[[], Dict[str, Any]],
     executor: Any = None,
-) -> None:
+) -> bool:
     """Process incoming alarm data: filter, geocode, fetch weather, and store.
 
     The alarm is stored immediately with coordinates=None, weather=None.
@@ -56,20 +56,23 @@ def process_alarm(
         config: The AppConfig instance.
         get_settings: Callable returning current effective settings dict.
         executor: Optional ThreadPoolExecutor for background tasks.
+
+    Returns:
+        True if the alarm was accepted and stored, False if it was silently dropped.
     """
     LOGGER.info("Processing alarm: %s", alarm.get("incident_number"))
 
     incident_number = alarm.get("incident_number")
     if not incident_number:
         LOGGER.warning("Ignoring alarm without incident number (ENR)")
-        return
+        return False
 
     if store.has_incident_number(incident_number):
         LOGGER.info(
             "Ignoring duplicate alarm with incident number: %s",
             incident_number,
         )
-        return
+        return False
 
     effective_settings = get_settings()
     activation_filters = effective_settings.get("activation_groups", [])
@@ -101,7 +104,7 @@ def process_alarm(
                 "Ignoring alarm without configured groups: filters=%s",
                 activation_filters,
             )
-            return
+            return False
 
     # Store immediately with no coordinates/weather
     alarm_payload: Dict[str, Any] = {
@@ -153,6 +156,8 @@ def process_alarm(
     else:
         import threading
         threading.Thread(target=_enrich, daemon=True).start()
+
+    return True
 
 
 __all__ = ["process_alarm", "_serialize_history_entry"]
