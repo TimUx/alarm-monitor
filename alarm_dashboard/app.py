@@ -353,7 +353,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "incident_number": alarm.get("incident_number"),
             "keyword": alarm.get("keyword") or alarm.get("subject"),
             "location": alarm.get("location"),
-            "description": alarm.get("description"),
+            "description": alarm.get("diagnosis"),
             "groups": alarm.get("groups"),
             "aao_groups": alarm.get("aao_groups"),
             "remark": alarm.get("remark"),
