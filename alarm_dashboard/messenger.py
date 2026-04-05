@@ -41,29 +41,13 @@ class AlarmMessenger:
             config: Configuration for the messenger service
         """
         self.config = config
-        # Cache mapping of incident_number to emergency_id
-        self._emergency_id_cache: Dict[str, str] = {}
-
-    def register_emergency(self, incident_number: str, emergency_id: str) -> None:
-        """Register an emergency_id for an incident number.
-
-        This allows participant lookups by incident number.
-        Typically called when an alarm is received from the alarm-mail service.
-
-        Args:
-            incident_number: The incident number (ENR) from the alarm
-            emergency_id: The emergency ID from alarm-messenger
-        """
-        if incident_number and emergency_id:
-            self._emergency_id_cache[incident_number] = emergency_id
-            LOGGER.debug(
-                "Registered emergency_id %s for incident %s",
-                emergency_id,
-                incident_number,
-            )
 
     def get_participants(self, incident_number: str) -> Optional[List[Dict[str, Any]]]:
         """Get participants for an emergency by incident number.
+
+        First looks up the internal emergency UUID from alarm-messenger by
+        querying /api/emergencies?emergencyNumber={incident_number}, then
+        fetches participants for that emergency.
 
         Args:
             incident_number: The incident number (ENR) from the alarm
@@ -71,22 +55,43 @@ class AlarmMessenger:
         Returns:
             List of participants with responder details, or None if not found/error
         """
-        # Get emergency_id from cache
-        emergency_id = self._emergency_id_cache.get(incident_number)
-        if not emergency_id:
+        # Look up the internal emergency UUID from alarm-messenger
+        try:
+            lookup_response = requests.get(
+                f"{self.config.server_url}/api/emergencies",
+                params={"emergencyNumber": incident_number},
+                headers={"X-API-Key": self.config.api_key},
+                timeout=self.config.timeout,
+            )
+            lookup_response.raise_for_status()
+            emergencies = lookup_response.json()
+        except requests.exceptions.Timeout:
+            LOGGER.error(
+                "Timeout looking up emergency from messenger server: %s",
+                self.config.server_url,
+            )
+            return None
+        except requests.exceptions.RequestException as exc:
+            LOGGER.error("Failed to look up emergency from messenger: %s", exc)
+            return None
+        except Exception as exc:  # pragma: no cover
+            LOGGER.error("Unexpected error looking up emergency: %s", exc)
+            return None
+
+        if not emergencies:
             LOGGER.warning(
-                "No emergency_id cached for incident %s, cannot fetch participants",
+                "No emergency found for incident %s in messenger",
                 incident_number,
             )
             return None
+
+        emergency_id = emergencies[0]["id"]
 
         try:
             # Call the alarm-messenger API to get participants
             response = requests.get(
                 f"{self.config.server_url}/api/emergencies/{emergency_id}/participants",
-                headers={
-                    "X-API-Key": self.config.api_key,
-                },
+                headers={"X-API-Key": self.config.api_key},
                 timeout=self.config.timeout,
             )
 

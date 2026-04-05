@@ -228,11 +228,6 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
         store.update(alarm_payload)
 
-        # Register emergency_id with messenger for participant lookups
-        # The emergency_id comes from alarm-mail which gets it from alarm-messenger
-        if messenger and alarm.get("emergency_id"):
-            messenger.register_emergency(incident_number, alarm["emergency_id"])
-
     # API endpoint for receiving alarms from alarm-mail service
     @app.route("/api/alarm", methods=["POST"])
     @limiter.limit("60 per minute")
@@ -353,7 +348,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             "incident_number": alarm.get("incident_number"),
             "keyword": alarm.get("keyword") or alarm.get("subject"),
             "location": alarm.get("location"),
-            "description": alarm.get("description"),
+            "description": alarm.get("diagnosis"),
             "groups": alarm.get("groups"),
             "aao_groups": alarm.get("aao_groups"),
             "remark": alarm.get("remark"),
