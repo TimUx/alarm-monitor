@@ -20,7 +20,7 @@ def get_cached_weather(
     lat: float,
     lon: float,
     executor: Any = None,
-) -> Optional[Any]:
+) -> Optional[Dict[str, Any]]:
     """Return cached weather data if fresh, otherwise fetch in background and return stale/None.
 
     Args:

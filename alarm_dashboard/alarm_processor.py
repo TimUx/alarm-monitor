@@ -146,18 +146,7 @@ def process_alarm(
                 LOGGER.warning("Failed to fetch weather: %s", exc)
 
         # Update the stored alarm with enriched data
-        with store._lock:
-            if store._alarm is not None and (store._alarm.get("alarm") or {}).get(
-                "incident_number"
-            ) == incident_number:
-                store._alarm["coordinates"] = coordinates
-                store._alarm["weather"] = weather
-            for entry in store._history:
-                if (entry.get("alarm") or {}).get("incident_number") == incident_number:
-                    entry["coordinates"] = coordinates
-                    entry["weather"] = weather
-                    break
-            store._persist_locked()
+        store.update_enrichment(incident_number, coordinates, weather)
 
     if executor is not None:
         executor.submit(_enrich)

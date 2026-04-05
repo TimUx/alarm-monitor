@@ -47,6 +47,26 @@ class AlarmStore:
                 self._incident_numbers.add(str(incident_number))
             self._persist_locked()
 
+    def update_enrichment(
+        self,
+        incident_number: str,
+        coordinates: Optional[Dict[str, Any]],
+        weather: Optional[Dict[str, Any]],
+    ) -> None:
+        """Update coordinates and weather for an existing alarm entry by incident number."""
+        with self._lock:
+            if self._alarm is not None and (self._alarm.get("alarm") or {}).get(
+                "incident_number"
+            ) == incident_number:
+                self._alarm["coordinates"] = coordinates
+                self._alarm["weather"] = weather
+            for entry in self._history:
+                if (entry.get("alarm") or {}).get("incident_number") == incident_number:
+                    entry["coordinates"] = coordinates
+                    entry["weather"] = weather
+                    break
+            self._persist_locked()
+
     def latest(self) -> Optional[Dict[str, Any]]:
         """Return the most recent alarm payload if available."""
 
