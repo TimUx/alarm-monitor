@@ -18,6 +18,7 @@ alarm-monitor/
     ├── ARCHITECTURE.md              → Technische Systemarchitektur
     ├── FAQ.md                       → Häufig gestellte Fragen
     ├── MESSENGER_INTEGRATION.md     → Push-Benachrichtigungen Setup
+    ├── RASPBERRY_PI_SETUP.md        → Raspberry Pi 3 Installationsanleitung
     ├── SCREENSHOTS.md               → Screenshot-Dokumentation
     └── screenshots/                 → Screenshot-Dateien
 ```
@@ -40,7 +41,8 @@ Technische Details, Komponenten, Datenfluss
 
 ### ...das System installieren
 → **[Betriebshandbuch](../Betriebshandbuch.md)** (Kapitel Installation)  
-→ **[Quick Start Guide](QUICK_START.md)** (Schnellinstallation)
+→ **[Quick Start Guide](QUICK_START.md)** (Schnellinstallation)  
+→ **[Raspberry Pi 3 Setup](RASPBERRY_PI_SETUP.md)** (Kiosk-Installation auf RPi 3)
 
 ### ...das System konfigurieren
 → **[README.md](../README.md)** (Abschnitt Konfiguration)  
@@ -82,6 +84,7 @@ Dokumentation aller Ansichten
 |----------|-----------|--------|
 | [Betriebshandbuch](../Betriebshandbuch.md) | Admins | Installation, Betrieb, Wartung |
 | [Messenger-Integration](MESSENGER_INTEGRATION.md) | Admins | Push-Setup, Rückmeldungen |
+| [Raspberry Pi 3 Setup](RASPBERRY_PI_SETUP.md) | Admins | Kiosk-Installation auf RPi 3 |
 
 ### Für Entwickler
 
@@ -122,6 +125,7 @@ Dokumentation aller Ansichten
 - [Quick Start Guide](QUICK_START.md) – Schritt-für-Schritt
 - [Betriebshandbuch](../Betriebshandbuch.md) – Ausführlich
 - [README.md](../README.md) – Überblick
+- [Raspberry Pi 3 Setup](RASPBERRY_PI_SETUP.md) – Kiosk auf RPi 3
 
 ### Konfiguration
 
@@ -193,6 +197,7 @@ Dokumentation aller Ansichten
 | FAQ | ✅ Vollständig | Dezember 2024 | 100% |
 | Betriebshandbuch | ✅ Vollständig | Dezember 2024 | 100% |
 | Messenger-Integration | ✅ Vollständig | Dezember 2024 | 100% |
+| Raspberry Pi 3 Setup | ✅ Vollständig | April 2026 | 100% |
 | Screenshots | ⚠️ Teilweise | Dezember 2024 | 60% |
 | Contributing | ✅ Vollständig | Dezember 2024 | 100% |
 
@@ -234,6 +239,7 @@ Großartig! Siehe [Contributing Guide](../CONTRIBUTING.md#dokumentation)
 **Für Installation/Setup**:
 - [Installation](../Betriebshandbuch.md#installation) – Ausführlich
 - [Konfiguration](../README.md#konfiguration) – Environment-Variablen
+- [Raspberry Pi 3 Setup](RASPBERRY_PI_SETUP.md) – Kiosk-Terminal
 - [Messenger-Setup](MESSENGER_INTEGRATION.md) – Push-Benachrichtigungen
 
 **Für Entwickler**:
