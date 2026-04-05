@@ -19,10 +19,6 @@ let activeStart = null;
 let navigationCompleted = false;
 const navigationConfig = window.navigationConfig || {};
 const configuredStart = navigationConfig.defaultStart || null;
-const orsApiKey =
-    typeof navigationConfig.orsApiKey === 'string' && navigationConfig.orsApiKey.trim().length > 0
-        ? navigationConfig.orsApiKey.trim()
-        : null;
 const instructionDistanceTrigger = Number(navigationConfig.instructionDistanceTrigger) || 60;
 
 function scheduleMapResize(callback) {
@@ -317,30 +313,14 @@ function fetchAlarm() {
 }
 
 async function requestRoute(start, destination) {
-    if (!orsApiKey) {
-        throw new Error('Der OpenRouteService API-Schlüssel ist nicht konfiguriert.');
-    }
+    const params = new URLSearchParams({
+        start_lat: start.lat,
+        start_lon: start.lon,
+        end_lat: destination.lat,
+        end_lon: destination.lon,
+    });
 
-    const body = {
-        coordinates: [
-            [start.lon, start.lat],
-            [destination.lon, destination.lat],
-        ],
-        instructions: true,
-        language: 'de',
-    };
-
-    const response = await fetch(
-        'https://api.openrouteservice.org/v2/directions/driving-car?geometry_format=geojson',
-        {
-            method: 'POST',
-            headers: {
-                Authorization: orsApiKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-        },
-    );
+    const response = await fetch(`/api/route?${params}`);
 
     let data = null;
     try {

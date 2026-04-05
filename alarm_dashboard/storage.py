@@ -26,6 +26,7 @@ class AlarmStore:
         self._lock = threading.Lock()
         self._alarm: Optional[Dict[str, Any]] = None
         self._history: List[Dict[str, Any]] = []
+        self._incident_numbers: set = set()
         self._max_history = max_history
         self._persistence_path = Path(persistence_path) if persistence_path else None
 
@@ -41,6 +42,9 @@ class AlarmStore:
             self._history.insert(0, dict(payload))
             if len(self._history) > self._max_history:
                 self._history.pop()
+            incident_number = (payload.get("alarm") or {}).get("incident_number")
+            if incident_number:
+                self._incident_numbers.add(str(incident_number))
             self._persist_locked()
 
     def get(self) -> Optional[Dict[str, Any]]:
@@ -80,13 +84,7 @@ class AlarmStore:
             raise ValueError("incident_number must not be None or empty")
         
         with self._lock:
-            for entry in self._history:
-                alarm = entry.get("alarm")
-                if isinstance(alarm, dict):
-                    stored_number = alarm.get("incident_number")
-                    if stored_number and str(stored_number) == str(incident_number):
-                        return True
-            return False
+            return str(incident_number) in self._incident_numbers
 
     def _load_persisted_state(self) -> None:
         if self._persistence_path is None:
@@ -119,6 +117,15 @@ class AlarmStore:
                     history_items.append(self._restore_entry(item))
 
         self._history = history_items
+
+        # Rebuild the incident numbers set from loaded history
+        self._incident_numbers = set()
+        for item in self._history:
+            alarm = item.get("alarm")
+            if isinstance(alarm, dict):
+                num = alarm.get("incident_number")
+                if num:
+                    self._incident_numbers.add(str(num))
 
         if isinstance(raw_alarm, dict):
             self._alarm = self._restore_entry(raw_alarm)
