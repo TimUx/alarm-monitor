@@ -103,4 +103,4 @@ def settings_page() -> str:
 @views_bp.route("/health")
 def health():
     from flask import jsonify
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "ok"}), 200
