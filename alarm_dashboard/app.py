@@ -159,9 +159,16 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     app.config["LIMITER"] = _limiter
 
     @app.after_request
-    def set_api_cache_headers(response):
-        if request.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store, no-cache"
+    def set_cache_headers(response):
+        # Static assets are cache-busted via ?v=<app_version> query strings,
+        # so they can be cached normally by the browser.
+        if request.path.startswith("/static/"):
+            return response
+        # All other responses (HTML pages, API endpoints) must never be cached.
+        # This is especially important for kiosk displays so that design changes
+        # are picked up immediately without a manual cache clear.
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
         return response
 
     # Initialize alarm messenger if configured
