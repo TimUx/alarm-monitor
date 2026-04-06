@@ -685,3 +685,11 @@ body {
         font-size: 0.5rem;
     }
 }
+
+/* Hide bottom navigation in browser fullscreen mode */
+:fullscreen .mobile-bottom-nav,
+:-webkit-full-screen .mobile-bottom-nav,
+:-moz-full-screen .mobile-bottom-nav,
+body.is-fullscreen .mobile-bottom-nav {
+    display: none !important;
+}
