@@ -93,12 +93,52 @@ body {
 
 .header-meta {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 1.25rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.9rem;
+}
+
+.header-weather {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.22rem;
+    justify-content: center;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.header-weather-main {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: clamp(0.9rem, 0.82rem + 0.3vw, 1.05rem);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.header-weather-icon {
+    font-size: clamp(1.1rem, 1rem + 0.3vw, 1.3rem);
+    line-height: 1;
+}
+
+.header-weather-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: clamp(0.68rem, 0.62rem + 0.2vw, 0.8rem);
+    color: var(--text-secondary);
+}
+
+.header-weather-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    white-space: nowrap;
 }
 
 .crest {
@@ -239,15 +279,8 @@ body {
 
 .meta-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1.75rem;
-}
-
-@media (min-width: 860px) {
-    .meta-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: stretch;
-    }
 }
 
 .meta-card {
@@ -279,9 +312,6 @@ body {
     list-style: none;
 }
 
-.meta-card--weather {
-    grid-column: 1 / -1;
-}
 
 .meta-list {
     margin: 0;
@@ -322,9 +352,6 @@ body {
     font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.6rem);
 }
 
-.meta-card--weather > p {
-    margin: 0;
-}
 
 
 .weather-summary {
@@ -654,7 +681,7 @@ body.mode-alarm .app-main {
     }
 
     .header-meta {
-        align-self: start;
+        align-self: center;
         justify-self: end;
         width: auto;
     }
