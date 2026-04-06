@@ -117,13 +117,13 @@ body {
     align-items: center;
     gap: 0.4rem;
     font-weight: 700;
-    font-size: clamp(1.1rem, 0.95rem + 0.5vw, 1.4rem);
+    font-size: clamp(1.4rem, 1.2rem + 0.7vw, 1.8rem);
     color: var(--text-primary);
     white-space: nowrap;
 }
 
 .header-weather-icon {
-    font-size: clamp(1.3rem, 1.1rem + 0.4vw, 1.6rem);
+    font-size: clamp(1.6rem, 1.4rem + 0.6vw, 2.1rem);
     line-height: 1;
 }
 
@@ -131,7 +131,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    font-size: clamp(0.95rem, 0.82rem + 0.4vw, 1.2rem);
+    font-size: clamp(1.15rem, 1.0rem + 0.5vw, 1.5rem);
     color: var(--text-secondary);
 }
 

@@ -802,3 +802,17 @@ def test_post_alarm_with_invalid_groups_list_item_returns_400(client) -> None:
         headers={"X-API-Key": API_KEY},
     )
     assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Cache-Control headers
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("path", ["/", "/history", "/mobile", "/navigation", "/settings", "/health", "/api/alarm"])
+def test_html_pages_have_no_cache_headers(client, path) -> None:
+    """HTML pages and API endpoints must not be cached by the browser."""
+    response = client.get(path)
+    cache_control = response.headers.get("Cache-Control", "")
+    assert "no-store" in cache_control, f"Expected no-store in Cache-Control for {path}, got: {cache_control!r}"
+    assert "no-cache" in cache_control, f"Expected no-cache in Cache-Control for {path}, got: {cache_control!r}"

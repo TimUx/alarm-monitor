@@ -217,7 +217,7 @@ def api_stream():
                             event_data = json.dumps({"type": "idle"})
                         yield "data: " + event_data + "\n\n"
                     else:
-                        yield ": heartbeat\n\n"
+                        yield "data: " + json.dumps({"type": "heartbeat"}) + "\n\n"
                 except (BrokenPipeError, ConnectionResetError, GeneratorExit):
                     LOGGER.debug("SSE client disconnected")
                     break
