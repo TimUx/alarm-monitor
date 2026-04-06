@@ -53,7 +53,7 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     gap: 1.25rem;
-    padding: 0.85rem clamp(1.6rem, 2.3vw, 2.4rem);
+    padding: 0.5rem clamp(1.6rem, 2.3vw, 2.4rem);
     background: var(--surface);
     box-shadow: var(--shadow-soft);
     position: relative;
@@ -67,12 +67,12 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: clamp(60px, 48px + 1.8vw, 82px);
+    min-height: clamp(48px, 38px + 1.5vw, 64px);
 }
 
 .header-brand h1 {
     margin: 0;
-    font-size: clamp(2.5rem, 1.9rem + 1.2vw, 3.05rem);
+    font-size: clamp(1.9rem, 1.5rem + 0.9vw, 2.4rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     line-height: 0.95;
@@ -93,12 +93,52 @@ body {
 
 .header-meta {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 1.25rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.9rem;
+}
+
+.header-weather {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.22rem;
+    justify-content: center;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.header-weather-main {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: clamp(0.9rem, 0.82rem + 0.3vw, 1.05rem);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.header-weather-icon {
+    font-size: clamp(1.1rem, 1rem + 0.3vw, 1.3rem);
+    line-height: 1;
+}
+
+.header-weather-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: clamp(0.68rem, 0.62rem + 0.2vw, 0.8rem);
+    color: var(--text-secondary);
+}
+
+.header-weather-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    white-space: nowrap;
 }
 
 .crest {
@@ -108,7 +148,7 @@ body {
 }
 
 .app-header .crest {
-    width: clamp(60px, 48px + 1.8vw, 82px);
+    width: clamp(48px, 38px + 1.5vw, 64px);
     flex-shrink: 0;
     align-self: flex-start;
 }
@@ -239,15 +279,8 @@ body {
 
 .meta-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1.75rem;
-}
-
-@media (min-width: 860px) {
-    .meta-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: stretch;
-    }
 }
 
 .meta-card {
@@ -279,9 +312,6 @@ body {
     list-style: none;
 }
 
-.meta-card--weather {
-    grid-column: 1 / -1;
-}
 
 .meta-list {
     margin: 0;
@@ -322,9 +352,6 @@ body {
     font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.6rem);
 }
 
-.meta-card--weather > p {
-    margin: 0;
-}
 
 
 .weather-summary {
@@ -642,7 +669,7 @@ body.mode-alarm .app-main {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        padding: 1.05rem clamp(1.4rem, 6vw, 2.2rem);
+        padding: 0.7rem clamp(1.4rem, 6vw, 2.2rem);
         column-gap: 1rem;
         row-gap: 0.5rem;
     }
@@ -650,17 +677,17 @@ body.mode-alarm .app-main {
     .header-brand {
         min-width: 0;
         align-self: center;
-        min-height: clamp(56px, 46px + 3vw, 78px);
+        min-height: clamp(44px, 36px + 2.5vw, 60px);
     }
 
     .header-meta {
-        align-self: start;
+        align-self: center;
         justify-self: end;
         width: auto;
     }
 
     .app-header .crest {
-        width: clamp(56px, 46px + 3vw, 78px);
+        width: clamp(44px, 36px + 2.5vw, 60px);
     }
 
     .app-main {
@@ -682,11 +709,11 @@ body.mode-alarm .app-main {
     .app-header {
         column-gap: 0.75rem;
         row-gap: 0.4rem;
-        padding: 0.9rem clamp(1.1rem, 5vw, 1.5rem);
+        padding: 0.6rem clamp(1.1rem, 5vw, 1.5rem);
     }
 
     .header-brand {
-        min-height: clamp(50px, 42px + 2vw, 64px);
+        min-height: clamp(38px, 30px + 2vw, 52px);
     }
 
     .header-brand h1 {
@@ -705,7 +732,7 @@ body.mode-alarm .app-main {
     }
 
     .app-header .crest {
-        width: clamp(50px, 42px + 2vw, 64px);
+        width: clamp(38px, 30px + 2vw, 52px);
     }
 
     .app-main {
@@ -1193,4 +1220,12 @@ body.navigation-page .app-main {
     font-weight: 600;
     z-index: 9999;
     display: none;
+}
+
+/* Hide bottom navigation in browser fullscreen mode */
+:fullscreen .bottom-nav,
+:-webkit-full-screen .bottom-nav,
+:-moz-full-screen .bottom-nav,
+body.is-fullscreen .bottom-nav {
+    display: none !important;
 }

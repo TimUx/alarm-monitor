@@ -537,6 +537,7 @@ const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
 const idleDateEl = document.getElementById('idle-date');
 const idleWeatherEl = document.getElementById('idle-weather');
+const headerWeatherEl = document.getElementById('header-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordHeadingEl = document.getElementById('keyword');
@@ -728,56 +729,67 @@ function setMode(mode) {
     }
 }
 
-function updateWeather(weather) {
-    const container = document.getElementById('weather');
-    container.innerHTML = '';
+function createHeaderWeatherChip(icon, value) {
+    const chip = document.createElement('span');
+    chip.classList.add('header-weather-chip');
+    const iconEl = document.createElement('span');
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = icon;
+    const textEl = document.createElement('span');
+    textEl.textContent = value;
+    chip.appendChild(iconEl);
+    chip.appendChild(textEl);
+    return chip;
+}
 
-    const heading = document.createElement('h3');
-    heading.textContent = 'Wetter am Einsatzort';
-    container.appendChild(heading);
+function updateHeaderWeather(weather) {
+    if (!headerWeatherEl) {
+        return;
+    }
+    headerWeatherEl.innerHTML = '';
 
     if (!weather) {
-        const empty = document.createElement('p');
-        empty.textContent = 'Keine Daten verfügbar';
-        container.appendChild(empty);
+        headerWeatherEl.classList.add('hidden');
         return;
     }
 
-    const summary = createWeatherSummaryElement(weather);
-    if (summary) {
-        container.appendChild(summary);
-    }
+    const info = describeWeatherCode(Number(weather?.weathercode));
 
-    const temperatureText = formatTemperature(Number(weather.temperature)) ?? '–';
+    const main = document.createElement('div');
+    main.classList.add('header-weather-main');
+    if (info?.icon) {
+        const icon = document.createElement('span');
+        icon.classList.add('header-weather-icon');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = info.icon;
+        main.appendChild(icon);
+    }
+    const tempSpan = document.createElement('span');
+    tempSpan.textContent = formatTemperature(Number(weather.temperature)) ?? '–';
+    main.appendChild(tempSpan);
+    headerWeatherEl.appendChild(main);
+
+    const chips = document.createElement('div');
+    chips.classList.add('header-weather-chips');
+
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
-    const directionText = windInfo
-        ? windInfo.abbr
-        : formatMeasurement(Number(weather.winddirection), '°');
+    const windValue = windInfo ? `${windSpeedText} ${windInfo.abbr}` : windSpeedText;
+    chips.appendChild(createHeaderWeatherChip('🌬️', windValue));
 
-    const details = document.createElement('div');
-    details.classList.add('weather-details');
-
-    const temperature = createLabeledValueElement('p', 'Temperatur', temperatureText);
-    const wind = createLabeledValueElement('p', 'Wind', windSpeedText);
-    const direction = createLabeledValueElement('p', 'Richtung', directionText);
-    if (windInfo) {
-        const degreesText = formatDegrees(windInfo.degrees);
-        if (degreesText) {
-            direction.title = `≈ ${degreesText}`;
+    const precipProb = Number(weather.precipitation_probability);
+    if (isValidNumber(precipProb)) {
+        const unit = typeof weather.precipitation_probability_unit === 'string'
+            ? weather.precipitation_probability_unit
+            : '%';
+        const probText = formatProbability(precipProb, unit);
+        if (probText) {
+            chips.appendChild(createHeaderWeatherChip('💧', probText));
         }
     }
 
-    details.appendChild(temperature);
-    details.appendChild(wind);
-    details.appendChild(direction);
-
-    collectPrecipitationDetails(weather).forEach((entry) => {
-        const element = createLabeledValueElement('p', entry.label, entry.value);
-        details.appendChild(element);
-    });
-
-    container.appendChild(details);
+    headerWeatherEl.appendChild(chips);
+    headerWeatherEl.classList.remove('hidden');
 }
 
 function updateIdleWeather(weather) {
@@ -1174,7 +1186,7 @@ function updateDashboard(data) {
             alarmTimeEl.textContent = formattedTime || '-';
         }
 
-        updateWeather(data.weather);
+        updateHeaderWeather(data.weather);
         const coordinates = resolveCoordinates(
             data.coordinates,
             alarm.latitude,
@@ -1195,6 +1207,10 @@ function updateDashboard(data) {
         setMode('idle');
         setNavigationTarget(null, null);
         setNavigationAvailability(false);
+        if (headerWeatherEl) {
+            headerWeatherEl.classList.add('hidden');
+            headerWeatherEl.innerHTML = '';
+        }
         if (timestampEl) {
             timestampEl.textContent = 'Keine aktuellen Einsätze';
             timestampEl.classList.remove('hidden');
@@ -1489,3 +1505,17 @@ function startParticipantsPolling(incidentNumber) {
 
 // Clean up on page unload
 window.addEventListener('beforeunload', stopParticipantsPolling);
+
+// Hide bottom navigation in browser fullscreen mode (F11 or Fullscreen API)
+(function () {
+    function updateFullscreen() {
+        const isFullscreen = !!document.fullscreenElement ||
+            !!document.webkitFullscreenElement ||
+            window.outerHeight === screen.height;
+        document.body.classList.toggle('is-fullscreen', isFullscreen);
+    }
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    document.addEventListener('webkitfullscreenchange', updateFullscreen);
+    window.addEventListener('resize', updateFullscreen);
+    updateFullscreen();
+}());

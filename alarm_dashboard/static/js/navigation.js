@@ -761,3 +761,17 @@ if (document.readyState === 'loading') {
 } else {
     initializeNavigation();
 }
+
+// Hide bottom navigation in browser fullscreen mode (F11 or Fullscreen API)
+(function () {
+    function updateFullscreen() {
+        const isFullscreen = !!document.fullscreenElement ||
+            !!document.webkitFullscreenElement ||
+            window.outerHeight === screen.height;
+        document.body.classList.toggle('is-fullscreen', isFullscreen);
+    }
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    document.addEventListener('webkitfullscreenchange', updateFullscreen);
+    window.addEventListener('resize', updateFullscreen);
+    updateFullscreen();
+}());
