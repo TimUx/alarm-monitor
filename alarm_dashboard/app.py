@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import atexit
 import concurrent.futures
+import hashlib
 import hmac
 import json
 import logging
 import os
 import re
+import time
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -23,7 +25,7 @@ from .alarm_processor import _serialize_history_entry, process_alarm
 from .config import AppConfig, load_config
 from .messenger import create_messenger
 from .storage import AlarmStore, SettingsStore
-from .weather_cache import get_cached_weather
+from .weather_cache import WeatherCache, get_cached_weather
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,6 +33,16 @@ _executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 atexit.register(_executor.shutdown, wait=False)
 
 _INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
+
+
+def generate_csrf_token(settings_password: str) -> str:
+    """Generate an hourly HMAC-SHA256 CSRF token.
+
+    The token is valid for the current hour window (and accepted for the previous
+    hour to handle boundary conditions).
+    """
+    window = str(int(time.time() // 3600)).encode()
+    return hmac.new(settings_password.encode(), window, hashlib.sha256).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -93,6 +105,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     settings_store = SettingsStore(persistence_path=settings_path)
     app.config["SETTINGS_STORE"] = settings_store
 
+    # Per-app weather cache instance
+    weather_cache = WeatherCache()
+    app.config["WEATHER_CACHE"] = weather_cache
+
     # SSE subscriber registry – one threading.Event per connected client
     _subscribers: List[threading.Event] = []
     _subscribers_lock = threading.Lock()
@@ -143,6 +159,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             response = jsonify({"status": "ok"})
             response.headers["Cache-Control"] = "no-store"
             return response, 200
+        except ValueError as exc:
+            LOGGER.warning("Invalid alarm payload: %s", exc)
+            return jsonify({"error": str(exc)}), 400
         except Exception as exc:
             LOGGER.error("Error processing alarm: %s", exc)
             return jsonify({"error": "Internal server error"}), 500
@@ -177,30 +196,10 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
 
     @app.route("/history")
     def history_page() -> str:
-        raw_entries = store.history()
-        serialized = [_serialize_history_entry(entry) for entry in raw_entries]
-        decorated = []
-        for entry in serialized:
-            timestamp = entry.get("timestamp") or entry.get("received_at")
-            parsed: Optional[datetime]
-            parsed = None
-            if timestamp:
-                try:
-                    parsed = datetime.fromisoformat(timestamp)
-                except ValueError:
-                    parsed = None
-            display_date = parsed.strftime("%d.%m.%Y") if parsed else "–"
-            display_time = parsed.strftime("%H:%M") if parsed else "–"
-            decorated.append({
-                **entry,
-                "display_date": display_date,
-                "display_time": display_time,
-            })
         crest_url = url_for("static", filename="img/crest.png")
         effective_settings = get_settings()
         return render_template(
             "history.html",
-            entries=decorated,
             crest_url=crest_url,
             department_name=effective_settings["fire_department_name"],
             app_version=config.app_version,
@@ -225,7 +224,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         lat = effective_settings["default_latitude"]
         lon = effective_settings["default_longitude"]
         if lat is not None and lon is not None:
-            weather = get_cached_weather(
+            weather = weather_cache.get_weather(
                 config.weather_base_url,
                 config.weather_params,
                 lat,
@@ -246,6 +245,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         }
 
     @app.route("/api/alarm")
+    @limiter.limit("120 per minute")
     def api_alarm():
         alarm_payload = store.latest()
         if alarm_payload is None:
@@ -283,6 +283,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         return resp
 
     @app.route("/api/stream")
+    @limiter.limit("10 per minute")
     def api_stream():
         """Server-Sent Events endpoint for real-time alarm updates.
 
@@ -293,6 +294,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         """
 
         def generate():
+            # Guard: reject if too many concurrent SSE connections
+            with _subscribers_lock:
+                if len(_subscribers) >= 20:
+                    yield Response(
+                        json.dumps({"error": "Too many concurrent streams"}),
+                        status=503,
+                        mimetype="application/json",
+                    )
+                    return
             evt = threading.Event()
             with _subscribers_lock:
                 _subscribers.append(evt)
@@ -300,28 +310,32 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
                 # Immediately confirm the connection
                 yield "data: " + json.dumps({"type": "connected"}) + "\n\n"
                 while True:
-                    triggered = evt.wait(timeout=30)
-                    evt.clear()
-                    if triggered:
-                        alarm_payload = store.latest()
-                        if alarm_payload is not None:
-                            received_at = alarm_payload.get("received_at")
-                            if isinstance(received_at, datetime):
-                                received_at = received_at.isoformat()
-                            event_data = json.dumps({
-                                "type": "alarm",
-                                "alarm": alarm_payload.get("alarm"),
-                                "coordinates": alarm_payload.get("coordinates"),
-                                "weather": alarm_payload.get("weather"),
-                                "received_at": received_at,
-                            })
+                    try:
+                        triggered = evt.wait(timeout=30)
+                        evt.clear()
+                        if triggered:
+                            alarm_payload = store.latest()
+                            if alarm_payload is not None:
+                                received_at = alarm_payload.get("received_at")
+                                if isinstance(received_at, datetime):
+                                    received_at = received_at.isoformat()
+                                event_data = json.dumps({
+                                    "type": "alarm",
+                                    "alarm": alarm_payload.get("alarm"),
+                                    "coordinates": alarm_payload.get("coordinates"),
+                                    "weather": alarm_payload.get("weather"),
+                                    "received_at": received_at,
+                                })
+                            else:
+                                event_data = json.dumps({"type": "idle"})
+                            yield "data: " + event_data + "\n\n"
                         else:
-                            event_data = json.dumps({"type": "idle"})
-                        yield "data: " + event_data + "\n\n"
-                    else:
-                        # Heartbeat comment keeps proxies and load balancers from
-                        # closing the idle connection.
-                        yield ": heartbeat\n\n"
+                            # Heartbeat comment keeps proxies and load balancers from
+                            # closing the idle connection.
+                            yield ": heartbeat\n\n"
+                    except (BrokenPipeError, ConnectionResetError, GeneratorExit):
+                        LOGGER.debug("SSE client disconnected")
+                        break
             finally:
                 with _subscribers_lock:
                     try:
@@ -359,7 +373,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             except ValueError:
                 limit = None
 
-        history_entries = store.history(limit=limit)
+        offset = 0
+        raw_offset = request.args.get("offset")
+        if raw_offset:
+            try:
+                offset = max(0, min(10000, int(raw_offset)))
+            except ValueError:
+                offset = 0
+
+        history_entries = store.history(limit=limit, offset=offset)
         history_payload: List[Dict[str, Any]] = [
             _serialize_history_entry(entry) for entry in history_entries
         ]
@@ -389,6 +411,19 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         if not config.settings_password or not hmac.compare_digest(provided, config.settings_password):
             LOGGER.warning("Unauthorized settings update attempt")
             return jsonify({"error": "Unauthorized"}), 401
+
+        # Verify CSRF token (accept current and previous hour to handle boundaries)
+        csrf_header = request.headers.get("X-CSRF-Token") or ""
+        current_token = generate_csrf_token(config.settings_password)
+        prev_token = hmac.new(
+            config.settings_password.encode(),
+            str(int(time.time() // 3600) - 1).encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        if not (hmac.compare_digest(csrf_header, current_token) or
+                hmac.compare_digest(csrf_header, prev_token)):
+            LOGGER.warning("Invalid CSRF token on settings update")
+            return jsonify({"error": "Invalid CSRF token"}), 403
 
         data = request.get_json()
         if not data:
@@ -497,6 +532,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         """Settings configuration page."""
         crest_url = url_for("static", filename="img/crest.png")
         effective_settings = get_settings()
+        csrf_token = generate_csrf_token(config.settings_password) if config.settings_password else ""
         return render_template(
             "settings.html",
             crest_url=crest_url,
@@ -504,6 +540,7 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             app_version=config.app_version,
             app_version_url=config.app_version_url,
             api_key_configured=bool(config.api_key),
+            csrf_token=csrf_token,
         )
 
     @app.route("/health")

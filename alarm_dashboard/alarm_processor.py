@@ -3,9 +3,76 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Callable, Dict, List, Optional, Set
 
 LOGGER = logging.getLogger(__name__)
+
+_INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
+
+_OPTIONAL_STRING_FIELDS = (
+    "keyword", "subject", "location", "diagnosis",
+    "remark", "timestamp", "timestamp_display",
+)
+_OPTIONAL_LIST_FIELDS = (
+    "groups", "aao_groups", "dispatch_groups", "dispatch_group_codes",
+)
+
+
+def validate_alarm_payload(alarm: dict) -> None:
+    """Validate alarm payload fields.
+
+    incident_number is required and must be 1–50 alphanumeric/dash/underscore chars.
+    When other optional fields are present they must satisfy their constraints.
+
+    Raises:
+        ValueError: if any field violates its constraint.
+    """
+    incident_number = alarm.get("incident_number")
+    if incident_number is not None:
+        if not isinstance(incident_number, str):
+            raise ValueError("incident_number must be a string")
+        if not _INCIDENT_NUMBER_RE.match(incident_number):
+            raise ValueError(
+                "incident_number must be 1–50 characters matching ^[A-Za-z0-9\\-_]+$"
+            )
+
+    for field in _OPTIONAL_STRING_FIELDS:
+        value = alarm.get(field)
+        if value is not None:
+            if not isinstance(value, str):
+                raise ValueError(f"{field} must be a string")
+            if len(value) > 500:
+                raise ValueError(f"{field} must not exceed 500 characters")
+
+    for field in _OPTIONAL_LIST_FIELDS:
+        value = alarm.get(field)
+        if value is not None:
+            if not isinstance(value, list):
+                raise ValueError(f"{field} must be a list")
+            for i, item in enumerate(value):
+                if not isinstance(item, str):
+                    raise ValueError(f"{field}[{i}] must be a string")
+                if len(item) > 200:
+                    raise ValueError(f"{field}[{i}] must not exceed 200 characters")
+
+    lat = alarm.get("latitude")
+    if lat is not None:
+        try:
+            lat_f = float(lat)
+        except (TypeError, ValueError):
+            raise ValueError("latitude must be a number")
+        if not (-90 <= lat_f <= 90):
+            raise ValueError("latitude must be between -90 and 90")
+
+    lon = alarm.get("longitude")
+    if lon is not None:
+        try:
+            lon_f = float(lon)
+        except (TypeError, ValueError):
+            raise ValueError("longitude must be a number")
+        if not (-180 <= lon_f <= 180):
+            raise ValueError("longitude must be between -180 and 180")
 
 
 def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -62,6 +129,8 @@ def process_alarm(
     """
     LOGGER.info("Processing alarm: %s", alarm.get("incident_number"))
 
+    validate_alarm_payload(alarm)
+
     incident_number = alarm.get("incident_number")
     if not incident_number:
         LOGGER.warning("Ignoring alarm without incident number (ENR)")
@@ -116,40 +185,46 @@ def process_alarm(
 
     # Run geocoding + weather in the background
     def _enrich() -> None:
+        import requests as _requests
         from .geocode import geocode_location
         from .weather import fetch_weather
 
-        location = alarm.get("location")
-        coordinates: Optional[Dict[str, float]] = None
-        weather = None
+        session = _requests.Session()
+        try:
+            location = alarm.get("location")
+            coordinates: Optional[Dict[str, float]] = None
+            weather = None
 
-        lat = alarm.get("latitude")
-        lon = alarm.get("longitude")
-        if lat is not None and lon is not None:
-            try:
-                coordinates = {"lat": float(lat), "lon": float(lon)}
-            except (TypeError, ValueError):
-                coordinates = None
+            lat = alarm.get("latitude")
+            lon = alarm.get("longitude")
+            if lat is not None and lon is not None:
+                try:
+                    coordinates = {"lat": float(lat), "lon": float(lon)}
+                except (TypeError, ValueError):
+                    coordinates = None
 
-        if coordinates is None and location:
-            try:
-                coordinates = geocode_location(config.nominatim_base_url, location)
-            except Exception as exc:
-                LOGGER.warning("Failed to geocode location %s: %s", location, exc)
+            if coordinates is None and location:
+                try:
+                    coordinates = geocode_location(config.nominatim_base_url, location, session=session)
+                except Exception as exc:
+                    LOGGER.warning("Failed to geocode location %s: %s", location, exc)
 
-        if coordinates:
-            try:
-                weather = fetch_weather(
-                    config.weather_base_url,
-                    config.weather_params,
-                    float(coordinates["lat"]),
-                    float(coordinates["lon"]),
-                )
-            except Exception as exc:
-                LOGGER.warning("Failed to fetch weather: %s", exc)
+            if coordinates:
+                try:
+                    weather = fetch_weather(
+                        config.weather_base_url,
+                        config.weather_params,
+                        float(coordinates["lat"]),
+                        float(coordinates["lon"]),
+                        session=session,
+                    )
+                except Exception as exc:
+                    LOGGER.warning("Failed to fetch weather: %s", exc)
 
-        # Update the stored alarm with enriched data
-        store.update_enrichment(incident_number, coordinates, weather)
+            # Update the stored alarm with enriched data
+            store.update_enrichment(incident_number, coordinates, weather)
+        finally:
+            session.close()
 
     if executor is not None:
         executor.submit(_enrich)
@@ -160,4 +235,4 @@ def process_alarm(
     return True
 
 
-__all__ = ["process_alarm", "_serialize_history_entry"]
+__all__ = ["process_alarm", "validate_alarm_payload", "_serialize_history_entry"]

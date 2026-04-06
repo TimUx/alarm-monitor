@@ -21,11 +21,10 @@
             <img src="{{ crest_url }}" alt="Gemeindewappen" class="history-crest">
         </header>
         <main>
-            {% if entries %}
             <section class="history-table-section" aria-labelledby="history-title">
                 <h2 id="history-title" class="history-section-title">Alarm-Historie</h2>
                 <div class="history-table-wrap">
-                    <table class="history-table">
+                    <table class="history-table" id="history-table">
                         <thead>
                             <tr>
                                 <th scope="col">Datum</th>
@@ -36,44 +35,15 @@
                                 <th scope="col">Alarmierte Fahrzeuge</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for entry in entries %}
-                            <tr>
-                                <td data-label="Datum">{{ entry.display_date }}</td>
-                                <td data-label="Uhrzeit">{{ entry.display_time }}</td>
-                                <td data-label="Stichwort">{{ entry.keyword or "-" }}</td>
-                                <td data-label="Ort">{{ entry.location or "-" }}</td>
-                                <td data-label="Beschreibung">
-                                    {% if entry.description %}
-                                    <div class="history-description">{{ entry.description }}</div>
-                                    {% else %}
-                                    <div class="history-description">-</div>
-                                    {% endif %}
-                                    {% if entry.remark %}
-                                    <div class="history-remark">{{ entry.remark }}</div>
-                                    {% endif %}
-                                </td>
-                                <td data-label="Alarmierte Fahrzeuge">
-                                    {% set vehicles = entry.aao_groups %}
-                                    {% if vehicles %}
-                                        {% if vehicles is string %}
-                                            {{ vehicles }}
-                                        {% else %}
-                                            {{ vehicles | join(', ') }}
-                                        {% endif %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
+                        <tbody id="history-tbody">
                         </tbody>
                     </table>
                 </div>
+                <p class="history-empty" id="history-empty" style="display:none;">Keine Einsätze vorhanden.</p>
+                <div class="history-load-more" id="load-more-wrap" style="display:none;">
+                    <button type="button" id="load-more-btn" class="btn btn-secondary">Mehr laden</button>
+                </div>
             </section>
-            {% else %}
-            <p class="history-empty">Keine Einsätze vorhanden.</p>
-            {% endif %}
         </main>
         <nav class="bottom-nav" aria-label="Hauptnavigation">
             <a href="/" class="bottom-nav__item" aria-label="Zurück zum Dashboard">
@@ -122,5 +92,6 @@
             </div>
         </nav>
     </div>
+    <script src="/static/js/history.js"></script>
 </body>
 </html>

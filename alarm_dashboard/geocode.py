@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Dict, Optional
 
 import requests
@@ -13,7 +14,14 @@ LOGGER = logging.getLogger(__name__)
 # https://operations.osmfoundation.org/policies/nominatim/
 DEFAULT_USER_AGENT = "AlarmDashboard/1.0"
 
-_session: requests.Session = requests.Session()
+_local = threading.local()
+
+
+def _get_session() -> requests.Session:
+    """Return a thread-local requests Session, creating one if needed."""
+    if not hasattr(_local, 'session'):
+        _local.session = requests.Session()
+    return _local.session
 
 
 class GeocodingError(RuntimeError):
@@ -27,7 +35,7 @@ def geocode_location(
 ) -> Optional[Dict[str, float]]:
     """Resolve a human readable location into latitude and longitude."""
 
-    _s = session if session is not None else _session
+    _s = session if session is not None else _get_session()
     params = {
         "q": location,
         "format": "json",

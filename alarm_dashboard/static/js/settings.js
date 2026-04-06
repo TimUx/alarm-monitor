@@ -93,6 +93,9 @@
             headers: {
                 'Content-Type': 'application/json',
                 'X-Settings-Password': password,
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')
+                    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    : '',
             },
             body: JSON.stringify(settings),
         })

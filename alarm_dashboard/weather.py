@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import urllib.parse
 from typing import Any, Dict, List, Optional
 
@@ -10,7 +11,14 @@ import requests
 
 LOGGER = logging.getLogger(__name__)
 
-_session: requests.Session = requests.Session()
+_local = threading.local()
+
+
+def _get_session() -> requests.Session:
+    """Return a thread-local requests Session, creating one if needed."""
+    if not hasattr(_local, 'session'):
+        _local.session = requests.Session()
+    return _local.session
 
 
 class WeatherServiceError(RuntimeError):
@@ -26,7 +34,7 @@ def fetch_weather(
 ) -> Optional[Dict[str, float]]:
     """Fetch current weather data for the provided coordinates."""
 
-    _s = session if session is not None else _session
+    _s = session if session is not None else _get_session()
 
     params: Dict[str, Any] = {
         "latitude": lat,

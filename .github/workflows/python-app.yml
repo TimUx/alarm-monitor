@@ -28,6 +28,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest pytest-cov
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Security scan with pip-audit
+      run: |
+        pip install pip-audit
+        pip-audit -r requirements.txt --vulnerability-service osv
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

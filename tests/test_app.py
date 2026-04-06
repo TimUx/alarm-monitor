@@ -15,6 +15,7 @@ import pytest
 
 from alarm_dashboard.config import AppConfig
 from alarm_dashboard import app as app_module
+from alarm_dashboard.app import generate_csrf_token
 
 
 API_KEY = "test-secret-key"
@@ -330,7 +331,10 @@ def test_post_settings_updates_values(client, flask_app) -> None:
     response = client.post(
         "/api/settings",
         json=payload,
-        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
     )
 
     assert response.status_code == 200
@@ -369,7 +373,10 @@ def test_post_settings_invalid_coordinates(client) -> None:
             "default_latitude": 999,
             "default_longitude": 9.0,
         },
-        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
     )
 
     assert response.status_code == 400

@@ -123,6 +123,24 @@ def load_config() -> AppConfig:
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
     history_file = _get_env("HISTORY_FILE") or None
+    settings_file = _get_env("SETTINGS_FILE") or None
+
+    def _validate_path(path_str: str, env_name: str) -> None:
+        from pathlib import Path as _Path
+        if not path_str.startswith("/"):
+            raise MissingConfiguration(
+                f"{ENV_PREFIX}{env_name} must be an absolute path (got: {path_str!r})"
+            )
+        resolved = str(_Path(path_str).resolve())
+        if ".." in _Path(path_str).parts:
+            raise MissingConfiguration(
+                f"{ENV_PREFIX}{env_name} must not contain '..' components (got: {path_str!r})"
+            )
+
+    if history_file:
+        _validate_path(history_file, "HISTORY_FILE")
+    if settings_file:
+        _validate_path(settings_file, "SETTINGS_FILE")
     default_latitude_float: Optional[float] = None
     default_longitude_float: Optional[float] = None
     if default_latitude_raw is not None and default_longitude_raw is not None:
@@ -188,6 +206,7 @@ def load_config() -> AppConfig:
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
         history_file=history_file,
+        settings_file=settings_file,
         ors_api_key=ors_api_key,
         app_version=app_version,
         app_version_url=app_version_url,

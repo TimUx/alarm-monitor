@@ -76,12 +76,19 @@ class AlarmStore:
                 return None
             return dict(self._alarm)
 
-    def history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def history(self, limit: Optional[int] = None, offset: int = 0) -> List[Dict[str, Any]]:
         """Return the stored alarm history in chronological order (newest first)."""
 
         with self._lock:
-            items = self._history if limit is None else self._history[:limit]
+            items = self._history[offset:] if offset else self._history
+            if limit is not None:
+                items = items[:limit]
             return [dict(item) for item in items]
+
+    def history_count(self) -> int:
+        """Return the total number of stored history entries."""
+        with self._lock:
+            return len(self._history)
 
     def has_incident_number(self, incident_number: str) -> bool:
         """Check if an alarm with the given incident number already exists in history.
