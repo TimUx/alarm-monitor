@@ -56,6 +56,7 @@ class AlarmMessenger:
             List of participants with responder details, or None if not found/error
         """
         # Look up the internal emergency UUID from alarm-messenger
+        LOGGER.debug("Step 1: looking up emergency UUID for incident %s", incident_number)
         try:
             lookup_response = requests.get(
                 f"{self.config.server_url}/api/emergencies",
@@ -63,8 +64,27 @@ class AlarmMessenger:
                 headers={"X-API-Key": self.config.api_key},
                 timeout=self.config.timeout,
             )
+            if lookup_response.status_code == 401:
+                LOGGER.error(
+                    "Participant lookup failed with 401 Unauthorized. "
+                    "alarm-messenger GET /api/emergencies must be accessible with X-API-Key. "
+                    "See alarm-messenger fix: change verifyDeviceToken to verifyApiKey on GET /api/emergencies."
+                )
+                return None
             lookup_response.raise_for_status()
-            emergencies = lookup_response.json()
+            response_body = lookup_response.json()
+
+            # alarm-messenger returns a paginated envelope {"data": [...], "pagination": {...}}
+            if isinstance(response_body, dict) and "data" in response_body:
+                emergencies = response_body["data"]
+            elif isinstance(response_body, list):
+                emergencies = response_body  # forward-compatible with any future API change
+            else:
+                LOGGER.error(
+                    "Unexpected emergency lookup response format: %s",
+                    type(response_body).__name__,
+                )
+                return None
         except requests.exceptions.Timeout:
             LOGGER.error(
                 "Timeout looking up emergency from messenger server: %s",
@@ -86,7 +106,9 @@ class AlarmMessenger:
             return None
 
         emergency_id = emergencies[0]["id"]
+        LOGGER.debug("Step 1 resolved: incident %s → UUID %s", incident_number, emergency_id)
 
+        LOGGER.debug("Step 2: fetching participants for UUID %s", emergency_id)
         try:
             # Call the alarm-messenger API to get participants
             response = requests.get(
