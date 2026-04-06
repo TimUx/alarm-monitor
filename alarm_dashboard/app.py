@@ -64,6 +64,17 @@ def generate_csrf_token(settings_password: str) -> str:
     return hmac.new(settings_password.encode(), window, hashlib.sha256).hexdigest()
 
 
+def generate_csrf_token_for_hour_offset(settings_password: str, hour_offset: int) -> str:
+    """Generate an HMAC-SHA256 CSRF token for a specific hour offset from now.
+
+    Args:
+        settings_password: The settings password used as HMAC key.
+        hour_offset: Number of hours to offset from current time (e.g. -1 for previous hour).
+    """
+    window = str(int(time.time() // 3600) + hour_offset).encode()
+    return hmac.new(settings_password.encode(), window, hashlib.sha256).hexdigest()
+
+
 # ---------------------------------------------------------------------------
 # Module-level helper for effective settings
 # ---------------------------------------------------------------------------

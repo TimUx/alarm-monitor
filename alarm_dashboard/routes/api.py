@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import hashlib
 import hmac
 import json
 import logging
 import re
 import threading
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -127,9 +125,12 @@ def receive_alarm():
         return response, 200
     except ValueError as exc:
         LOGGER.warning("Invalid alarm payload: %s", exc)
-        return jsonify({"error": str(exc)}), 400
-    except Exception as exc:
-        LOGGER.error("Error processing alarm: %s", exc)
+        # Validation errors from validate_alarm_payload() are intentionally surfaced
+        # to callers so they can correct the payload.
+        error_message = str(exc)
+        return jsonify({"error": error_message}), 400
+    except Exception:
+        LOGGER.error("Error processing alarm", exc_info=True)
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -344,7 +345,7 @@ def api_get_settings():
 @api_bp.route("/api/settings", methods=["POST"])
 def api_update_settings():
     """Update settings."""
-    from ..app import generate_csrf_token
+    from ..app import generate_csrf_token, generate_csrf_token_for_hour_offset
     config = _get_config()
     settings_store = _get_settings_store()
 
@@ -355,11 +356,7 @@ def api_update_settings():
 
     csrf_header = request.headers.get("X-CSRF-Token") or ""
     current_token = generate_csrf_token(config.settings_password)
-    prev_token = hmac.new(
-        config.settings_password.encode(),
-        str(int(time.time() // 3600) - 1).encode(),
-        hashlib.sha256,
-    ).hexdigest()
+    prev_token = generate_csrf_token_for_hour_offset(config.settings_password, -1)
     if not (hmac.compare_digest(csrf_header, current_token) or
             hmac.compare_digest(csrf_header, prev_token)):
         LOGGER.warning("Invalid CSRF token on settings update")
