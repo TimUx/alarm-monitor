@@ -14,6 +14,7 @@ import requests as http_requests
 from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
 
 from ..alarm_processor import _serialize_history_entry, process_alarm
+from ..app import _limiter
 
 LOGGER = logging.getLogger(__name__)
 
@@ -93,6 +94,7 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
 # ---------------------------------------------------------------------------
 
 @api_bp.route("/api/alarm", methods=["POST"])
+@_limiter.limit("60 per minute")
 def receive_alarm():
     """Receive alarm data via API from alarm-mail service."""
     from ..app import _executor, _increment_metric

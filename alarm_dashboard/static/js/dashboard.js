@@ -937,7 +937,9 @@ function updateIdleLastAlarm(info) {
     const location = info.location;
 
     const keywordEl = document.createElement('p');
-    keywordEl.innerHTML = `<strong>${keyword}</strong>`;
+    const strongEl = document.createElement('strong');
+    strongEl.textContent = keyword;
+    keywordEl.appendChild(strongEl);
     idleLastAlarmEl.appendChild(keywordEl);
 
     if (location) {
@@ -966,12 +968,6 @@ function resolveCoordinates(primary, fallbackLat, fallbackLon) {
     }
 
     return null;
-}
-
-function isLeafletAvailable() {
-    return typeof window !== 'undefined'
-        && typeof window.L === 'object'
-        && typeof window.L.map === 'function';
 }
 
 function isLeafletAvailable() {
@@ -1174,7 +1170,9 @@ function updateDashboard(data) {
         }
         updateGroups(alarm.aao_groups || alarm.groups);
         updateLocationDetails(alarm.location_details || {});
-        alarmTimeEl.textContent = formattedTime || '-';
+        if (alarmTimeEl) {
+            alarmTimeEl.textContent = formattedTime || '-';
+        }
 
         updateWeather(data.weather);
         const coordinates = resolveCoordinates(
