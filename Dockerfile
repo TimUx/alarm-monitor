@@ -28,6 +28,10 @@ RUN apt-get update \
 COPY --from=builder /opt/venv /opt/venv
 
 COPY alarm_dashboard ./alarm_dashboard
+COPY scripts ./scripts
+
+# Download Leaflet vendor assets (JS, CSS, marker images) for offline map rendering
+RUN bash scripts/download-leaflet.sh
 
 # Create instance directory for persistence and set ownership
 RUN mkdir -p /app/instance && chown -R appuser:appuser /app
