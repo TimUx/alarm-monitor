@@ -208,6 +208,11 @@ def process_alarm(
                     coordinates = geocode_location(config.nominatim_base_url, location, session=session)
                 except Exception as exc:
                     LOGGER.warning("Failed to geocode location %s: %s", location, exc)
+                    try:
+                        from .app import _increment_metric
+                        _increment_metric("geocode_errors")
+                    except ImportError:
+                        pass
 
             if coordinates:
                 try:
@@ -220,6 +225,11 @@ def process_alarm(
                     )
                 except Exception as exc:
                     LOGGER.warning("Failed to fetch weather: %s", exc)
+                    try:
+                        from .app import _increment_metric
+                        _increment_metric("weather_errors")
+                    except ImportError:
+                        pass
 
             # Update the stored alarm with enriched data
             store.update_enrichment(incident_number, coordinates, weather)

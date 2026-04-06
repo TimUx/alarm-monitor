@@ -1178,3 +1178,19 @@ body.navigation-page .app-main {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Connection status banner */
+#connection-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #cc0000;
+    color: #ffffff;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    z-index: 9999;
+    display: none;
+}

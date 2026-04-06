@@ -145,3 +145,30 @@ def test_load_config_messenger_defaults_to_none():
     assert app_config.messenger_server_url is None
     assert app_config.messenger_api_key is None
 
+
+
+# ---------------------------------------------------------------------------
+# Part 2c – Path traversal validation
+# ---------------------------------------------------------------------------
+
+
+def test_load_config_rejects_relative_history_file_path():
+    """A relative path for HISTORY_FILE should raise MissingConfiguration."""
+    import pytest
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="relative/path/alarm.json"):
+        with pytest.raises(config.MissingConfiguration, match="absolute"):
+            config.load_config()
+
+
+def test_load_config_rejects_path_traversal_in_history_file():
+    """A path with '..' components for HISTORY_FILE should raise MissingConfiguration."""
+    import pytest
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="/data/../etc/alarm.json"):
+        with pytest.raises(config.MissingConfiguration):
+            config.load_config()

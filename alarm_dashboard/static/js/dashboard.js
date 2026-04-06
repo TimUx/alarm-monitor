@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Alarm Dashboard – main dashboard controller.
+ *
+ * @typedef {Object} AlarmPayload
+ * @property {string} mode - 'alarm' | 'idle'
+ * @property {Object|null} alarm - Raw alarm data object or null in idle mode.
+ * @property {{lat: number, lon: number}|null} coordinates - Geocoded coordinates or null.
+ * @property {WeatherData|null} weather - Current weather data or null.
+ * @property {string|null} received_at - ISO 8601 timestamp when the alarm was received.
+ *
+ * @typedef {Object} WeatherData
+ * @property {number} weathercode - WMO weather code.
+ * @property {number} temperature - Temperature in °C.
+ * @property {number} windspeed - Wind speed in km/h.
+ * @property {number} winddirection - Wind direction in degrees.
+ * @property {number} [precipitation] - Precipitation in mm.
+ * @property {number} [precipitation_probability] - Precipitation probability in %.
+ */
+
 const WIND_DIRECTIONS = [
     { abbr: 'N', label: 'Nord' },
     { abbr: 'NNO', label: 'Nord-Nordost' },
@@ -38,6 +57,10 @@ const MAP_DEFAULT_ZOOM = 17;
 const ACTIVE_ALARM_STORAGE_KEY = 'alarm-dashboard.active-alarm';
 const DEFAULT_DISPLAY_DURATION_MINUTES = 30;
 
+/**
+ * Read the alarm display duration from the data attribute on the body element.
+ * @returns {number|null} Duration in minutes or null if not set/invalid.
+ */
 function readDisplayDurationMinutes() {
     if (!document || !document.body) {
         return null;
@@ -59,6 +82,10 @@ function readDisplayDurationMinutes() {
     return parsed;
 }
 
+/**
+ * Resolve the alarm display duration in milliseconds.
+ * @returns {number} Display duration in milliseconds.
+ */
 function resolveDisplayDurationMs() {
     const minutes = readDisplayDurationMinutes()
         ?? DEFAULT_DISPLAY_DURATION_MINUTES;
@@ -1057,6 +1084,8 @@ function showLeafletMap(lat, lon, locationLabel) {
     if (mapCanvas) {
         mapCanvas.classList.remove('map-canvas--message');
         mapCanvas.removeAttribute('aria-hidden');
+        const label = locationLabel || 'Einsatzort';
+        mapCanvas.setAttribute('aria-label', 'Einsatzkarte für ' + label);
     }
 
     requestAnimationFrame(() => {
@@ -1098,6 +1127,10 @@ function updateMap(coordinates, location) {
     showLeafletMap(latNum, lonNum, location);
 }
 
+/**
+ * Fetch the current alarm payload from the API.
+ * @returns {Promise<AlarmPayload>} The current alarm or idle payload.
+ */
 async function fetchAlarm() {
     const response = await fetch('/api/alarm');
     if (!response.ok) {
@@ -1106,6 +1139,11 @@ async function fetchAlarm() {
     return response.json();
 }
 
+/**
+ * Update the dashboard UI based on the given alarm payload.
+ * @param {AlarmPayload} data - The current alarm or idle payload.
+ * @returns {void}
+ */
 function updateDashboard(data) {
     const alarm = data.alarm;
 
@@ -1215,7 +1253,98 @@ async function poll() {
 
 poll();
 
-// Participants functionality
+// ---------------------------------------------------------------------------
+// SSE connection with connection status banner
+// ---------------------------------------------------------------------------
+
+/**
+ * Create and manage the SSE connection with a connection status banner.
+ * The banner is shown when the SSE connection is lost and reloads the page.
+ */
+(function initSSEConnection() {
+    'use strict';
+
+    // Create the connection banner dynamically
+    var banner = document.createElement('div');
+    banner.id = 'connection-banner';
+    banner.textContent = '⚠ Verbindung unterbrochen – Seite wird neu geladen...';
+    banner.style.display = 'none';
+    document.body.appendChild(banner);
+
+    var reloadTimeout = null;
+    var heartbeatTimeout = null;
+    var es = null;
+
+    var HEARTBEAT_TIMEOUT_MS = 60000; // 60 seconds without any event
+    var RELOAD_DELAY_MS = 10000;      // reload 10 seconds after banner shown
+
+    function showBanner() {
+        if (banner.style.display !== 'none') {
+            return; // Already shown
+        }
+        banner.style.display = 'block';
+        reloadTimeout = setTimeout(function () {
+            window.location.reload();
+        }, RELOAD_DELAY_MS);
+    }
+
+    function hideBanner() {
+        banner.style.display = 'none';
+        if (reloadTimeout) {
+            clearTimeout(reloadTimeout);
+            reloadTimeout = null;
+        }
+    }
+
+    function resetHeartbeatTimer() {
+        if (heartbeatTimeout) {
+            clearTimeout(heartbeatTimeout);
+        }
+        heartbeatTimeout = setTimeout(function () {
+            showBanner();
+        }, HEARTBEAT_TIMEOUT_MS);
+    }
+
+    function connect() {
+        if (typeof EventSource === 'undefined') {
+            return; // SSE not supported
+        }
+
+        es = new EventSource('/api/stream');
+
+        es.onopen = function () {
+            hideBanner();
+            resetHeartbeatTimer();
+        };
+
+        es.onmessage = function (event) {
+            hideBanner();
+            resetHeartbeatTimer();
+            try {
+                var data = JSON.parse(event.data);
+                if (data && (data.type === 'alarm' || data.type === 'idle' || data.type === 'connected')) {
+                    if (data.type === 'alarm' || data.type === 'idle') {
+                        updateDashboard(data.type === 'alarm' ? data : { mode: 'idle', alarm: null });
+                    }
+                }
+            } catch (e) {
+                // Ignore parse errors
+            }
+        };
+
+        es.onerror = function () {
+            if (es.readyState === EventSource.CLOSED) {
+                showBanner();
+                if (heartbeatTimeout) {
+                    clearTimeout(heartbeatTimeout);
+                    heartbeatTimeout = null;
+                }
+            }
+        };
+    }
+
+    connect();
+})();
 const participantsColumn = document.getElementById('participants-column');
 const participantsList = document.getElementById('participants-list');
 let currentIncidentNumber = null;
