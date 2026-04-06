@@ -32,7 +32,7 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 - **Separation of Concerns**: Jede Komponente hat eine klar definierte Verantwortlichkeit
 - **Fail-Safe**: Ausfall einer Komponente beeinträchtigt nicht die Kernfunktion
 - **API-First**: Alle Komponenten kommunizieren über REST-APIs
-- **Stateless**: Services sind zustandslos und können einfach repliziert werden
+- **Single-Worker**: Der alarm-monitor nutzt In-Process-State (AlarmStore, SSE-Subscriber-Liste, WeatherCache) und muss mit einem einzigen Gunicorn-Worker betrieben werden
 - **Observable**: Ausführliches Logging für Monitoring und Debugging
 
 ---
@@ -197,8 +197,8 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 
 17. Teilnehmerrückmeldungen (optional)
         ├─▶ JavaScript startet Polling
-        ├─▶ Alle 10s: GET /api/emergencies/{id}/participants
-        ├─▶ Messenger liefert Teilnehmerliste
+        ├─▶ Alle 10s: GET /api/alarm/participants/{incident_number}
+        ├─▶ alarm-monitor ruft Teilnehmerliste vom Messenger ab
         └─▶ Dashboard aktualisiert Anzeige
 
 18. Auto-Timeout
@@ -221,10 +221,9 @@ Dashboard (Browser)
     │         │         └──▶ Ja: Polling starten
     │         └──▶ Nein: Polling stoppen
     │
-    └──▶ GET /api/emergencies/{emergency_id}/participants
+    └──▶ GET /api/alarm/participants/{incident_number}
          │
-         └──▶ alarm-messenger
-              └──▶ Rückgabe: { participants: [...] }
+         └──▶ alarm-monitor → alarm-messenger
                    ├─▶ deviceName
                    ├─▶ response (accepted/declined)
                    ├─▶ respondedAt
@@ -286,10 +285,29 @@ MESSENGER_API_KEY = "..."  # Optional
 **Module**:
 
 #### `app.py` – Flask-Anwendung
-- REST-API Endpunkte
-- Template-Rendering
-- Error-Handling
-- Health-Check
+- Application Factory (`create_app()`)
+- Initialisierung von AlarmStore, SettingsStore, WeatherCache
+- SSE-Subscriber-Verwaltung
+- Rate-Limiter-Initialisierung
+- CSRF-Token-Generierung für Einstellungs-Seite
+- Blueprint-Registrierung (`routes/api.py` und `routes/views.py`)
+
+#### `routes/api.py` – REST API
+- `/api/alarm` – Alarm empfangen (POST) und abrufen (GET)
+- `/api/stream` – Server-Sent Events für Echtzeit-Updates
+- `/api/alarm/participants/<nr>` – Teilnehmerrückmeldungen
+- `/api/history` – Alarm-Historie
+- `/api/route` – Routing-Proxy (OpenRouteService)
+- `/api/settings` – Einstellungen lesen und speichern
+- `/api/metrics` – Prometheus-Metriken
+
+#### `routes/views.py` – HTML-Seiten
+- `/` – Haupt-Dashboard
+- `/mobile` – Mobile Ansicht
+- `/history` – Einsatzhistorie
+- `/navigation` – Navigationsansicht
+- `/settings` – Einstellungs-Oberfläche
+- `/health` – Health-Check
 
 #### `config.py` – Konfiguration
 - Environment-Variable-Parsing
@@ -299,22 +317,35 @@ MESSENGER_API_KEY = "..."  # Optional
 #### `storage.py` – Datenhaltung
 ```python
 class AlarmStore:
-    def __init__(self, history_file: str):
-        self.current_alarm = None
-        self.history = []
-        self.history_file = history_file
+    def __init__(self, persistence_path: Optional[Path] = None):
+        # Lädt persistierten Zustand beim Start
     
-    def store_alarm(self, alarm: dict) -> bool:
-        """Speichert Alarm, wenn nicht Duplikat"""
+    def update(self, payload: dict) -> None:
+        """Speichert neuen Alarm und fügt ihn zur Historie hinzu"""
+    
+    def update_enrichment(self, incident_number, coordinates, weather) -> None:
+        """Aktualisiert Koordinaten und Wetterdaten eines vorhandenen Alarms"""
+
+    def latest(self) -> Optional[dict]:
+        """Gibt den zuletzt gespeicherten Alarm zurück"""
     
     def has_incident_number(self, incident_number: str) -> bool:
-        """Prüft auf Duplikat"""
+        """Prüft, ob Alarm mit dieser Einsatznummer bereits vorhanden ist"""
     
-    def get_current_alarm(self) -> Optional[dict]:
-        """Gibt aktuellen Alarm zurück"""
+    def history(self, limit: int = None, offset: int = 0) -> list:
+        """Gibt die Historie zurück (neueste zuerst, mit Pagination)"""
     
-    def get_history(self, limit: int = 100) -> list:
-        """Gibt Historie zurück"""
+    def history_count(self) -> int:
+        """Gibt die Gesamtzahl der gespeicherten Alarme zurück"""
+
+class SettingsStore:
+    """Persistente Speicherung von Web-UI-Einstellungen in instance/settings.json"""
+    
+    def get_all(self) -> dict:
+        """Gibt alle gespeicherten Einstellungen zurück"""
+    
+    def update(self, updates: dict) -> None:
+        """Speichert neue Einstellungen (überschreibt Teilmengen)"""
 ```
 
 #### `geocode.py` – Geokodierung
@@ -451,17 +482,15 @@ Siehe [alarm-messenger Repository](https://github.com/TimUx/alarm-messenger) fü
 
 **Response**:
 ```json
-{
-  "success": true,
-  "message": "Alarm processed successfully"
-}
+{"status": "ok"}
 ```
 
 **Fehlercodes**:
 - `400` – Validation Error (z.B. fehlende Pflichtfelder)
 - `401` – Invalid API Key
-- `409` – Duplicate (Alarm bereits vorhanden)
 - `500` – Internal Server Error
+
+**Hinweis**: Doppelt eingehende Alarme (gleiche Einsatznummer) werden still ignoriert und geben ebenfalls `200 {"status": "ok"}` zurück.
 
 ---
 
@@ -630,31 +659,21 @@ services:
 ### Horizontale Skalierung
 
 **alarm-monitor**:
-- Stateless Design erlaubt Load Balancing
-- Mehrere Instanzen hinter Reverse Proxy
-- Gemeinsamer Zugriff auf History-File (z.B. via NFS)
+- Der alarm-monitor nutzt **In-Process-State** (AlarmStore, SSE-Subscriber-Liste, WeatherCache)
+- Mehrere Instanzen oder mehrere Gunicorn-Worker würden je unabhängigen Zustand haben
+- Dies würde zu verlorenen SSE-Benachrichtigungen und inkonsistenten Alarm-Anzeigen führen
+- **Empfehlung**: Einen einzigen Worker mit mehreren Threads (`--workers 1 --threads 8`) verwenden
 
 ```yaml
-# compose.yaml (Beispiel)
+# compose.yaml (Standard-Konfiguration – 1 Worker empfohlen)
 services:
-  alarm-monitor-1:
+  alarm-dashboard:
     build: .
+    environment:
+      - ALARM_DASHBOARD_GUNICORN_WORKERS=1
+      - ALARM_DASHBOARD_GUNICORN_THREADS=8
     volumes:
-      - shared-history:/app/instance
-  
-  alarm-monitor-2:
-    build: .
-    volumes:
-      - shared-history:/app/instance
-  
-  nginx:
-    image: nginx
-    depends_on:
-      - alarm-monitor-1
-      - alarm-monitor-2
-
-volumes:
-  shared-history:
+      - ./instance:/app/instance
 ```
 
 ### Performance-Optimierung
@@ -740,16 +759,15 @@ curl -f http://localhost:8000/health || exit 1
 
 1. **Datenspeicherung**: JSON-Datei nicht optimal für große Datenmengen
 2. **Keine Authentifizierung**: Dashboard hat keine Benutzerverwaltung
-3. **Eingeschränktes Monitoring**: Keine eingebauten Metriken
-4. **Keine Offline-Fähigkeit**: Clients benötigen permanente Netzwerkverbindung
+3. **Keine Offline-Fähigkeit**: Clients benötigen permanente Netzwerkverbindung
 
 ### Geplante Verbesserungen
 
 - [ ] Migration zu relationaler Datenbank (SQLite/PostgreSQL)
 - [ ] Benutzerverwaltung und Zugriffsrechte
-- [ ] WebSocket für Echtzeit-Updates (aktuell Polling)
+- [x] Echtzeit-Updates via Server-Sent Events (implementiert)
 - [ ] Progressive Web App (PWA) für Offline-Nutzung
-- [ ] Prometheus-Metriken Export
+- [x] Prometheus-Metriken Export (implementiert via `/api/metrics`)
 - [ ] Automatische Tests (CI/CD)
 - [ ] API-Versionierung
 
