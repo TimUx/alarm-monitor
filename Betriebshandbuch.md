@@ -128,6 +128,10 @@ Bearbeiten Sie die Datei mit Ihren Zugangsdaten:
 # Generieren mit: openssl rand -hex 32
 ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...
 
+# Passwort für die Einstellungs-Seite (Pflichtfeld für Web-UI)
+# Generieren mit: openssl rand -hex 16
+ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
+
 # Gruppenfilter (optional, kommagetrennt)
 ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41
 
@@ -145,6 +149,9 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 # Alarm-Messenger Integration (optional)
 # ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
 # ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
+
+# Prometheus-Metriken-Endpoint aktivieren (optional)
+# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
 ```
 
 ### Wichtige Konfigurationsparameter
@@ -152,11 +159,14 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 | Parameter | Beschreibung | Standardwert |
 |-----------|--------------|--------------|
 | `API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
+| `SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (Web-UI deaktiviert) |
 | `DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
 | `GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
 | `MESSENGER_SERVER_URL` | URL des Alarm-Messenger-Servers | (deaktiviert) |
 | `MESSENGER_API_KEY` | API-Key für Messenger-Authentifizierung | (deaktiviert) |
+| `METRICS_TOKEN` | Bearer-Token für `/api/metrics` Endpunkt | (deaktiviert) |
 | `HISTORY_FILE` | Pfad zur Historie-Datei | instance/alarm_history.json |
+| `SETTINGS_FILE` | Pfad zur Einstellungs-Datei | instance/settings.json |
 
 ---
 
@@ -308,8 +318,8 @@ WorkingDirectory=/home/pi/alarm-monitor
 Environment="PATH=/home/pi/alarm-monitor/.venv/bin"
 ExecStart=/home/pi/alarm-monitor/.venv/bin/gunicorn \
     --bind 0.0.0.0:8000 \
-    --workers 2 \
-    --threads 4 \
+    --workers 1 \
+    --threads 8 \
     --worker-class gthread \
     alarm_dashboard.app:create_app()
 Restart=always
@@ -350,10 +360,18 @@ EOF
 | `/` | GET | Haupt-Dashboard |
 | `/mobile` | GET | Mobile Ansicht |
 | `/history` | GET | Einsatzhistorie (HTML) |
+| `/settings` | GET | Einstellungs-Oberfläche |
+| `/navigation` | GET | Navigations-Ansicht |
 | `/health` | GET | Health-Check |
-| `/api/alarm` | GET | Aktueller Alarm (JSON) |
-| `/api/history` | GET | Historie (JSON) |
-| `/api/mobile/alarm` | GET | Alarm für Mobile (JSON) |
+| `/api/alarm` | POST | Alarm empfangen (X-API-Key erforderlich) |
+| `/api/alarm` | GET | Aktuellen Alarm abrufen (JSON) |
+| `/api/stream` | GET | Echtzeit-Updates via Server-Sent Events |
+| `/api/alarm/participants/<nr>` | GET | Teilnehmerrückmeldungen (wenn Messenger konfiguriert) |
+| `/api/history` | GET | Historie (JSON, ?limit=&offset=) |
+| `/api/route` | GET | Routing-Proxy (ORS, wenn konfiguriert) |
+| `/api/settings` | GET | Einstellungen lesen (JSON) |
+| `/api/settings` | POST | Einstellungen speichern (Passwort + CSRF erforderlich) |
+| `/api/metrics` | GET | Prometheus-Metriken (Token erforderlich) |
 
 ---
 

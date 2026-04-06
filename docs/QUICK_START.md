@@ -228,7 +228,7 @@ curl -X POST http://localhost:8000/api/alarm \
   }'
 
 # Erwartete Antwort:
-# {"success": true, "message": "Alarm processed successfully"}
+# {"status": "ok"}
 ```
 
 ### Option B: Test-E-Mail senden

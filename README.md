@@ -312,7 +312,7 @@ nano .env             # Konfiguration anpassen
 flask --app alarm_dashboard.app run --host 0.0.0.0 --port 8000
 
 # Oder mit Gunicorn für Produktion
-gunicorn --bind 0.0.0.0:8000 --workers 2 'alarm_dashboard.app:create_app()'
+gunicorn --bind 0.0.0.0:8000 --workers 1 --threads 8 'alarm_dashboard.app:create_app()'
 ```
 
 ### Systemd-Service (Autostart)
@@ -335,9 +335,9 @@ WorkingDirectory=/home/pi/alarm-monitor
 Environment="PATH=/home/pi/alarm-monitor/.venv/bin"
 ExecStart=/home/pi/alarm-monitor/.venv/bin/gunicorn \
     --bind 0.0.0.0:8000 \
-    --workers 2 \
+    --workers 1 \
     --worker-class gthread \
-    --threads 4 \
+    --threads 8 \
     'alarm_dashboard.app:create_app()'
 Restart=always
 RestartSec=10
@@ -402,9 +402,13 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 # API-Key für Alarmempfang (ERFORDERLICH)
 # Generieren mit: openssl rand -hex 32
 ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+
+# Passwort für die Einstellungs-Seite (/settings)
+# Generieren mit: openssl rand -hex 16
+ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
 ```
 
-**Wichtig**: Dieser API-Key muss im `alarm-mail` Service als `ALARM_MAIL_MONITOR_API_KEY` konfiguriert werden.
+**Wichtig**: Der API-Key muss im `alarm-mail` Service als `ALARM_MAIL_MONITOR_API_KEY` konfiguriert werden. Das `SETTINGS_PASSWORD` wird benötigt, um Einstellungen über die Web-Oberfläche zu speichern.
 
 ### Grundeinstellungen (optional, können auch über Web-UI gesetzt werden)
 
@@ -460,6 +464,19 @@ ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 # Pfad zur Historie-Datei (Standard: instance/alarm_history.json)
 # ALARM_DASHBOARD_HISTORY_FILE=/custom/path/to/history.json
 
+# Pfad zur Einstellungs-Datei (Standard: instance/settings.json)
+# ALARM_DASHBOARD_SETTINGS_FILE=/custom/path/to/settings.json
+
+# Prometheus-Metriken-Endpoint aktivieren (Token erforderlich)
+# Generieren mit: openssl rand -hex 32
+# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
+
+# Gunicorn Worker/Thread-Anzahl – Worker auf 1 lassen!
+# Mehrere Worker würden den gemeinsamen In-Process-Zustand (AlarmStore, SSE-Subscriber)
+# aufteilen, was zu verlorenen SSE-Benachrichtigungen führt.
+# ALARM_DASHBOARD_GUNICORN_WORKERS=1
+# ALARM_DASHBOARD_GUNICORN_THREADS=8
+
 # Version und Release-Link
 # ALARM_DASHBOARD_APP_VERSION=v1.0.0
 # ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/TimUx/alarm-monitor/releases/tag/v1.0.0
@@ -474,6 +491,7 @@ ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 
 # --- PFLICHTFELDER ---
 ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
 
 # --- GRUNDEINSTELLUNGEN ---
 ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Willingshausen
@@ -494,6 +512,10 @@ ALARM_DASHBOARD_GRUPPEN=
 # --- NAVIGATION (optional) ---
 # OpenRouteService API-Key für Routenplanung
 # ALARM_DASHBOARD_ORS_API_KEY=ors-api-key-hier
+
+# --- METRIKEN (optional) ---
+# Prometheus-kompatiblen /api/metrics Endpunkt aktivieren
+# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
 
 # --- VERSION ---
 ALARM_DASHBOARD_APP_VERSION=v1.0.0
@@ -581,37 +603,76 @@ GET /api/alarm
 
 # Antwort bei aktivem Alarm:
 {
-  "active": true,
+  "mode": "alarm",
   "alarm": { ... },
-  "last_alarm": { ... }
+  "coordinates": { ... },
+  "weather": { ... },
+  "received_at": "2024-01-01T12:00:00+00:00"
 }
 
 # Antwort bei Idle:
 {
-  "active": false,
+  "mode": "idle",
+  "alarm": null,
+  "weather": { ... },
+  "location": "Feuerwache Musterstadt",
+  "timestamp": "2024-01-01T12:30:00+00:00",
   "last_alarm": { ... }
 }
 ```
 
+#### Echtzeit-Updates (Server-Sent Events)
+```bash
+GET /api/stream
+
+# Verbindung liefert SSE-Events:
+# data: {"type": "connected"}
+# data: {"type": "alarm", "alarm": { ... }, "coordinates": { ... }, "weather": { ... }, "received_at": "..."}
+# data: {"type": "idle"}
+# : heartbeat   (alle 30 Sekunden)
+
+# Max. 20 gleichzeitige Verbindungen; bei Überschreitung: 503
+```
+
+#### Teilnehmerrückmeldungen abrufen
+```bash
+GET /api/alarm/participants/<incident_number>
+
+# Antwort:
+{
+  "participants": [
+    {
+      "deviceId": "device-uuid-123",
+      "deviceName": "Max Mustermann - iPhone",
+      "response": "accepted",
+      "respondedAt": "2024-01-01T12:05:30",
+      "note": ""
+    }
+  ]
+}
+
+# 503 wenn alarm-messenger nicht konfiguriert
+```
+
+#### Routen-Proxy (OpenRouteService)
+```bash
+GET /api/route?start_lat=50.9&start_lon=9.2&end_lat=51.0&end_lon=9.3
+
+# Gibt die ORS-Routing-Antwort zurück
+# 503 wenn ALARM_DASHBOARD_ORS_API_KEY nicht konfiguriert
+```
+
 #### Historie abrufen
 ```bash
-GET /api/history?limit=50
+GET /api/history?limit=50&offset=0
 
 # Antwort:
 {
   "history": [
     { ... },
     { ... }
-  ],
-  "count": 50
+  ]
 }
-```
-
-#### Mobile-Alarm abrufen
-```bash
-GET /api/mobile/alarm
-
-# Optimierte Antwort für mobile Clients
 ```
 
 #### Einstellungen abrufen
@@ -632,6 +693,8 @@ GET /api/settings
 ```bash
 POST /api/settings
 Content-Type: application/json
+X-Settings-Password: <settings-passwort>
+X-CSRF-Token: <csrf-token>
 
 {
   "fire_department_name": "Feuerwehr Musterstadt",
@@ -646,6 +709,21 @@ Content-Type: application/json
   "status": "ok",
   "settings": { ... }
 }
+```
+
+**Hinweis**: Das CSRF-Token wird stündlich generiert und ist auf der `/settings`-Seite eingebettet. Es wird automatisch vom Browser mitgesendet.
+
+#### Prometheus-Metriken
+```bash
+GET /api/metrics
+Authorization: Bearer <metrics-token>
+
+# Gibt Prometheus-kompatibles Text-Format zurück
+# 503 wenn ALARM_DASHBOARD_METRICS_TOKEN nicht konfiguriert
+# Verfügbare Metriken: alarm_dashboard_alarms_received_total,
+#   alarm_dashboard_alarms_stored_total, alarm_dashboard_geocode_errors_total,
+#   alarm_dashboard_weather_errors_total, alarm_dashboard_sse_active_connections,
+#   alarm_dashboard_history_size
 ```
 
 #### Health-Check
