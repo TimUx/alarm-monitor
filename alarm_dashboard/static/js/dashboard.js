@@ -1532,6 +1532,8 @@ window.addEventListener('beforeunload', stopParticipantsPolling);
         : null;
 
     function updateFullscreen() {
+        // Use a small tolerance (2 px) to account for sub-pixel rounding or minor OS
+        // UI differences when the browser window occupies the full screen height.
         var isFullscreen =
             !!document.fullscreenElement ||
             !!document.webkitFullscreenElement ||
