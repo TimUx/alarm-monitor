@@ -553,6 +553,27 @@ let navigationTarget = null;
 let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
+let alarmExpiryTimer = null;
+
+function scheduleAlarmExpiry(payload) {
+    clearAlarmExpiryTimer();
+    const expiresAt = computeAlarmExpiryTimestamp(payload);
+    const delay = expiresAt - Date.now();
+    if (delay > 0) {
+        alarmExpiryTimer = setTimeout(function () {
+            poll();
+        }, delay);
+    } else {
+        poll();
+    }
+}
+
+function clearAlarmExpiryTimer() {
+    if (alarmExpiryTimer !== null) {
+        clearTimeout(alarmExpiryTimer);
+        alarmExpiryTimer = null;
+    }
+}
 
 const cachedActiveAlarm = loadActiveAlarmFromCache();
 if (cachedActiveAlarm) {
@@ -1158,6 +1179,7 @@ function updateDashboard(data) {
 
     if (data.mode === 'alarm' && alarm) {
         persistActiveAlarm(data);
+        scheduleAlarmExpiry(data);
         setMode('alarm');
         const entryTime = alarm.timestamp_display || alarm.timestamp || data.received_at;
         const formattedTime = formatTimestamp(alarm.timestamp || data.received_at) || entryTime;
@@ -1208,6 +1230,7 @@ function updateDashboard(data) {
         }
     } else {
         clearActiveAlarmCache();
+        clearAlarmExpiryTimer();
         setMode('idle');
         setNavigationTarget(null, null);
         setNavigationAvailability(false);
