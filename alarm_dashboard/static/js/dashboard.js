@@ -542,6 +542,7 @@ const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const keywordHeadingEl = document.getElementById('keyword');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
+const alarmMetaSeparatorEl = document.getElementById('alarm-meta-separator');
 const remarkEl = document.getElementById('remark');
 const locationTownEl = document.getElementById('location-town');
 const locationVillageEl = document.getElementById('location-village');
@@ -1180,6 +1181,9 @@ function updateDashboard(data) {
             remarkEl.textContent = alarm.remark || '';
             remarkEl.classList.toggle('hidden', !alarm.remark);
         }
+        if (alarmMetaSeparatorEl) {
+            alarmMetaSeparatorEl.classList.toggle('hidden', !alarm.keyword_secondary || !alarm.remark);
+        }
         updateGroups(alarm.aao_groups || alarm.groups);
         updateLocationDetails(alarm.location_details || {});
         if (alarmTimeEl) {
@@ -1224,6 +1228,9 @@ function updateDashboard(data) {
         if (remarkEl) {
             remarkEl.textContent = '';
             remarkEl.classList.add('hidden');
+        }
+        if (alarmMetaSeparatorEl) {
+            alarmMetaSeparatorEl.classList.add('hidden');
         }
         if (mapPanel) {
             mapPanel.classList.add('hidden');
@@ -1419,6 +1426,8 @@ function renderParticipant(participant) {
     `;
 }
 
+const MESSENGER_NOT_CONFIGURED = 'messenger_not_configured';
+
 async function fetchParticipants(incidentNumber) {
     // Validate incident number
     if (!incidentNumber || typeof incidentNumber !== 'string') {
@@ -1431,7 +1440,7 @@ async function fetchParticipants(incidentNumber) {
         if (!response.ok) {
             if (response.status === 503) {
                 // Messenger not configured
-                return null;
+                return MESSENGER_NOT_CONFIGURED;
             }
             throw new Error('Failed to fetch participants');
         }
@@ -1490,15 +1499,25 @@ function startParticipantsPolling(incidentNumber) {
     }
     
     currentIncidentNumber = incidentNumber;
-    showParticipantsColumn();
-    
+
+    function handleParticipantsResponse(result) {
+        if (result === MESSENGER_NOT_CONFIGURED) {
+            // Messenger is not configured – hide the column and stop polling
+            hideParticipantsColumn();
+            stopParticipantsPolling();
+            return;
+        }
+        showParticipantsColumn();
+        updateParticipantsDisplay(result);
+    }
+
     // Fetch immediately
-    fetchParticipants(incidentNumber).then(updateParticipantsDisplay);
+    fetchParticipants(incidentNumber).then(handleParticipantsResponse);
     
     // Then poll every 10 seconds
     participantsPollInterval = setInterval(() => {
         if (currentIncidentNumber === incidentNumber) {
-            fetchParticipants(incidentNumber).then(updateParticipantsDisplay);
+            fetchParticipants(incidentNumber).then(handleParticipantsResponse);
         }
     }, 10000);
 }
@@ -1506,16 +1525,27 @@ function startParticipantsPolling(incidentNumber) {
 // Clean up on page unload
 window.addEventListener('beforeunload', stopParticipantsPolling);
 
-// Hide bottom navigation in browser fullscreen mode (F11 or Fullscreen API)
+// Hide bottom navigation in browser fullscreen mode (F11, Fullscreen API, or kiosk mode)
 (function () {
+    var kioskMediaQuery = window.matchMedia
+        ? window.matchMedia('(display-mode: fullscreen)')
+        : null;
+
     function updateFullscreen() {
-        const isFullscreen = !!document.fullscreenElement ||
+        // Use a small tolerance (2 px) to account for sub-pixel rounding or minor OS
+        // UI differences when the browser window occupies the full screen height.
+        var isFullscreen =
+            !!document.fullscreenElement ||
             !!document.webkitFullscreenElement ||
-            window.outerHeight === screen.height;
+            window.outerHeight >= screen.height - 2 ||
+            (kioskMediaQuery ? kioskMediaQuery.matches : false);
         document.body.classList.toggle('is-fullscreen', isFullscreen);
     }
     document.addEventListener('fullscreenchange', updateFullscreen);
     document.addEventListener('webkitfullscreenchange', updateFullscreen);
     window.addEventListener('resize', updateFullscreen);
+    if (kioskMediaQuery && kioskMediaQuery.addEventListener) {
+        kioskMediaQuery.addEventListener('change', updateFullscreen);
+    }
     updateFullscreen();
 }());
