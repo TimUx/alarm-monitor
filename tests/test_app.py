@@ -15,6 +15,7 @@ import pytest
 
 from alarm_dashboard.config import AppConfig
 from alarm_dashboard import app as app_module
+from alarm_dashboard.app import generate_csrf_token
 
 
 API_KEY = "test-secret-key"
@@ -330,7 +331,10 @@ def test_post_settings_updates_values(client, flask_app) -> None:
     response = client.post(
         "/api/settings",
         json=payload,
-        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
     )
 
     assert response.status_code == 200
@@ -369,7 +373,10 @@ def test_post_settings_invalid_coordinates(client) -> None:
             "default_latitude": 999,
             "default_longitude": 9.0,
         },
-        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
     )
 
     assert response.status_code == 400
@@ -453,3 +460,344 @@ def test_sse_subscriber_not_notified_for_dropped_alarm(client, flask_app) -> Non
             flask_app.config["SSE_SUBSCRIBERS"].remove(evt)
         except ValueError:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Part 2a – SSE max concurrent connections
+# ---------------------------------------------------------------------------
+
+
+def test_api_stream_rejects_when_max_connections_reached(flask_app) -> None:
+    """GET /api/stream should return 503 when 20 concurrent connections are already open."""
+    mock_events = [threading.Event() for _ in range(20)]
+    flask_app.config["SSE_SUBSCRIBERS"].extend(mock_events)
+    try:
+        with flask_app.test_client() as c:
+            r = c.get("/api/stream")
+            assert r.status_code == 503
+            assert b"Too many concurrent streams" in r.data
+    finally:
+        for evt in mock_events:
+            try:
+                flask_app.config["SSE_SUBSCRIBERS"].remove(evt)
+            except ValueError:
+                pass
+
+
+# ---------------------------------------------------------------------------
+# Part 2b – Alarm payload validation
+# ---------------------------------------------------------------------------
+
+
+def test_post_alarm_with_oversized_keyword_returns_400(client) -> None:
+    """POST /api/alarm with keyword > 500 chars should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "12345", "keyword": "X" * 501},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_post_alarm_with_invalid_incident_number_chars_returns_400(client) -> None:
+    """POST /api/alarm with incident_number containing invalid chars should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "INVALID!@#$"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+def test_post_alarm_with_out_of_range_latitude_returns_400(client) -> None:
+    """POST /api/alarm with latitude > 90 should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "12345", "latitude": 91.0, "longitude": 9.0},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "error" in response.get_json()
+
+
+# ---------------------------------------------------------------------------
+# Part 2d – CSRF protection
+# ---------------------------------------------------------------------------
+
+
+def test_post_settings_rejects_missing_csrf_token(client) -> None:
+    """POST /api/settings without X-CSRF-Token should return 403."""
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test"},
+        headers={"X-Settings-Password": SETTINGS_PASSWORD},
+    )
+    assert response.status_code == 403
+    assert "error" in response.get_json()
+
+
+def test_post_settings_rejects_invalid_csrf_token(client) -> None:
+    """POST /api/settings with wrong X-CSRF-Token should return 403."""
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test"},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": "invalid-token",
+        },
+    )
+    assert response.status_code == 403
+    assert "error" in response.get_json()
+
+
+def test_post_settings_accepts_valid_csrf_token(client) -> None:
+    """POST /api/settings with valid X-CSRF-Token should return 200."""
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Valid FW"},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
+    )
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "ok"
+
+
+# ---------------------------------------------------------------------------
+# Part 3a – SSE resource leak fix
+# ---------------------------------------------------------------------------
+
+
+def test_sse_subscriber_removed_on_generator_close(flask_app) -> None:
+    """Closing the generate() generator must remove the subscriber from _subscribers."""
+    with flask_app.test_client() as c:
+        with c.get("/api/stream") as resp:
+            assert resp.status_code == 200
+            first_chunk = next(iter(resp.response), b"")
+            assert b"connected" in first_chunk
+
+        assert len(flask_app.config["SSE_SUBSCRIBERS"]) == 0
+
+
+# ---------------------------------------------------------------------------
+# Part 5d – Prometheus metrics
+# ---------------------------------------------------------------------------
+
+
+def test_metrics_endpoint_requires_token(client) -> None:
+    """GET /api/metrics without token should return 503 if unconfigured."""
+    import os
+    original = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN")
+    try:
+        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+        response = client.get("/api/metrics")
+        assert response.status_code == 503
+    finally:
+        if original is not None:
+            os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = original
+
+
+def test_metrics_endpoint_returns_prometheus_format(client) -> None:
+    """GET /api/metrics with valid token should return Prometheus plain text."""
+    import os
+    token = "test-metrics-token-123"
+    os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = token
+    try:
+        response = client.get(
+            "/api/metrics",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        assert b"alarm_dashboard_alarms_received_total" in response.data
+        assert b"alarm_dashboard_sse_active_connections" in response.data
+        assert b"alarm_dashboard_history_size" in response.data
+    finally:
+        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+
+
+# ---------------------------------------------------------------------------
+# View route tests (coverage for routes/views.py)
+# ---------------------------------------------------------------------------
+
+
+def test_dashboard_page_returns_200(client) -> None:
+    """GET / should return 200 with dashboard HTML."""
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"dashboard" in response.data.lower() or b"feuerwehr" in response.data.lower()
+
+
+def test_history_page_returns_200(client) -> None:
+    """GET /history should return 200 with history HTML."""
+    response = client.get("/history")
+    assert response.status_code == 200
+    assert b"historie" in response.data.lower() or b"history" in response.data.lower()
+
+
+def test_mobile_page_returns_200(client) -> None:
+    """GET /mobile should return 200 with mobile HTML."""
+    response = client.get("/mobile")
+    assert response.status_code == 200
+
+
+def test_navigation_page_returns_200(client) -> None:
+    """GET /navigation should return 200 with navigation HTML."""
+    response = client.get("/navigation")
+    assert response.status_code == 200
+
+
+def test_settings_page_returns_200(client) -> None:
+    """GET /settings should return 200 with settings HTML."""
+    response = client.get("/settings")
+    assert response.status_code == 200
+    assert b"settings" in response.data.lower() or b"einstellungen" in response.data.lower()
+
+
+def test_health_returns_200(client) -> None:
+    """GET /health should return 200 with ok status."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "ok"
+
+
+# ---------------------------------------------------------------------------
+# Additional API coverage tests
+# ---------------------------------------------------------------------------
+
+
+def test_api_history_with_offset(client, flask_app) -> None:
+    """GET /api/history?offset=0 should return history payload."""
+    response = client.get("/api/history?limit=10&offset=0")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "history" in data
+
+
+def test_api_settings_returns_settings(client) -> None:
+    """GET /api/settings should return current settings."""
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "fire_department_name" in data
+
+
+def test_api_participants_invalid_incident_number(client) -> None:
+    """GET /api/alarm/participants/<bad> should return 400."""
+    response = client.get("/api/alarm/participants/invalid!@#")
+    assert response.status_code == 400
+
+
+def test_api_participants_no_messenger(client) -> None:
+    """GET /api/alarm/participants/<valid> should return 503 when messenger not configured."""
+    response = client.get("/api/alarm/participants/123-VALID")
+    assert response.status_code == 503
+
+
+def test_api_route_returns_503_when_not_configured(client) -> None:
+    """GET /api/route should return 503 when ORS API key is not configured."""
+    response = client.get("/api/route?start_lat=50&start_lon=9&end_lat=51&end_lon=10")
+    assert response.status_code == 503
+
+
+def test_api_metrics_unauthorized(client) -> None:
+    """GET /api/metrics with wrong token should return 401."""
+    import os
+    token = "correct-token-abc"
+    os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = token
+    try:
+        response = client.get(
+            "/api/metrics",
+            headers={"Authorization": "Bearer wrong-token"},
+        )
+        assert response.status_code == 401
+    finally:
+        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+
+
+def test_post_alarm_unauthorized(client) -> None:
+    """POST /api/alarm with wrong API key should return 401."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "TEST-001"},
+        headers={"X-API-Key": "wrong-key"},
+    )
+    assert response.status_code == 401
+
+
+def test_post_alarm_empty_body(client) -> None:
+    """POST /api/alarm with no body should return 400."""
+    response = client.post(
+        "/api/alarm",
+        headers={"X-API-Key": API_KEY},
+        content_type="application/json",
+        data="",
+    )
+    assert response.status_code == 400
+
+
+def test_post_settings_unauthorized(client) -> None:
+    """POST /api/settings with wrong password should return 401."""
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test"},
+        headers={"X-Settings-Password": "wrong-password"},
+    )
+    assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Alarm processor validation tests (for alarm_processor.py coverage)
+# ---------------------------------------------------------------------------
+
+
+def test_post_alarm_with_empty_incident_number_returns_400(client) -> None:
+    """POST /api/alarm with empty incident_number should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": ""},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_alarm_with_oversized_subject_returns_400(client) -> None:
+    """POST /api/alarm with subject > 500 chars should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "TEST-001", "subject": "S" * 501},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_alarm_with_oversized_location_returns_400(client) -> None:
+    """POST /api/alarm with location > 500 chars should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "TEST-001", "location": "L" * 501},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_alarm_with_out_of_range_longitude_returns_400(client) -> None:
+    """POST /api/alarm with longitude < -180 should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "12345", "latitude": 50.0, "longitude": -181.0},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_alarm_with_invalid_groups_list_item_returns_400(client) -> None:
+    """POST /api/alarm with a groups item > 200 chars should return 400."""
+    response = client.post(
+        "/api/alarm",
+        json={"incident_number": "12345", "groups": ["X" * 201]},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400

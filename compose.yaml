@@ -10,6 +10,10 @@ services:
     environment:
       # Example override: ensure container timezone if desired
       - TZ=Europe/Berlin
+      # Gunicorn worker/thread count – keep workers=1 unless using sticky sessions.
+      # See Dockerfile comment for details.
+      - ALARM_DASHBOARD_GUNICORN_WORKERS=${ALARM_DASHBOARD_GUNICORN_WORKERS:-1}
+      - ALARM_DASHBOARD_GUNICORN_THREADS=${ALARM_DASHBOARD_GUNICORN_THREADS:-8}
     volumes:
       - ./instance:/app/instance
     networks:
