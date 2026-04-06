@@ -83,7 +83,10 @@ class TestAlarmMessenger:
     def test_get_participants_success(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
-        lookup_response.json.return_value = [{"id": "emergency-uuid-123"}]
+        lookup_response.json.return_value = {
+            "data": [{"id": "emergency-uuid-123"}],
+            "pagination": {"page": 1, "limit": 50, "total": 1, "totalPages": 1},
+        }
 
         participants_response = Mock()
         participants_response.status_code = 200
@@ -153,13 +156,79 @@ class TestAlarmMessenger:
     def test_get_participants_not_found(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
-        lookup_response.json.return_value = []
+        lookup_response.json.return_value = {
+            "data": [],
+            "pagination": {"page": 1, "limit": 50, "total": 0, "totalPages": 0},
+        }
         mock_get.return_value = lookup_response
 
         messenger = AlarmMessenger(messenger_config)
         participants = messenger.get_participants("99999")
 
         assert participants is None
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_lookup_401_returns_none(self, mock_get, messenger_config):
+        lookup_response = Mock()
+        lookup_response.status_code = 401
+        mock_get.return_value = lookup_response
+
+        messenger = AlarmMessenger(messenger_config)
+        participants = messenger.get_participants("12345")
+
+        assert participants is None
+        mock_get.assert_called_once()
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_unexpected_response_format(self, mock_get, messenger_config):
+        lookup_response = Mock()
+        lookup_response.status_code = 200
+        lookup_response.json.return_value = "unexpected string"
+        mock_get.return_value = lookup_response
+
+        messenger = AlarmMessenger(messenger_config)
+        with patch("alarm_dashboard.messenger.LOGGER") as mock_logger:
+            participants = messenger.get_participants("12345")
+
+        assert participants is None
+        mock_logger.error.assert_called_once_with(
+            "Unexpected emergency lookup response format: %s",
+            "str",
+        )
+
+    @patch("alarm_dashboard.messenger.requests.get")
+    def test_get_participants_list_response_forward_compatible(self, mock_get, messenger_config):
+        lookup_response = Mock()
+        lookup_response.status_code = 200
+        lookup_response.json.return_value = [{"id": "emergency-uuid-456"}]
+
+        participants_response = Mock()
+        participants_response.status_code = 200
+        participants_response.json.return_value = {
+            "emergencyId": "emergency-uuid-456",
+            "totalParticipants": 1,
+            "participants": [
+                {
+                    "id": "response-1",
+                    "deviceId": "device-1",
+                    "platform": "android",
+                    "respondedAt": "2024-12-08T14:00:00.000Z",
+                    "responder": {
+                        "firstName": "Max",
+                        "lastName": "Mustermann",
+                        "qualifications": {"machinist": True, "agt": False, "paramedic": False},
+                        "leadershipRole": "none",
+                    },
+                }
+            ],
+        }
+        mock_get.side_effect = [lookup_response, participants_response]
+
+        messenger = AlarmMessenger(messenger_config)
+        participants = messenger.get_participants("12345")
+
+        assert participants is not None
+        assert len(participants) == 1
 
     @patch("alarm_dashboard.messenger.requests.get")
     def test_get_participants_lookup_request_error(self, mock_get, messenger_config):
@@ -174,7 +243,10 @@ class TestAlarmMessenger:
     def test_get_participants_request_error(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
-        lookup_response.json.return_value = [{"id": "emergency-uuid-123"}]
+        lookup_response.json.return_value = {
+            "data": [{"id": "emergency-uuid-123"}],
+            "pagination": {"page": 1, "limit": 50, "total": 1, "totalPages": 1},
+        }
 
         mock_get.side_effect = [
             lookup_response,
