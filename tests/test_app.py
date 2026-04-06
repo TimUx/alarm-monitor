@@ -589,13 +589,13 @@ def test_sse_subscriber_removed_on_generator_close(flask_app) -> None:
 
 
 def test_metrics_endpoint_requires_token(client) -> None:
-    """GET /api/metrics without token should return 503 if unconfigured."""
+    """GET /api/metrics without token should return 404 if unconfigured."""
     import os
     original = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN")
     try:
         os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
         response = client.get("/api/metrics")
-        assert response.status_code == 503
+        assert response.status_code == 404
     finally:
         if original is not None:
             os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = original
@@ -609,7 +609,7 @@ def test_metrics_endpoint_returns_prometheus_format(client) -> None:
     try:
         response = client.get(
             "/api/metrics",
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"X-Metrics-Token": token},
         )
         assert response.status_code == 200
         assert b"alarm_dashboard_alarms_received_total" in response.data
@@ -711,7 +711,7 @@ def test_api_metrics_unauthorized(client) -> None:
     try:
         response = client.get(
             "/api/metrics",
-            headers={"Authorization": "Bearer wrong-token"},
+            headers={"X-Metrics-Token": "wrong-token"},
         )
         assert response.status_code == 401
     finally:

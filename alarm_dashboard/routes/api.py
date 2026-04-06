@@ -420,19 +420,18 @@ def api_update_settings():
 def api_metrics():
     """Prometheus-compatible plain text metrics endpoint.
 
-    Requires Authorization: Bearer <ALARM_DASHBOARD_METRICS_TOKEN> header.
-    Returns 503 if ALARM_DASHBOARD_METRICS_TOKEN is not configured.
+    Requires X-Metrics-Token: <ALARM_DASHBOARD_METRICS_TOKEN> header.
+    Returns 404 if ALARM_DASHBOARD_METRICS_TOKEN is not configured.
     """
     import os
     from ..app import _metrics, _metrics_lock
 
-    metrics_token = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN")
+    metrics_token = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN", "")
     if not metrics_token:
-        return jsonify({"error": "Metrics not configured"}), 503
+        return jsonify({"error": "Not found"}), 404
 
-    auth_header = request.headers.get("Authorization") or ""
-    expected = "Bearer " + metrics_token
-    if not hmac.compare_digest(auth_header, expected):
+    token = request.headers.get("X-Metrics-Token", "")
+    if not hmac.compare_digest(token, metrics_token):
         return jsonify({"error": "Unauthorized"}), 401
 
     store = _get_store()

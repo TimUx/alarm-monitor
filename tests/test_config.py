@@ -54,12 +54,12 @@ def test_load_config_with_history_file(tmp_path):
     _clear_alarm_env()
     importlib.reload(config)
 
-    history_file = tmp_path / "history.json"
+    history_file = "/app/instance/alarm_history.json"
 
-    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE=str(history_file)):
+    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE=history_file):
         app_config = config.load_config()
 
-    assert app_config.history_file == str(history_file)
+    assert app_config.history_file == history_file
 
 
 def test_load_config_sets_defaults_for_branding_and_version():
@@ -171,4 +171,15 @@ def test_load_config_rejects_path_traversal_in_history_file():
 
     with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="/data/../etc/alarm.json"):
         with pytest.raises(config.MissingConfiguration):
+            config.load_config()
+
+
+def test_load_config_rejects_history_file_outside_allowed_base():
+    """A path outside /app/instance for HISTORY_FILE should raise MissingConfiguration."""
+    import pytest
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="/etc/passwd"):
+        with pytest.raises(config.MissingConfiguration, match="escapes allowed directory"):
             config.load_config()

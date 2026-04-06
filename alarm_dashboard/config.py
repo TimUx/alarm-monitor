@@ -131,10 +131,15 @@ def load_config() -> AppConfig:
             raise MissingConfiguration(
                 f"{ENV_PREFIX}{env_name} must be an absolute path (got: {path_str!r})"
             )
-        resolved = str(_Path(path_str).resolve())
         if ".." in _Path(path_str).parts:
             raise MissingConfiguration(
                 f"{ENV_PREFIX}{env_name} must not contain '..' components (got: {path_str!r})"
+            )
+        resolved = os.path.realpath(path_str)
+        allowed_base = os.path.realpath("/app/instance")
+        if not resolved.startswith(allowed_base + os.sep):
+            raise MissingConfiguration(
+                f"{ENV_PREFIX}{env_name} path escapes allowed directory: {resolved!r}"
             )
 
     if history_file:
@@ -160,6 +165,10 @@ def load_config() -> AppConfig:
     ors_api_key = _get_env("ORS_API_KEY") or None
 
     settings_password = _get_env("SETTINGS_PASSWORD") or None
+    if not settings_password:
+        LOGGER.critical(
+            "ALARM_DASHBOARD_SETTINGS_PASSWORD is not set — settings page is unprotected!"
+        )
 
     # Alarm messenger configuration
     messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
