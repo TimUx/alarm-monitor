@@ -150,8 +150,7 @@ def test_post_alarm_duplicate_incident_number_rejected(client, flask_app) -> Non
 
 
 def test_post_alarm_without_incident_number_rejected(client, flask_app) -> None:
-    """An alarm payload missing incident_number should be accepted at the HTTP level
-    but not stored (process_alarm silently drops it)."""
+    """An alarm payload missing incident_number must be rejected with HTTP 400."""
     alarm_data = {"keyword": "F3Y", "location": "Somewhere"}
 
     response = client.post(
@@ -160,7 +159,9 @@ def test_post_alarm_without_incident_number_rejected(client, flask_app) -> None:
         headers={"X-API-Key": API_KEY},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "incident_number is required" in data["error"]
     store = flask_app.config["ALARM_STORE"]
     assert store.history() == []
 

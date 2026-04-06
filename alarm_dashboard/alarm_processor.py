@@ -12,10 +12,13 @@ _INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
 
 _OPTIONAL_STRING_FIELDS = (
     "keyword", "subject", "location", "diagnosis",
-    "remark", "timestamp", "timestamp_display",
+    "remark", "timestamp", "timestamp_display", "keyword_secondary",
 )
 _OPTIONAL_LIST_FIELDS = (
-    "groups", "aao_groups", "dispatch_groups", "dispatch_group_codes",
+    "groups", "aao_groups", "dispatch_group_codes",
+)
+_OPTIONAL_LIST_OR_STRING_FIELDS = (
+    "dispatch_groups",
 )
 
 
@@ -28,14 +31,16 @@ def validate_alarm_payload(alarm: dict) -> None:
     Raises:
         ValueError: if any field violates its constraint.
     """
+    if "incident_number" not in alarm or not alarm.get("incident_number"):
+        raise ValueError("incident_number is required")
+
     incident_number = alarm.get("incident_number")
-    if incident_number is not None:
-        if not isinstance(incident_number, str):
-            raise ValueError("incident_number must be a string")
-        if not _INCIDENT_NUMBER_RE.match(incident_number):
-            raise ValueError(
-                "incident_number must be 1–50 characters matching ^[A-Za-z0-9\\-_]+$"
-            )
+    if not isinstance(incident_number, str):
+        raise ValueError("incident_number must be a string")
+    if not _INCIDENT_NUMBER_RE.match(incident_number):
+        raise ValueError(
+            "incident_number must be 1–50 characters matching ^[A-Za-z0-9\\-_]+$"
+        )
 
     for field in _OPTIONAL_STRING_FIELDS:
         value = alarm.get(field)
@@ -56,6 +61,18 @@ def validate_alarm_payload(alarm: dict) -> None:
                 if len(item) > 200:
                     raise ValueError(f"{field}[{i}] must not exceed 200 characters")
 
+    for field in _OPTIONAL_LIST_OR_STRING_FIELDS:
+        value = alarm.get(field)
+        if value is not None:
+            if not isinstance(value, (list, str)):
+                raise ValueError(f"{field} must be a list or string")
+            if isinstance(value, list):
+                for i, item in enumerate(value):
+                    if not isinstance(item, str):
+                        raise ValueError(f"{field}[{i}] must be a string")
+                    if len(item) > 200:
+                        raise ValueError(f"{field}[{i}] must not exceed 200 characters")
+
     lat = alarm.get("latitude")
     if lat is not None:
         try:
@@ -73,6 +90,23 @@ def validate_alarm_payload(alarm: dict) -> None:
             raise ValueError("longitude must be a number")
         if not (-180 <= lon_f <= 180):
             raise ValueError("longitude must be between -180 and 180")
+
+    has_lat = alarm.get("latitude") is not None
+    has_lon = alarm.get("longitude") is not None
+    if has_lat != has_lon:
+        raise ValueError("latitude and longitude must be provided together")
+
+    ld = alarm.get("location_details")
+    if ld is not None:
+        if not isinstance(ld, dict):
+            raise ValueError("location_details must be a dict")
+        for key, val in ld.items():
+            if not isinstance(key, str):
+                raise ValueError("location_details keys must be strings")
+            if val is not None and not isinstance(val, str):
+                raise ValueError(f"location_details.{key} must be a string or null")
+            if isinstance(val, str) and len(val) > 500:
+                raise ValueError(f"location_details.{key} must not exceed 500 characters")
 
 
 def _serialize_history_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -132,9 +166,6 @@ def process_alarm(
     validate_alarm_payload(alarm)
 
     incident_number = alarm.get("incident_number")
-    if not incident_number:
-        LOGGER.warning("Ignoring alarm without incident number (ENR)")
-        return False
 
     if store.has_incident_number(incident_number):
         LOGGER.info(
