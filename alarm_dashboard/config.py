@@ -46,6 +46,10 @@ class AppConfig:
     messenger_api_key: Optional[str] = None
     settings_password: Optional[str] = None
     calendar_urls: List[str] = field(default_factory=list)
+    ntfy_topic_url: Optional[str] = None
+    ntfy_poll_interval: int = 60
+    messages_file: Optional[str] = None
+    message_max_ttl_hours: int = 72
 
 
 class MissingConfiguration(RuntimeError):
@@ -199,6 +203,15 @@ def load_config() -> AppConfig:
             "Alarm messenger integration enabled: %s", messenger_server_url
         )
 
+    # ntfy.sh message integration
+    ntfy_topic_url = _get_env("NTFY_TOPIC_URL") or None
+    ntfy_poll_interval = int(_get_env("NTFY_POLL_INTERVAL", default="60") or "60")
+    messages_file = _get_env("MESSAGES_FILE") or None
+    message_max_ttl_hours = int(_get_env("MESSAGE_MAX_TTL_HOURS", default="72") or "72")
+
+    if messages_file:
+        _validate_path(messages_file, "MESSAGES_FILE")
+
     default_version = "dev-main"
     app_version = _get_env("APP_VERSION") or default_version
     app_version_url = _get_env("APP_VERSION_URL") or None
@@ -234,6 +247,10 @@ def load_config() -> AppConfig:
         messenger_api_key=messenger_api_key,
         settings_password=settings_password,
         calendar_urls=calendar_urls,
+        ntfy_topic_url=ntfy_topic_url,
+        ntfy_poll_interval=ntfy_poll_interval,
+        messages_file=messages_file,
+        message_max_ttl_hours=message_max_ttl_hours,
     )
 
 

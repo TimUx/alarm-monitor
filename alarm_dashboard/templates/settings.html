@@ -112,6 +112,47 @@
                             <small class="form-hint">Eine iCal-URL pro Zeile (Google Calendar, Nextcloud, etc.). Unterstützt werden nur https:// und http:// Adressen.</small>
                         </div>
 
+                        <div class="form-group form-group--section-header">
+                            <h3 class="settings-subsection-title">Nachrichten (ntfy.sh)</h3>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ntfy_topic_url">ntfy Topic-URL</label>
+                            <input
+                                type="url"
+                                id="ntfy_topic_url"
+                                name="ntfy_topic_url"
+                                placeholder="https://ntfy.sh/meine-feuerwehr-abc123"
+                            >
+                            <small class="form-hint">URL eines ntfy.sh Topics für Remote-Nachrichten (z.B. https://ntfy.sh/meine-fw). Leer lassen um zu deaktivieren. Kann alternativ per ALARM_DASHBOARD_NTFY_TOPIC_URL gesetzt werden.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ntfy_poll_interval">ntfy Abfrage-Intervall (Sekunden)</label>
+                            <input
+                                type="number"
+                                id="ntfy_poll_interval"
+                                name="ntfy_poll_interval"
+                                min="10"
+                                step="10"
+                                placeholder="60"
+                            >
+                            <small class="form-hint">Wie oft das ntfy Topic abgefragt wird (Standard: 60 Sekunden, Minimum: 10).</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="message_default_ttl_minutes">Standard Anzeigedauer für Nachrichten (Minuten)</label>
+                            <input
+                                type="number"
+                                id="message_default_ttl_minutes"
+                                name="message_default_ttl_minutes"
+                                min="1"
+                                step="1"
+                                placeholder="60"
+                            >
+                            <small class="form-hint">Wie lange ntfy-Nachrichten (ohne eigene Ablaufzeit) angezeigt werden. Standard: 60 Minuten. Gilt auch als Fallback wenn ntfy keine TTL überträgt.</small>
+                        </div>
+
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Speichern</button>
                             <button type="button" class="btn btn-secondary" id="cancel-btn">Abbrechen</button>

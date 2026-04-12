@@ -40,6 +40,7 @@ def config(tmp_path: Path) -> AppConfig:
         settings_password=SETTINGS_PASSWORD,
         history_file=str(tmp_path / "history.json"),
         settings_file=str(tmp_path / "settings.json"),
+        messages_file=str(tmp_path / "messages.json"),
         display_duration_minutes=30,
     )
 
@@ -819,6 +820,73 @@ def test_html_pages_have_no_cache_headers(client, path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GET /api/messages
+# ---------------------------------------------------------------------------
+
+
+def test_get_messages_returns_empty_list_when_no_messages(client) -> None:
+    """GET /api/messages should return an empty list when no messages exist."""
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["messages"] == []
+
+
+def test_get_messages_returns_active_messages(client, flask_app) -> None:
+    """GET /api/messages should return stored active messages."""
+    store = flask_app.config["MESSAGE_STORE"]
+    store.add("Hallo Dashboard", ttl_minutes=60)
+
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data["messages"]) == 1
+    assert data["messages"][0]["text"] == "Hallo Dashboard"
+
+
+def test_get_messages_no_auth_required(client) -> None:
+    """GET /api/messages must be accessible without authentication."""
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/messages
+# ---------------------------------------------------------------------------
+
+
+def test_post_message_creates_message(client, flask_app) -> None:
+    """POST /api/messages with valid auth and body should create a message."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Übung heute 19:00 Uhr", "ttl_minutes": 120},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert data["message"]["text"] == "Übung heute 19:00 Uhr"
+    assert "id" in data["message"]
+
+    store = flask_app.config["MESSAGE_STORE"]
+    assert len(store.get_active()) == 1
+
+
+def test_post_message_without_api_key_returns_401(client) -> None:
+    """POST /api/messages without X-API-Key should return 401."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Unauthorized"},
+    )
+    assert response.status_code == 401
+
+
+def test_post_message_with_wrong_api_key_returns_401(client) -> None:
+    """POST /api/messages with wrong key should return 401."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Wrong key"},
+        headers={"X-API-Key": "wrong-key"},
 # Logo upload / GET /api/logo / DELETE /api/settings/logo
 # ---------------------------------------------------------------------------
 
@@ -869,6 +937,23 @@ def test_upload_logo_unauthorized_returns_401(client) -> None:
     assert response.status_code == 401
 
 
+def test_post_message_missing_text_returns_400(client) -> None:
+    """POST /api/messages without 'text' field should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"ttl_minutes": 60},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "text" in response.get_json()["error"]
+
+
+def test_post_message_empty_text_returns_400(client) -> None:
+    """POST /api/messages with empty text should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "   "},
+        headers={"X-API-Key": API_KEY},
 def test_upload_logo_invalid_csrf_returns_403(client) -> None:
     """POST /api/settings/logo with invalid CSRF token should return 403."""
     response = client.post(
@@ -892,6 +977,236 @@ def test_upload_logo_no_file_returns_400(client) -> None:
     assert response.status_code == 400
 
 
+def test_post_message_text_too_long_returns_400(client) -> None:
+    """POST /api/messages with text longer than 500 chars should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "x" * 501},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "500" in response.get_json()["error"]
+
+
+def test_post_message_invalid_ttl_returns_400(client) -> None:
+    """POST /api/messages with non-integer ttl_minutes should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Test", "ttl_minutes": "abc"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_message_default_ttl(client, flask_app) -> None:
+    """POST /api/messages without ttl_minutes should use default TTL of 60 minutes."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Default TTL"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 201
+    store = flask_app.config["MESSAGE_STORE"]
+    active = store.get_active()
+    assert len(active) == 1
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/messages/<id>
+# ---------------------------------------------------------------------------
+
+
+def test_delete_message_removes_it(client, flask_app) -> None:
+    """DELETE /api/messages/<id> should remove the message."""
+    store = flask_app.config["MESSAGE_STORE"]
+    msg = store.add("Zu löschen", ttl_minutes=60)
+
+    response = client.delete(
+        f"/api/messages/{msg['id']}",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "ok"
+    assert store.get_active() == []
+
+
+def test_delete_message_without_api_key_returns_401(client, flask_app) -> None:
+    """DELETE /api/messages/<id> without auth should return 401."""
+    store = flask_app.config["MESSAGE_STORE"]
+    msg = store.add("Test", ttl_minutes=60)
+
+    response = client.delete(f"/api/messages/{msg['id']}")
+    assert response.status_code == 401
+
+
+def test_delete_message_not_found_returns_404(client) -> None:
+    """DELETE /api/messages/<id> for unknown ID should return 404."""
+    response = client.delete(
+        "/api/messages/00000000-0000-0000-0000-000000000000",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 404
+
+
+def test_delete_message_invalid_id_returns_400(client) -> None:
+    """DELETE /api/messages/<id> with a malformed ID should return 400."""
+    response = client.delete(
+        "/api/messages/not-a-valid-uuid",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Settings – ntfy / message TTL fields
+# ---------------------------------------------------------------------------
+
+
+def test_get_settings_returns_ntfy_fields(client) -> None:
+    """GET /api/settings must include ntfy_topic_url, ntfy_poll_interval and message_default_ttl_minutes."""
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "ntfy_topic_url" in data
+    assert "ntfy_poll_interval" in data
+    assert "message_default_ttl_minutes" in data
+
+
+def test_post_settings_saves_ntfy_topic_url(client, flask_app) -> None:
+    """POST /api/settings should persist ntfy_topic_url."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "ntfy_topic_url": "https://ntfy.sh/meine-fw-test",
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("ntfy_topic_url") == "https://ntfy.sh/meine-fw-test"
+
+
+def test_post_settings_saves_ntfy_poll_interval(client, flask_app) -> None:
+    """POST /api/settings should persist ntfy_poll_interval."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "ntfy_poll_interval": 120,
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("ntfy_poll_interval") == 120
+
+
+def test_post_settings_rejects_invalid_ntfy_poll_interval(client) -> None:
+    """POST /api/settings with ntfy_poll_interval < 10 should return 400."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "ntfy_poll_interval": 5},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 400
+    assert "ntfy_poll_interval" in response.get_json()["error"]
+
+
+def test_post_settings_saves_message_default_ttl(client, flask_app) -> None:
+    """POST /api/settings should persist message_default_ttl_minutes."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "message_default_ttl_minutes": 30,
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("message_default_ttl_minutes") == 30
+
+
+def test_post_settings_rejects_invalid_message_default_ttl(client) -> None:
+    """POST /api/settings with message_default_ttl_minutes < 1 should return 400."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "message_default_ttl_minutes": 0},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 400
+    assert "message_default_ttl_minutes" in response.get_json()["error"]
+
+
+def test_post_settings_clears_ntfy_topic_url_when_empty(client, flask_app) -> None:
+    """POST /api/settings with empty ntfy_topic_url should set it to None."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    # First set a URL
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({"ntfy_topic_url": "https://ntfy.sh/old-topic"})
+
+    # Then clear it
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "ntfy_topic_url": ""},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    assert settings_store.get("ntfy_topic_url") is None
+
+
+def test_get_settings_reflects_stored_ntfy_fields(client, flask_app) -> None:
+    """GET /api/settings should return stored ntfy fields."""
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({
+        "ntfy_topic_url": "https://ntfy.sh/my-fw",
+        "ntfy_poll_interval": 90,
+        "message_default_ttl_minutes": 45,
+    })
+
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ntfy_topic_url"] == "https://ntfy.sh/my-fw"
+    assert data["ntfy_poll_interval"] == 90
+    assert data["message_default_ttl_minutes"] == 45
 def test_upload_logo_unsupported_format_returns_415(client) -> None:
     """POST /api/settings/logo with a non-image file should return 415."""
     from io import BytesIO

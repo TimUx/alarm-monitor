@@ -366,6 +366,21 @@ body {
     }
 }
 
+.settings-subsection-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 2px solid var(--divider);
+    padding-bottom: 0.4rem;
+}
+
+.form-group--section-header {
+    margin-top: 0.5rem;
+}
+
 .settings-warning-banner {
     background: #fff3cd;
     border: 1px solid #ffc107;

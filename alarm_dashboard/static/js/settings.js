@@ -27,6 +27,12 @@
                 document.getElementById('activation_groups').value = data.activation_groups || '';
                 const calendarEl = document.getElementById('calendar_urls');
                 if (calendarEl) { calendarEl.value = data.calendar_urls || ''; }
+                const ntfyUrlEl = document.getElementById('ntfy_topic_url');
+                if (ntfyUrlEl) { ntfyUrlEl.value = data.ntfy_topic_url || ''; }
+                const ntfyIntervalEl = document.getElementById('ntfy_poll_interval');
+                if (ntfyIntervalEl) { ntfyIntervalEl.value = data.ntfy_poll_interval || ''; }
+                const msgTtlEl = document.getElementById('message_default_ttl_minutes');
+                if (msgTtlEl) { msgTtlEl.value = data.message_default_ttl_minutes || ''; }
             })
             .catch(error => {
                 console.error('Error loading settings:', error);
@@ -46,6 +52,9 @@
             default_location_name: formData.get('default_location_name'),
             activation_groups: formData.get('activation_groups'),
             calendar_urls: formData.get('calendar_urls') || '',
+            ntfy_topic_url: formData.get('ntfy_topic_url') || '',
+            ntfy_poll_interval: formData.get('ntfy_poll_interval') || '',
+            message_default_ttl_minutes: formData.get('message_default_ttl_minutes') || '',
         };
         const password = formData.get('settings_password') || '';
 

@@ -22,6 +22,9 @@ LOGGER = logging.getLogger(__name__)
 api_bp = Blueprint("api", __name__)
 
 _INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
+_MESSAGE_ID_RE = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+)
 
 # ---------------------------------------------------------------------------
 # Logo upload helpers
@@ -107,6 +110,10 @@ def _get_subscribers_lock():
 
 def _get_weather_cache():
     return current_app.config["WEATHER_CACHE"]
+
+
+def _get_message_store():
+    return current_app.config.get("MESSAGE_STORE")
 
 
 def _get_effective_settings() -> Dict[str, Any]:
@@ -396,6 +403,9 @@ def api_get_settings():
         "default_location_name": effective_settings["default_location_name"],
         "activation_groups": groups_str,
         "calendar_urls": calendar_urls_str,
+        "ntfy_topic_url": effective_settings.get("ntfy_topic_url") or "",
+        "ntfy_poll_interval": effective_settings.get("ntfy_poll_interval", 60),
+        "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -473,6 +483,28 @@ def api_update_settings():
         else:
             calendar_urls = []
         updates["calendar_urls"] = calendar_urls
+
+    if "ntfy_topic_url" in data:
+        ntfy_url = str(data["ntfy_topic_url"]).strip() if data["ntfy_topic_url"] else ""
+        updates["ntfy_topic_url"] = ntfy_url if ntfy_url else None
+
+    if "ntfy_poll_interval" in data and data["ntfy_poll_interval"] not in (None, ""):
+        try:
+            interval = int(data["ntfy_poll_interval"])
+            if interval < 10:
+                return jsonify({"error": "ntfy_poll_interval must be at least 10 seconds"}), 400
+            updates["ntfy_poll_interval"] = interval
+        except (TypeError, ValueError):
+            return jsonify({"error": "ntfy_poll_interval must be an integer"}), 400
+
+    if "message_default_ttl_minutes" in data and data["message_default_ttl_minutes"] not in (None, ""):
+        try:
+            ttl = int(data["message_default_ttl_minutes"])
+            if ttl < 1:
+                return jsonify({"error": "message_default_ttl_minutes must be at least 1"}), 400
+            updates["message_default_ttl_minutes"] = ttl
+        except (TypeError, ValueError):
+            return jsonify({"error": "message_default_ttl_minutes must be an integer"}), 400
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)
@@ -608,6 +640,88 @@ def api_calendar():
         events = []
 
     resp = jsonify({"events": events})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@api_bp.route("/api/messages", methods=["GET"])
+def api_get_messages():
+    """Return all active (non-expired) dashboard messages."""
+    store = _get_message_store()
+    messages = store.get_active() if store is not None else []
+    resp = jsonify({"messages": messages})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@api_bp.route("/api/messages", methods=["POST"])
+@_limiter.limit("30 per minute")
+def api_post_message():
+    """Create a new dashboard message (requires X-API-Key)."""
+    config = _get_config()
+
+    api_key = request.headers.get("X-API-Key") or ""
+    if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
+        LOGGER.warning("Unauthorized message creation attempt")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid request"}), 400
+
+    text = str(data.get("text") or "").strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+    if len(text) > 500:
+        return jsonify({"error": "text must not exceed 500 characters"}), 400
+
+    raw_ttl = data.get("ttl_minutes", 60)
+    try:
+        ttl_minutes = int(raw_ttl)
+    except (TypeError, ValueError):
+        return jsonify({"error": "ttl_minutes must be an integer"}), 400
+
+    store = _get_message_store()
+    if store is None:
+        return jsonify({"error": "Message store not available"}), 503
+
+    subscribers = _get_subscribers()
+    subscribers_lock = _get_subscribers_lock()
+
+    def _trigger_sse() -> None:
+        with subscribers_lock:
+            for evt in subscribers:
+                evt.set()
+
+    message = store.add(text, ttl_minutes, on_stored=_trigger_sse)
+
+    resp = jsonify({"status": "ok", "message": message})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp, 201
+
+
+@api_bp.route("/api/messages/<message_id>", methods=["DELETE"])
+def api_delete_message(message_id: str):
+    """Delete a dashboard message by ID (requires X-API-Key)."""
+    config = _get_config()
+
+    api_key = request.headers.get("X-API-Key") or ""
+    if not config.api_key or not hmac.compare_digest(api_key, config.api_key):
+        LOGGER.warning("Unauthorized message deletion attempt")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if not _MESSAGE_ID_RE.match(message_id):
+        return jsonify({"error": "Invalid message ID"}), 400
+
+    store = _get_message_store()
+    if store is None:
+        return jsonify({"error": "Message store not available"}), 503
+
+    deleted = store.delete(message_id)
+    if not deleted:
+        return jsonify({"error": "Message not found"}), 404
+
+    resp = jsonify({"status": "ok"})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 
