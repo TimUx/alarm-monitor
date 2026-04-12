@@ -53,6 +53,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - ✅ **Duplikatserkennung** – Automatische Erkennung bereits verarbeiteter Alarme
 - ✅ **Gruppenfilterung** – Optionale Filterung nach TME-Codes oder Gruppennamen
 - ✅ **Persistente Speicherung** – Alle Alarme werden in einer Historie gespeichert
+- ✅ **Echtzeit-Updates** – Server-Sent Events (SSE) für sofortige Browser-Benachrichtigung
 
 ### Geodaten & Kartendarstellung
 - 🗺️ **Automatische Geokodierung** – Koordinaten-Ermittlung über OpenStreetMap (Nominatim)
@@ -62,16 +63,25 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 
 ### Wetter & Umgebungsinformationen
 - 🌤️ **Aktuelle Wetterdaten** – Temperatur, Niederschlag, Wind über Open-Meteo API
-- 🌤️ **Wettervorhersage** – Stündliche Vorhersage für Einsatzplanung
 - 🌤️ **Standort-Wetter** – Wetterdaten für Einsatzort in Alarmansicht
 - 🌤️ **Idle-Wetter** – Lokales Wetter in der Standardansicht
 
 ### Dashboard-Ansichten
 - 📺 **Alarm-Ansicht** – Vollbildanzeige mit allen Einsatzinformationen
-- 📺 **Idle-Ansicht** – Uhrzeit, Wetter und letzter Einsatz im Ruhezustand
-- 📺 **Mobile-Ansicht** – Optimiert für Smartphones und Tablets
+- 📺 **Idle-Ansicht** – Uhrzeit, Wetter, nächste Termine und letzter Einsatz
+- 📺 **Mobile-Ansicht** – Optimiert für Smartphones und Tablets mit Navigation
 - 📺 **Historien-Ansicht** – Tabellarische Übersicht aller vergangenen Einsätze
 - 📺 **Navigations-Ansicht** – Routenplanung zum Einsatzort
+
+### Kalender-Integration (optional)
+- 📅 **iCal-Kalender** – Anbindung beliebiger iCal-URLs (Google Calendar, Nextcloud, etc.)
+- 📅 **Terminanzeige** – Nächste Termine werden in der Idle-Ansicht angezeigt
+- 📅 **Multi-Kalender** – Mehrere Kalender-URLs konfigurierbar
+
+### Dashboard-Nachrichten (optional)
+- 📣 **ntfy.sh Integration** – Nachrichten über ntfy.sh Topics senden und anzeigen
+- 📣 **REST-API** – Nachrichten über die API erstellen und verwalten (`POST /api/messages`)
+- 📣 **Automatische Ablaufzeit** – Konfigurierbare TTL für Nachrichten
 
 ### Messenger-Integration (optional)
 - 📱 **Push-Benachrichtigungen** – Mobile Alarmierung über alarm-messenger
@@ -80,7 +90,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 📱 **Führungsrollen** – Kennzeichnung von Führungskräften
 
 ### Anpassbarkeit
-- 🎨 **Branding** – Anpassbare Feuerwehrnamen und Logos
+- 🎨 **Logo-Upload** – Individuelles Feuerwehr-Logo über die Web-Oberfläche hochladen
 - 🎨 **Farbschema** – CSS-Variablen für individuelle Farbgestaltung
 - 🎨 **Anzeigedauer** – Konfigurierbare Dauer der Alarmanzeige
 - 🎨 **Standortdaten** – Individuelle Standardkoordinaten und Standortnamen
@@ -90,7 +100,16 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - ⚙️ **Feuerwehr-Name** – Dynamische Anpassung des angezeigten Namens
 - ⚙️ **Standortkonfiguration** – Einstellung von Standardkoordinaten und Standortnamen
 - ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche
+- ⚙️ **Kalender-URLs** – iCal-URLs für die Terminanzeige
+- ⚙️ **ntfy.sh-Einstellungen** – Topic-URL, Abfrage-Intervall und TTL für Nachrichten
+- ⚙️ **Logo-Verwaltung** – Logo hochladen oder Standard-Logo wiederherstellen
 - ⚙️ **Persistente Speicherung** – Einstellungen bleiben über Neustarts hinweg erhalten
+
+### Monitoring & Betrieb
+- 📊 **Prometheus-Metriken** – Optionaler `/api/metrics`-Endpunkt für Monitoring
+- 🔒 **Rate-Limiting** – Schutz der API-Endpunkte gegen Missbrauch
+- 🔒 **CSRF-Schutz** – Einstellungen-API mit CSRF-Token abgesichert
+- 🏥 **Health-Check** – `/health`-Endpunkt für Docker und Load-Balancer
 
 ---
 
@@ -107,22 +126,32 @@ Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldung
 ![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-feedback.png)
 
 ### Dashboard – Standardansicht (Idle)
-Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, aktuelles Wetter und den letzten Einsatz.
+Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, aktuelles Wetter, nächste Kalendertermine, Nachrichten und den letzten Einsatz.
 
 ![Dashboard Standardansicht](docs/screenshots/dashboard-idle.png)
 
 ### Einsatzhistorie
-Übersichtliche Darstellung aller vergangenen Einsätze mit Filterfunktion.
+Übersichtliche Darstellung aller vergangenen Einsätze mit Filterfunktion und Sortierung.
 
 ![Einsatzhistorie](docs/screenshots/history-alarm.png)
 
-### Mobile Ansicht
-Optimiert für Smartphones und Tablets mit Touch-Bedienung und direkter Navigation.
+### Navigationsseite
+Dedizierte Navigationsseite mit interaktiver Karte und optionaler Routenplanung über OpenRouteService.
 
-![Mobile Ansicht](docs/screenshots/mobile-idle.png)
+![Navigation](docs/screenshots/navigation-page.png)
+
+### Mobile Ansicht – Alarmansicht
+Optimiert für Smartphones und Tablets mit Touch-Bedienung, direkter Navigation und kompakter Darstellung.
+
+![Mobile Alarmansicht](docs/screenshots/mobile-alarm.png)
+
+### Mobile Ansicht – Ruhezustand
+Mobile Ansicht im Ruhezustand mit Uhrzeit, Wetter und letztem Einsatz.
+
+![Mobile Idle](docs/screenshots/mobile-idle.png)
 
 ### Einstellungen
-Webbasierte Konfigurationsoberfläche für zentrale Einstellungen wie Feuerwehr-Name, Standort und Gruppenfilter. Änderungen werden sofort übernommen und persistent gespeichert.
+Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen inkl. Kalender-URLs, ntfy.sh-Integration und Logo-Upload. Änderungen werden sofort übernommen und persistent gespeichert.
 
 ![Einstellungen](docs/screenshots/settings-page.png)
 
@@ -387,12 +416,17 @@ Die Konfiguration erfolgt über zwei Wege:
 
 ### Web-basierte Einstellungen
 
-Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert werden (erreichbar über den Einstellungen-Button im Menü):
+Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert werden (erreichbar über den Einstellungen-Button im Menü unter `/settings`):
 
 - **Feuerwehr-Name**: Name der Feuerwehr, der in allen Ansichten angezeigt wird
 - **Standard Breitengrad/Längengrad**: Koordinaten für Wetter-Anzeige im Ruhezustand
 - **Standard Standortname**: Bezeichnung des Standorts (z.B. "Feuerwache Willingshausen")
 - **Gruppen-Filter (TME-Codes)**: Kommagetrennte Liste von TME-Codes zur Alarmfilterung
+- **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand (eine URL pro Zeile)
+- **ntfy.sh Topic-URL**: URL des ntfy-Topics für eingehende Dashboard-Nachrichten
+- **ntfy Abfrage-Intervall**: Wie oft das ntfy-Topic abgefragt wird (in Sekunden)
+- **Nachrichten-TTL**: Standard-Anzeigedauer für ntfy-Nachrichten (in Minuten)
+- **Logo**: Individuelles Feuerwehr-Logo hochladen oder Standard-Logo wiederherstellen
 
 **Hinweis**: Web-basierte Einstellungen haben Vorrang vor Umgebungsvariablen und werden persistent gespeichert.
 
@@ -434,6 +468,30 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 # ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
 ```
 
+### Kalender-Integration (optional, kann in Web-UI konfiguriert werden)
+
+```bash
+# iCal-URLs für die Terminanzeige (Zeilenumbruch- oder kommagetrennt)
+# Unterstützt Google Calendar, Nextcloud, Apple iCloud, etc.
+# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+```
+
+### Nachrichten & ntfy.sh (optional, kann in Web-UI konfiguriert werden)
+
+```bash
+# ntfy.sh Topic-URL für eingehende Nachrichten (kann in Web-UI geändert werden)
+# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+
+# Abfrage-Intervall in Sekunden (Standard: 60, Minimum: 10)
+# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
+
+# Pfad zur Nachrichten-Datei (Standard: instance/messages.json)
+# ALARM_DASHBOARD_MESSAGES_FILE=/app/instance/messages.json
+
+# Maximale TTL für Nachrichten in Stunden (Standard: 72)
+# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
+```
+
 ### Externe Dienste (optional)
 
 ```bash
@@ -462,10 +520,10 @@ ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 
 ```bash
 # Pfad zur Historie-Datei (Standard: instance/alarm_history.json)
-# ALARM_DASHBOARD_HISTORY_FILE=/custom/path/to/history.json
+# ALARM_DASHBOARD_HISTORY_FILE=/app/instance/alarm_history.json
 
 # Pfad zur Einstellungs-Datei (Standard: instance/settings.json)
-# ALARM_DASHBOARD_SETTINGS_FILE=/custom/path/to/settings.json
+# ALARM_DASHBOARD_SETTINGS_FILE=/app/instance/settings.json
 
 # Prometheus-Metriken-Endpoint aktivieren (Token erforderlich)
 # Generieren mit: openssl rand -hex 32
@@ -503,6 +561,14 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Willingshausen
 # --- GRUPPENFILTER ---
 # Leer = alle Alarme, oder TME-Codes kommagetrennt
 ALARM_DASHBOARD_GRUPPEN=
+
+# --- KALENDER (optional, kann in Web-UI gesetzt werden) ---
+# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+
+# --- NACHRICHTEN / NTFY (optional, kann in Web-UI gesetzt werden) ---
+# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
+# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
 
 # --- MESSENGER-INTEGRATION (optional) ---
 # Für Teilnehmerrückmeldungen und Push-Benachrichtigungen
@@ -574,9 +640,11 @@ Webbasierte Konfigurationsoberfläche:
 - **Feuerwehr-Name**: Anpassung des angezeigten Namens
 - **Standortkonfiguration**: Eingabe von Breitengrad, Längengrad und Standortname
 - **Gruppenfilter**: Konfiguration der TME-Codes (kommagetrennt)
+- **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand
+- **ntfy.sh-Integration**: Topic-URL, Abfrage-Intervall und Nachrichten-TTL
+- **Logo-Upload**: Individuelles Feuerwehr-Logo hochladen (PNG/JPEG/WebP/SVG)
 - **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
 - **Persistente Speicherung**: Einstellungen bleiben über Neustarts erhalten
-- Erreichbar über den Einstellungen-Button in der Navigation aller Seiten
 
 ### API-Endpunkte
 
@@ -587,13 +655,25 @@ Content-Type: application/json
 X-API-Key: <ihr-api-key>
 
 {
-  "incident_number": "2024-001",
-  "keyword": "F3Y",
-  "description": "Brand in Wohngebäude",
-  "location": "Musterstraße 1",
-  "latitude": 51.2345,
+  "incident_number": "2024-001",    # Pflichtfeld (alphanumerisch, max. 50 Zeichen)
+  "keyword": "B3 - Wohnungsbrand",  # Einsatzstichwort
+  "keyword_secondary": "Menschenleben in Gefahr",
+  "subject": "Vollbrand EFH",       # Kurzbeschreibung
+  "diagnosis": "Wohnungsbrand",     # Diagnose
+  "remark": "2 Personen im Gebäude",
+  "location": "Musterstraße 1, 12345 Musterstadt",
+  "latitude": 51.2345,              # Koordinaten (optional, sonst Geocoding)
   "longitude": 9.8765,
-  ...
+  "timestamp": "2024-01-01T12:00:00+00:00",
+  "timestamp_display": "01.01.2024 12:00",
+  "groups": ["LF20-MST", "TLF4000-MST"],
+  "dispatch_group_codes": ["MST26", "MST41"],
+  "location_details": {             # optional
+    "town": "Musterstadt",
+    "village": "Nordviertel",
+    "street": "Musterstraße 1",
+    "additional": "EG links"
+  }
 }
 ```
 
@@ -605,7 +685,7 @@ GET /api/alarm
 {
   "mode": "alarm",
   "alarm": { ... },
-  "coordinates": { ... },
+  "coordinates": {"lat": 51.2345, "lon": 9.8765},
   "weather": { ... },
   "received_at": "2024-01-01T12:00:00+00:00"
 }
@@ -654,6 +734,58 @@ GET /api/alarm/participants/<incident_number>
 # 503 wenn alarm-messenger nicht konfiguriert
 ```
 
+#### Kalender-Termine abrufen
+```bash
+GET /api/calendar
+
+# Antwort:
+{
+  "events": [
+    {
+      "summary": "Dienstbesprechung",
+      "start": "2024-02-15T19:00:00",
+      "end": "2024-02-15T21:00:00",
+      "location": "Gerätehaus"
+    }
+  ]
+}
+
+# 200 mit leerer Liste wenn keine Kalender-URLs konfiguriert
+```
+
+#### Dashboard-Nachrichten
+
+```bash
+# Alle aktiven Nachrichten abrufen
+GET /api/messages
+
+# Antwort:
+{
+  "messages": [
+    {
+      "id": "uuid-...",
+      "text": "Dienstbesprechung heute 19:00 Uhr!",
+      "created_at": "2024-01-01T10:00:00+00:00",
+      "expires_at": "2024-01-02T10:00:00+00:00"
+    }
+  ]
+}
+
+# Neue Nachricht erstellen
+POST /api/messages
+Content-Type: application/json
+X-API-Key: <ihr-api-key>
+
+{
+  "text": "Nachrichtentext (max. 500 Zeichen)",
+  "ttl_minutes": 60   # Anzeigedauer in Minuten (Standard: 60)
+}
+
+# Nachricht löschen
+DELETE /api/messages/<message-id>
+X-API-Key: <ihr-api-key>
+```
+
 #### Routen-Proxy (OpenRouteService)
 ```bash
 GET /api/route?start_lat=50.9&start_lon=9.2&end_lat=51.0&end_lon=9.3
@@ -685,7 +817,11 @@ GET /api/settings
   "default_latitude": 51.2345,
   "default_longitude": 9.8765,
   "default_location_name": "Feuerwache Willingshausen",
-  "activation_groups": "WIL26,WIL41,WIL52"
+  "activation_groups": ["WIL26", "WIL41"],
+  "calendar_urls": ["https://calendar.google.com/..."],
+  "ntfy_topic_url": "https://ntfy.sh/meine-fw",
+  "ntfy_poll_interval": 60,
+  "message_default_ttl_minutes": 60
 }
 ```
 
@@ -701,7 +837,11 @@ X-CSRF-Token: <csrf-token>
   "default_latitude": 50.1234,
   "default_longitude": 8.5678,
   "default_location_name": "Hauptwache",
-  "activation_groups": "MST10,MST20"
+  "activation_groups": "MST10,MST20",
+  "calendar_urls": "https://calendar.google.com/...",
+  "ntfy_topic_url": "https://ntfy.sh/meine-fw",
+  "ntfy_poll_interval": 60,
+  "message_default_ttl_minutes": 60
 }
 
 # Antwort:
@@ -713,13 +853,29 @@ X-CSRF-Token: <csrf-token>
 
 **Hinweis**: Das CSRF-Token wird stündlich generiert und ist auf der `/settings`-Seite eingebettet. Es wird automatisch vom Browser mitgesendet.
 
+#### Logo hochladen/löschen
+```bash
+# Logo hochladen
+POST /api/settings/logo
+Content-Type: multipart/form-data
+X-Settings-Password: <settings-passwort>
+X-CSRF-Token: <csrf-token>
+
+# Formulardaten: file=<Bilddatei> (PNG/JPEG/WebP/SVG, max. 2 MB)
+
+# Logo auf Standard zurücksetzen
+DELETE /api/settings/logo
+X-Settings-Password: <settings-passwort>
+X-CSRF-Token: <csrf-token>
+```
+
 #### Prometheus-Metriken
 ```bash
 GET /api/metrics
-Authorization: Bearer <metrics-token>
+X-Metrics-Token: <metrics-token>
 
 # Gibt Prometheus-kompatibles Text-Format zurück
-# 503 wenn ALARM_DASHBOARD_METRICS_TOKEN nicht konfiguriert
+# 404 wenn ALARM_DASHBOARD_METRICS_TOKEN nicht konfiguriert
 # Verfügbare Metriken: alarm_dashboard_alarms_received_total,
 #   alarm_dashboard_alarms_stored_total, alarm_dashboard_geocode_errors_total,
 #   alarm_dashboard_weather_errors_total, alarm_dashboard_sse_active_connections,
@@ -736,15 +892,13 @@ GET /health
 
 ### Anpassung des Erscheinungsbilds
 
-#### Wappen/Logo austauschen
+#### Logo über Web-Oberfläche hochladen
 
-```bash
-# Eigenes Wappen ersetzen (PNG mit transparentem Hintergrund empfohlen)
-cp mein-wappen.png alarm_dashboard/static/img/crest.png
-
-# Container neu starten (Docker)
-docker compose restart
-```
+Das einfachste ist die Einstellungs-Seite (`/settings`):
+1. Öffnen Sie `/settings` im Browser
+2. Scrollen Sie zum Abschnitt **"Feuerwehr-Logo"**
+3. Klicken Sie auf **"Datei wählen"** und wählen Sie Ihr Logo (PNG/JPEG/WebP/SVG, max. 2 MB)
+4. Klicken Sie auf **"Logo hochladen"**
 
 #### Farbschema anpassen
 

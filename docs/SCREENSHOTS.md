@@ -1,6 +1,7 @@
 # 📸 Screenshot-Dokumentation
 
 Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems.
+Alle Screenshots wurden in **Full HD (1920×1080)** aufgenommen.
 
 ---
 
@@ -8,10 +9,10 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 - [Dashboard-Ansichten](#dashboard-ansichten)
 - [Mobile-Ansichten](#mobile-ansichten)
-- [Historie-Ansichten](#historie-ansichten)
-- [Navigations-Ansichten](#navigations-ansichten)
-- [Admin-Ansichten](#admin-ansichten)
-- [Fehler-Ansichten](#fehler-ansichten)
+- [Historie-Ansicht](#historie-ansicht)
+- [Navigations-Ansicht](#navigations-ansicht)
+- [Einstellungs-Ansicht](#einstellungs-ansicht)
+- [Admin-Endpunkte](#admin-endpunkte)
 - [Screenshots erstellen](#screenshots-erstellen)
 
 ---
@@ -20,20 +21,20 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ### Dashboard – Alarmansicht (Aktiver Einsatz)
 
-**Datei**: `docs/screenshots/dashboard-alarm.png`
+**Datei**: `docs/screenshots/dashboard-alarm.png`  
+**Auflösung**: 1920×1080 (Full HD)
 
 **Beschreibung**: Vollbild-Ansicht eines aktiven Alarms mit allen relevanten Informationen.
 
 **Angezeigte Elemente**:
-- ✅ Alarm-Header mit Stichwort und Zeitstempel
-- ✅ Interaktive Karte mit Einsatzort-Marker
-- ✅ Vollständige Adressinformationen
-- ✅ Wetterdaten (Temperatur, Niederschlag, Wind)
-- ✅ Diagnose und Bemerkungen (rot hervorgehoben)
-- ✅ Zusatzinformationen und Hinweise
+- ✅ Alarm-Header mit Stichwort, Unterstichwort und Zeitstempel
+- ✅ Diagnose und Bemerkungen (hervorgehoben)
+- ✅ Vollständige Adressinformationen (Ort, Ortsteil, Straße, Zusatz)
 - ✅ Alarmierte Fahrzeuge (AAO)
-- ✅ Funkmeldeempfänger (FME) mit Alarmierungszeit
-- ✅ Telefonmeldeempfänger (TME) mit Alarmierungszeit
+- ✅ Interaktive Karte mit Einsatzort-Marker (wenn Koordinaten vorhanden)
+- ✅ Wetterdaten am Einsatzort (Temperatur, Niederschlag, Wind)
+- ✅ Navigations-Button (öffnet Navigationsseite)
+- ✅ Bottom-Navigation (Home, Navigation, Historie, Einstellungen)
 
 **Verwendung**: Hauptanzeige für Alarmdarstellung auf großen Displays
 
@@ -41,23 +42,25 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ---
 
-### Dashboard – Teilnehmerrückmeldungen
+### Dashboard – Teilnehmerrückmeldungen (mit alarm-messenger)
 
-**Datei**: `docs/screenshots/dashboard-messenger-feedback.png`
+**Datei**: `docs/screenshots/dashboard-messenger-feedback.png`  
+**Auflösung**: 1920×1080 (Full HD)
 
-**Beschreibung**: Alarmansicht mit zusätzlicher Anzeige von Teilnehmerrückmeldungen vom alarm-messenger.
+**Beschreibung**: Alarmansicht mit zusätzlicher Anzeige von Teilnehmerrückmeldungen vom alarm-messenger (wenn konfiguriert).
 
 **Angezeigte Elemente**:
 - ✅ Alle Elemente der Standard-Alarmansicht
-- ✅ **Zusätzlich**: Panel mit Teilnehmerrückmeldungen
+- ✅ **Zusätzliches Rückmeldungs-Panel**:
   - Namen der Teilnehmer
   - Zusagen (✓ grün)
   - Absagen (✗ rot)
   - Ausstehende Rückmeldungen (⏳ grau)
-  - Qualifikationen (z.B. Atemschutz, Maschinist)
-  - Führungsrollen (z.B. Zugführer)
-  - Kommentare/Notizen
-- ✅ Zusammenfassung (X Zusagen • Y Absagen • Z Ausstehend)
+  - Qualifikationen (z.B. AGT = Atemschutzgeräteträger, Ma = Maschinist)
+  - Führungsrollen (z.B. Zugführer, Gruppenführer)
+  - Zusammenfassung (X Zusagen • Y Absagen • Z Ausstehend)
+
+**Voraussetzung**: alarm-messenger muss konfiguriert sein (`ALARM_DASHBOARD_MESSENGER_SERVER_URL`)
 
 **Verwendung**: Einsatzleitung kann sehen, wer verfügbar ist und welche Qualifikationen vorhanden sind
 
@@ -67,24 +70,21 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ### Dashboard – Idle-Ansicht (Ruhezustand)
 
-**Datei**: `docs/screenshots/dashboard-idle.png`
+**Datei**: `docs/screenshots/dashboard-idle.png`  
+**Auflösung**: 1920×1080 (Full HD)
 
 **Beschreibung**: Standardansicht wenn kein aktiver Alarm vorliegt oder der letzte Alarm die maximale Anzeigedauer überschritten hat.
 
 **Angezeigte Elemente**:
 - ✅ Große digitale Uhr (Stunden:Minuten:Sekunden)
 - ✅ Aktuelles Datum (Wochentag, TT.MM.YYYY)
-- ✅ Vereinswappen/Logo (anpassbar)
+- ✅ Vereinswappen/Logo (individuell anpassbar über Einstellungen)
 - ✅ Feuerwehr-Name
-- ✅ Lokales Wetter am Standort
-  - Temperatur
-  - Wetter-Icon
-  - Niederschlagswahrscheinlichkeit
-- ✅ **Letzter Einsatz** (kompakte Anzeige):
-  - Zeitstempel
-  - Stichwort
-  - Kurzbeschreibung
-- ✅ Button "Historie ansehen"
+- ✅ Lokales Wetter am Standort (wenn Koordinaten konfiguriert):
+  - Temperatur, Wetter-Icon, Niederschlagswahrscheinlichkeit
+- ✅ **Letzter Einsatz** (kompakte Anzeige mit Zeitstempel und Stichwort)
+- ✅ **Nächste Termine** aus iCal-Kalendern (wenn konfiguriert)
+- ✅ **Dashboard-Nachrichten** (von ntfy.sh oder API, wenn aktiv)
 - ✅ Versions-Anzeige im Footer
 
 **Verwendung**: Permanente Anzeige in der Wache, wenn kein Einsatz aktiv ist
@@ -97,147 +97,181 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ### Mobile – Idle-Ansicht
 
-**Datei**: `docs/screenshots/mobile-idle.png`
+**Datei**: `docs/screenshots/mobile-idle.png`  
+**Auflösung**: 390×844 (iPhone 14)
 
 **Beschreibung**: Mobiloptimierte Ansicht für Smartphones und Tablets im Ruhezustand.
 
 **Angezeigte Elemente**:
-- ✅ Responsive Header mit Feuerwehr-Name
+- ✅ Responsive Header mit Feuerwehr-Name und Wappen
 - ✅ Touch-freundliche Bedienelemente
-- ✅ Kompakte Uhr und Datum
-- ✅ Wetter-Informationen
-- ✅ Letzter Einsatz (wenn vorhanden)
-- ✅ Navigation-Button zur Historie
+- ✅ Digitale Uhr und Datum
+- ✅ Aktuelles Wetter
+- ✅ Letzter Einsatz (kompakt)
+- ✅ Navigation zur Historie und Einstellungen
 
 **Besonderheiten**:
-- Optimiert für Touch-Bedienung
+- Optimiert für Touch-Bedienung (Hochformat)
 - Automatische Schriftgrößenanpassung
-- Hochformat-optimiert
 - Weniger Details als Desktop-Version
 
 **Verwendung**: Zugriff von Smartphones und Tablets, ideal für unterwegs
 
-![Mobile Ansicht](screenshots/mobile-idle.png)
+![Mobile Ansicht Idle](screenshots/mobile-idle.png)
 
 ---
 
 ### Mobile – Alarmansicht
 
-**Status**: Screenshot noch zu erstellen
+**Datei**: `docs/screenshots/mobile-alarm.png`  
+**Auflösung**: 390×844 (iPhone 14)
 
-**Beschreibung**: Mobiloptimierte Alarmdarstellung mit folgenden Elementen:
+**Beschreibung**: Mobiloptimierte Alarmdarstellung.
 
-**Geplante Elemente**:
-- ✅ Kompakter Alarm-Header
-- ✅ Vereinfachte Karte (kleinere Ansicht)
-- ✅ Wesentliche Adressinformationen
-- ✅ **"Navigation starten" Button** (prominent platziert)
-  - Öffnet Apple Karten (iOS)
-  - Öffnet Google Maps (Android)
-  - Übergibt Koordinaten oder Adresse
-- ✅ Wichtigste Einsatzinfos
+**Angezeigte Elemente**:
+- ✅ Kompakter Alarm-Header (Stichwort, Unterstichwort, Zeitstempel)
+- ✅ Diagnose und Bemerkungen
+- ✅ Vollständige Adressinformationen
 - ✅ Alarmierte Fahrzeuge (kompakt)
+- ✅ **"Navigation starten" Button** (öffnet Apple Karten/Google Maps)
+- ✅ Interaktive Karte (wenn Koordinaten vorhanden)
+- ✅ Wetterdaten am Einsatzort
 
-**Verwendung**: Schneller Zugriff auf Alarminfos und Navigation
+**Verwendung**: Schneller Zugriff auf Alarminfos und Navigation von unterwegs
+
+![Mobile Alarmansicht](screenshots/mobile-alarm.png)
 
 ---
 
-## Historie-Ansichten
+## Historie-Ansicht
 
-### Historie – Tabellenansicht
+### Einsatzhistorie
 
-**Datei**: `docs/screenshots/history-alarm.png`
+**Datei**: `docs/screenshots/history-alarm.png`  
+**Auflösung**: 1920×1080 (Full HD)
 
-**Beschreibung**: Tabellarische Übersicht aller vergangenen Einsätze.
+**Beschreibung**: Tabellarische Übersicht aller vergangenen Einsätze mit Filterfunktion.
 
 **Angezeigte Elemente**:
-- ✅ Such-/Filterfeld
-- ✅ Sortierbare Spalten:
+- ✅ Such-/Filterfeld (Suche nach Stichwort, Ort, Diagnose)
+- ✅ Sortierbare Tabellenspalten:
   - Datum/Uhrzeit
   - Stichwort
   - Ort
   - Diagnose
   - Alarmierte Fahrzeuge
 - ✅ Pagination (bei vielen Einträgen)
-- ✅ Zurück-Button zum Dashboard
+- ✅ Bottom-Navigation
 
 **Funktionen**:
-- Sortierung nach Spalten (Klick auf Header)
-- Filterung über Suchfeld
+- Sortierung nach Spalten (Klick auf Spaltenheader)
+- Echtzeit-Filterung über Suchfeld
 - Responsive Layout für mobile Geräte
 
-**Verwendung**: Nachschlagen vergangener Einsätze, Statistiken
+**Verwendung**: Nachschlagen vergangener Einsätze, Dokumentation
 
 ![Einsatzhistorie](screenshots/history-alarm.png)
 
 ---
 
-## Navigations-Ansichten
+## Navigations-Ansicht
 
-### Navigation – Routenansicht
+### Navigation – Routenplanung
 
-**Status**: Screenshot noch zu erstellen
+**Datei**: `docs/screenshots/navigation-page.png`  
+**Auflösung**: 1920×1080 (Full HD)
 
 **Beschreibung**: Dedizierte Navigationsseite mit Routenplanung zum Einsatzort.
 
-**Geplante Elemente**:
-- ✅ Großformatige Karte
-- ✅ Start- und Zielpunkt markiert
-- ✅ Route eingezeichnet (wenn OpenRouteService konfiguriert)
-- ✅ Entfernungsangabe (km)
-- ✅ Geschätzte Fahrzeit
-- ✅ Alternativ-Routen (falls verfügbar)
-- ✅ Zurück-Button zum Dashboard
+**Angezeigte Elemente**:
+- ✅ Großformatige interaktive Karte (Leaflet/OpenStreetMap)
+- ✅ Automatische Übernahme des Einsatzorts aus dem aktiven Alarm
+- ✅ Routenplanung (wenn OpenRouteService konfiguriert via `ALARM_DASHBOARD_ORS_API_KEY`):
+  - Start- und Zielpunkt markiert
+  - Route eingezeichnet
+  - Entfernungsangabe (km) und geschätzte Fahrzeit
+  - Schritt-für-Schritt-Navigation
+- ✅ Links zur externen Navigation (Apple Karten/Google Maps)
+- ✅ Bottom-Navigation (Zurück-Button)
 
 **Verwendung**: Detaillierte Routenplanung auf Desktop, z.B. für Einsatzleitung
 
+![Navigation](screenshots/navigation-page.png)
+
 ---
 
-## Admin-Ansichten
+## Einstellungs-Ansicht
+
+### Einstellungen
+
+**Datei**: `docs/screenshots/settings-page.png`  
+**Auflösung**: 1920×1080 (Full HD)
+
+**Beschreibung**: Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen.
+
+**Konfigurierbare Bereiche**:
+
+**Allgemeine Einstellungen**:
+- ✅ Einstellungs-Passwort (Authentifizierung)
+- ✅ Feuerwehr-Name
+- ✅ Standard-Koordinaten (Breitengrad/Längengrad) für Idle-Wetter
+- ✅ Standard-Standortname
+
+**Alarmfilterung**:
+- ✅ Gruppen-Filter (TME-Codes, kommagetrennt)
+
+**Kalender-Integration**:
+- ✅ Kalender-URLs (iCal, eine URL pro Zeile)
+
+**Nachrichten-Integration (ntfy.sh)**:
+- ✅ ntfy Topic-URL
+- ✅ ntfy Abfrage-Intervall (Sekunden)
+- ✅ Standard-Anzeigedauer für Nachrichten (Minuten)
+
+**Logo-Verwaltung**:
+- ✅ Logo-Vorschau (aktuell verwendetes Logo)
+- ✅ Neues Logo hochladen (PNG, JPEG, WebP, SVG, max. 2 MB)
+- ✅ Standard-Logo wiederherstellen
+
+**Hinweis**: Einstellungen werden sofort übernommen und persistent gespeichert. Das Passwort wird in `ALARM_DASHBOARD_SETTINGS_PASSWORD` konfiguriert.
+
+![Einstellungen](screenshots/settings-page.png)
+
+---
+
+## Admin-Endpunkte
 
 ### Health-Check
 
-**Endpoint**: `/health`
+**Endpoint**: `GET /health`
 
-**Beschreibung**: Minimale JSON-Antwort für Monitoring.
+**Beschreibung**: Minimale JSON-Antwort für Container-Health-Checks.
 
-**Antwort**:
 ```json
-{
-  "status": "ok"
-}
+{"status": "ok"}
 ```
 
-**Verwendung**: Docker Health-Checks, Monitoring-Systeme
+**Verwendung**: Docker Health-Checks, Monitoring-Systeme, Load-Balancer
 
 ---
 
-## Fehler-Ansichten
+### Prometheus-Metriken
 
-### 404 – Seite nicht gefunden
+**Endpoint**: `GET /api/metrics`  
+**Authentifizierung**: `X-Metrics-Token: <ALARM_DASHBOARD_METRICS_TOKEN>` Header  
+**Aktivierung**: Umgebungsvariable `ALARM_DASHBOARD_METRICS_TOKEN` setzen
 
-**Status**: Screenshot noch zu erstellen
+**Verfügbare Metriken**:
+```
+alarm_dashboard_alarms_received_total   # Empfangene Alarme (Counter)
+alarm_dashboard_alarms_stored_total     # Gespeicherte Alarme (Counter)
+alarm_dashboard_geocode_errors_total    # Geokodierungs-Fehler (Counter)
+alarm_dashboard_weather_errors_total    # Wetter-Fehler (Counter)
+alarm_dashboard_sse_active_connections  # Aktive SSE-Verbindungen (Gauge)
+alarm_dashboard_history_size            # Anzahl Historieneinträge (Gauge)
+```
 
-**Beschreibung**: Fehlerseite bei ungültigen URLs.
-
-**Geplante Elemente**:
-- ❌ 404 Überschrift
-- ℹ️ "Seite nicht gefunden"
-- 🔙 Zurück zum Dashboard Button
-
----
-
-### 500 – Server-Fehler
-
-**Status**: Screenshot noch zu erstellen
-
-**Beschreibung**: Fehlerseite bei Server-Problemen.
-
-**Geplante Elemente**:
-- ❌ 500 Überschrift
-- ℹ️ "Ein Fehler ist aufgetreten"
-- 🔙 Zurück zum Dashboard Button
-- 📝 Kontakt-Information
+**Verwendung**: Prometheus/Grafana-Integration, Betriebsmonitoring
 
 ---
 
@@ -245,80 +279,86 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ### Vorbereitung
 
-1. **Testdaten vorbereiten**:
+1. **App starten** (lokale Entwicklungsumgebung):
 ```bash
-# Testalarm mit realistischen Daten senden
-curl -X POST http://localhost:8000/api/alarm \
-  -H "X-API-Key: $(grep ALARM_DASHBOARD_API_KEY .env | cut -d= -f2)" \
-  -H "Content-Type: application/json" \
-  -d @test-alarm.json
+ALARM_DASHBOARD_API_KEY=test-key \
+ALARM_DASHBOARD_SETTINGS_PASSWORD=test-pass \
+ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Musterstadt \
+python -m flask --app alarm_dashboard.app:create_app run --port 8000
 ```
 
-2. **Browser vorbereiten**:
-   - Chrome/Firefox im Vollbild (F11)
-   - Developer Tools öffnen (F12)
-   - Responsive Design Mode aktivieren (für Mobile)
+2. **Testdaten einfügen**:
+```bash
+# Testalarm senden
+curl -X POST http://localhost:8000/api/alarm \
+  -H "X-API-Key: test-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "incident_number": "2026-TEST-001",
+    "keyword": "B3 - Wohnungsbrand",
+    "keyword_secondary": "Menschenleben in Gefahr",
+    "diagnosis": "Wohnungsbrand",
+    "remark": "2 Personen gerettet",
+    "location": "Musterstraße 42, 12345 Musterstadt",
+    "latitude": 51.2345,
+    "longitude": 9.8765,
+    "groups": ["LF20-MST", "TLF4000-MST"],
+    "dispatch_group_codes": ["MST26"]
+  }'
+
+# Testnachricht hinzufügen
+curl -X POST http://localhost:8000/api/messages \
+  -H "X-API-Key: test-key" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Dienstbesprechung morgen 19:00 Uhr!", "ttl_minutes": 1440}'
+```
 
 3. **Auflösung einstellen**:
-   - Desktop: 1920×1080 (Full HD)
-   - Mobile: 375×667 (iPhone SE) oder 414×896 (iPhone 11)
-   - Tablet: 768×1024 (iPad)
+   - Desktop: **1920×1080 (Full HD)**
+   - Mobile: **390×844 (iPhone 14)** oder ähnlich
 
-### Screenshots aufnehmen
+### Screenshots automatisch erstellen (Playwright)
 
-**Desktop**:
 ```bash
-# Browser-Screenshot (Chrome)
-# Rechtsklick → "Screenshot aufnehmen" → "Vollständiger Screenshot"
+pip install playwright
+playwright install chromium
 
-# Oder mit Werkzeug:
-import -window root ~/screenshot.png
+python3 << 'EOF'
+import asyncio
+from playwright.async_api import async_playwright
+
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(args=["--no-sandbox"])
+        
+        # Desktop Full HD
+        ctx = await browser.new_context(viewport={"width": 1920, "height": 1080})
+        page = await ctx.new_page()
+        
+        await page.goto("http://localhost:8000/")
+        await page.wait_for_timeout(3000)
+        await page.screenshot(path="docs/screenshots/dashboard-idle.png")
+        
+        await ctx.close()
+        await browser.close()
+
+asyncio.run(main())
+EOF
 ```
-
-**Mobile**:
-1. Developer Tools → Responsive Design Mode
-2. Gerät auswählen (z.B. "iPhone SE")
-3. Screenshot-Tool nutzen (im Developer Tools)
 
 ### Nachbearbeitung
 
-1. **Zuschneiden**: Nur relevanten Bereich
-2. **Sensible Daten entfernen**: 
-   - Echte Adressen anonymisieren
-   - Reale Namen durch "Max Mustermann" ersetzen
-   - API-Keys unkenntlich machen
-3. **Optimieren**:
-```bash
-# PNG optimieren
-optipng screenshot.png
+- **Sensible Daten**: Echte Adressen und Namen durch Beispieldaten ersetzen
+- **Optimieren**: `optipng screenshot.png` oder ImageMagick
+- **Dateigröße**: Ziel < 500 KB pro Screenshot
 
-# Oder mit ImageMagick
-convert screenshot.png -quality 85 screenshot-optimized.png
-```
-
-### Speichern
-
-**Benennung**: `<view>-<state>-<variant>.png`
-
-**Beispiele**:
-- `dashboard-alarm-standard.png`
-- `dashboard-alarm-messenger.png`
-- `dashboard-idle.png`
-- `mobile-idle.png`
-- `mobile-alarm.png`
-- `history-list.png`
-- `navigation-route.png`
+### Speichern und Einbinden
 
 **Speicherort**: `docs/screenshots/`
 
-### In Dokumentation einbinden
-
+**In Dokumentation einbinden**:
 ```markdown
-### Beschreibung
-
 ![Alt-Text](screenshots/dateiname.png)
-
-**Verwendung**: ...
 ```
 
 ---
@@ -327,36 +367,28 @@ convert screenshot.png -quality 85 screenshot-optimized.png
 
 Bei UI-Änderungen:
 
-- [ ] Screenshots mit Testdaten erstellt
-- [ ] Sensible Daten anonymisiert
+- [ ] Screenshots mit Testdaten erstellt (1920×1080 Desktop, 390×844 Mobile)
+- [ ] Beispieldaten verwendet (keine echten Einsatzdaten)
 - [ ] Bilder optimiert (Dateigröße < 500 KB)
 - [ ] In `docs/screenshots/` gespeichert
-- [ ] Korrekt benannt
 - [ ] In Dokumentation referenziert:
   - [ ] README.md
-  - [ ] Betriebshandbuch.md (falls relevant)
-  - [ ] Dieser Guide (SCREENSHOTS.md)
-- [ ] Alt-Text hinzugefügt (Barrierefreiheit)
+  - [ ] SCREENSHOTS.md (dieser Guide)
 
 ---
 
-## Fehlende Screenshots
+## Aktueller Screenshot-Status
 
-**Noch zu erstellen**:
-
-- [ ] `mobile-alarm.png` – Mobile Alarmansicht
-- [ ] `navigation-route.png` – Navigation mit Route
-- [ ] `error-404.png` – 404-Fehlerseite
-- [ ] `error-500.png` – 500-Fehlerseite
-- [ ] `dashboard-alarm-no-weather.png` – Alarm ohne Wetter
-- [ ] `dashboard-alarm-geocoded.png` – Alarm mit nachträglich geokodierter Adresse
-- [ ] `history-empty.png` – Leere Historie
-- [ ] `mobile-history.png` – Historie auf Mobile
-
-**Optional**:
-- [ ] `dashboard-idle-custom-logo.png` – Mit individuellem Wappen
-- [ ] `dashboard-alarm-night-mode.png` – Dunkles Farbschema
-- [ ] `dashboard-alarm-multiple-locations.png` – Mehrere Einsatzorte (falls unterstützt)
+| Datei | Status | Auflösung | Beschreibung |
+|-------|--------|-----------|--------------|
+| `dashboard-alarm.png` | ✅ Aktuell | 1920×1080 | Dashboard – Alarmansicht |
+| `dashboard-idle.png` | ✅ Aktuell | 1920×1080 | Dashboard – Ruhezustand |
+| `dashboard-messenger-feedback.png` | ✅ Aktuell | 1920×1080 | Alarmansicht mit Teilnehmerrückmeldungen |
+| `history-alarm.png` | ✅ Aktuell | 1920×1080 | Einsatzhistorie |
+| `navigation-page.png` | ✅ Aktuell | 1920×1080 | Navigationsseite |
+| `settings-page.png` | ✅ Aktuell | 1920×1080 | Einstellungsseite |
+| `mobile-idle.png` | ✅ Aktuell | 390×844 | Mobile – Ruhezustand |
+| `mobile-alarm.png` | ✅ Aktuell | 390×844 | Mobile – Alarmansicht |
 
 ---
 
@@ -364,26 +396,24 @@ Bei UI-Änderungen:
 
 ### DOs ✅
 
-- **Realistische Daten** verwenden (aber anonymisiert)
-- **Konsistente Auflösung** für ähnliche Screenshots
-- **Gute Beleuchtung** (Kontrast)
-- **Vollständige Ansicht** zeigen
+- **Anonymisierte Beispieldaten** verwenden
+- **Full HD (1920×1080)** für Desktop-Screenshots
+- **Vollständige Ansicht** zeigen (kein Zuschneiden)
 - **Optimierte Dateigröße** (< 500 KB)
 
 ### DON'Ts ❌
 
 - **Keine echten Einsatzdaten** (Datenschutz!)
-- **Keine persönlichen Informationen** (Namen, Adressen)
+- **Keine persönlichen Informationen** (echte Namen, Adressen)
 - **Keine API-Keys oder Passwörter** sichtbar
 - **Keine übermäßig großen Dateien** (> 1 MB)
-- **Keine unscharfen Bilder**
 
 ---
 
 <div align="center">
 
 **Beitragen?**  
-Erstellen Sie fehlende Screenshots und öffnen Sie einen [Pull Request](../CONTRIBUTING.md)!
+Erstellen Sie verbesserte Screenshots und öffnen Sie einen [Pull Request](../CONTRIBUTING.md)!
 
 [⬆ Zurück nach oben](#-screenshot-dokumentation)
 

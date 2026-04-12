@@ -210,21 +210,16 @@ curl -X POST http://localhost:8000/api/alarm \
   -H "Content-Type: application/json" \
   -d '{
     "incident_number": "TEST-001",
-    "keyword": "F3Y",
-    "keyword_sub": "Brand",
-    "timestamp": "2024-01-01T12:00:00",
-    "description": "Testalarm - Brand in Wohngebäude",
-    "remarks": "Dies ist ein Testalarm",
-    "location": "Teststraße 1",
-    "city": "Teststadt",
+    "keyword": "B3 - Wohnungsbrand",
+    "keyword_secondary": "Menschenleben in Gefahr",
+    "subject": "Testalarm - Vollbrand EFH",
+    "diagnosis": "Wohnungsbrand",
+    "remark": "Dies ist ein Testalarm",
+    "location": "Teststraße 1, 12345 Teststadt",
     "latitude": 51.2345,
     "longitude": 9.8765,
-    "resources": [
-      {
-        "name": "LF Teststadt 1",
-        "dispatched_at": "2024-01-01T12:01:00"
-      }
-    ]
+    "groups": ["LF20-TEST", "TLF4000-TEST"],
+    "dispatch_group_codes": ["TEST26"]
   }'
 
 # Erwartete Antwort:
@@ -341,7 +336,68 @@ Details siehe [alarm-messenger Dokumentation](https://github.com/TimUx/alarm-mes
 
 Ihr System ist jetzt einsatzbereit. Folgende Schritte empfohlen:
 
-### 1. Kiosk-Modus einrichten
+### 1. Einstellungen konfigurieren
+
+Öffnen Sie `http://localhost:8000/settings` und passen Sie an:
+- **Feuerwehr-Name** und **Logo**
+- **Standardkoordinaten** für Idle-Wetter
+- **Gruppenfilter** (TME-Codes)
+
+### 2. Kalender-Integration einrichten (optional)
+
+Zeigt bevorstehende Termine in der Idle-Ansicht:
+
+1. Öffnen Sie die Einstellungen: `http://localhost:8000/settings`
+2. Scrollen Sie zu **"Kalender"**
+3. Tragen Sie Ihre iCal-URLs ein (eine pro Zeile)
+4. Speichern Sie die Einstellungen
+
+**Beispiel-URLs**:
+```
+# Google Calendar (Export → Kalender-URL kopieren)
+https://calendar.google.com/calendar/ical/IhreID%40group.calendar.google.com/private-...
+
+# Nextcloud
+https://nextcloud.example.com/remote.php/dav/calendars/user/kalender/
+
+# Apple iCloud
+https://p01-caldav.icloud.com/published/2/...
+```
+
+### 3. Dashboard-Nachrichten via ntfy.sh einrichten (optional)
+
+Zeigt Nachrichten vom ntfy.sh-Topic auf dem Dashboard:
+
+1. Erstellen Sie ein ntfy-Topic (z.B. auf [ntfy.sh](https://ntfy.sh) oder eigener Instanz)
+2. Öffnen Sie die Einstellungen: `http://localhost:8000/settings`
+3. Tragen Sie die ntfy Topic-URL ein (z.B. `https://ntfy.sh/meine-fw-abc123`)
+4. Konfigurieren Sie das Abfrage-Intervall (Standard: 60 Sekunden)
+5. Speichern Sie die Einstellungen
+
+**Nachrichten senden via ntfy**:
+```bash
+# Nachricht via ntfy.sh senden
+curl -X POST https://ntfy.sh/meine-fw-abc123 \
+  -H "Content-Type: text/plain" \
+  -d "Dienstbesprechung heute 19:00 Uhr im Gerätehaus!"
+```
+
+**Oder direkt via API**:
+```bash
+curl -X POST http://localhost:8000/api/messages \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Dienstbesprechung heute 19:00 Uhr!", "ttl_minutes": 1440}'
+```
+
+### 4. Logo hochladen (optional)
+
+1. Öffnen Sie die Einstellungen: `http://localhost:8000/settings`
+2. Scrollen Sie zu **"Feuerwehr-Logo"**
+3. Wählen Sie eine Bilddatei (PNG/JPEG/WebP/SVG, max. 2 MB)
+4. Klicken Sie auf **"Logo hochladen"**
+
+### 5. Kiosk-Modus einrichten
 
 Für dedizierte Anzeigegeräte (z.B. Raspberry Pi mit Display):
 
@@ -359,7 +415,7 @@ EOF
 
 Ersetzen Sie `SERVER-IP` mit der IP-Adresse Ihres Servers.
 
-### 2. Autostart einrichten (Systemd)
+### 6. Autostart einrichten (Systemd)
 
 Damit die Services beim Systemstart automatisch starten:
 
@@ -392,7 +448,7 @@ sudo systemctl start alarm-monitor
 
 Wiederholen Sie dies für `alarm-mail` und `alarm-messenger`.
 
-### 3. Backup einrichten
+### 7. Backup einrichten
 
 ```bash
 # Backup-Skript erstellen
@@ -406,8 +462,8 @@ mkdir -p $BACKUP_DIR
 # Konfiguration sichern
 cp ~/alarm-monitor/.env $BACKUP_DIR/.env.$DATE
 
-# Historie sichern
-cp ~/alarm-monitor/instance/alarm_history.json $BACKUP_DIR/alarm_history.$DATE.json
+# Instanz-Daten sichern (Historie, Einstellungen, Nachrichten, Logo)
+cp -r ~/alarm-monitor/instance $BACKUP_DIR/instance_$DATE
 
 # Alte Backups löschen (älter als 30 Tage)
 find $BACKUP_DIR -type f -mtime +30 -delete
@@ -421,18 +477,7 @@ chmod +x ~/backup-alarm-monitor.sh
 (crontab -l 2>/dev/null; echo "0 2 * * * ~/backup-alarm-monitor.sh") | crontab -
 ```
 
-### 4. Branding anpassen
-
-```bash
-# Eigenes Wappen einbinden
-cp /pfad/zu/ihrem/wappen.png ~/alarm-monitor/alarm_dashboard/static/img/crest.png
-
-# Container neu starten
-cd ~/alarm-monitor
-docker compose restart
-```
-
-### 5. Weitere Dokumentation lesen
+### 8. Weitere Dokumentation lesen
 
 - **[README.md](../README.md)** – Vollständige Dokumentation
 - **[Betriebshandbuch.md](../Betriebshandbuch.md)** – Ausführliche Betriebsanleitung
