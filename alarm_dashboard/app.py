@@ -92,6 +92,9 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "default_location_name": stored.get("default_location_name", config.default_location_name),
         "activation_groups": stored.get("activation_groups", config.activation_groups),
         "calendar_urls": stored.get("calendar_urls", config.calendar_urls),
+        "ntfy_topic_url": stored.get("ntfy_topic_url", config.ntfy_topic_url),
+        "ntfy_poll_interval": stored.get("ntfy_poll_interval", config.ntfy_poll_interval),
+        "message_default_ttl_minutes": stored.get("message_default_ttl_minutes", 60),
     }
 
 
@@ -201,14 +204,15 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
             for evt in _ntfy_subscribers:
                 evt.set()
 
+    def _get_current_settings() -> Dict[str, Any]:
+        return get_effective_settings(settings_store, config)
+
     ntfy_poller = create_ntfy_poller(
-        config.ntfy_topic_url,
-        message_store,
-        config.ntfy_poll_interval,
+        get_effective_settings=_get_current_settings,
+        message_store=message_store,
         on_message=_trigger_sse_for_message,
     )
-    if ntfy_poller:
-        ntfy_poller.start()
+    ntfy_poller.start()
     app.config["NTFY_POLLER"] = ntfy_poller
 
     # Register blueprints – all route handlers live in routes/api.py and routes/views.py

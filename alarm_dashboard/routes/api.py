@@ -349,6 +349,9 @@ def api_get_settings():
         "default_location_name": effective_settings["default_location_name"],
         "activation_groups": groups_str,
         "calendar_urls": calendar_urls_str,
+        "ntfy_topic_url": effective_settings.get("ntfy_topic_url") or "",
+        "ntfy_poll_interval": effective_settings.get("ntfy_poll_interval", 60),
+        "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -426,6 +429,28 @@ def api_update_settings():
         else:
             calendar_urls = []
         updates["calendar_urls"] = calendar_urls
+
+    if "ntfy_topic_url" in data:
+        ntfy_url = str(data["ntfy_topic_url"]).strip() if data["ntfy_topic_url"] else ""
+        updates["ntfy_topic_url"] = ntfy_url if ntfy_url else None
+
+    if "ntfy_poll_interval" in data and data["ntfy_poll_interval"] not in (None, ""):
+        try:
+            interval = int(data["ntfy_poll_interval"])
+            if interval < 10:
+                return jsonify({"error": "ntfy_poll_interval must be at least 10 seconds"}), 400
+            updates["ntfy_poll_interval"] = interval
+        except (TypeError, ValueError):
+            return jsonify({"error": "ntfy_poll_interval must be an integer"}), 400
+
+    if "message_default_ttl_minutes" in data and data["message_default_ttl_minutes"] not in (None, ""):
+        try:
+            ttl = int(data["message_default_ttl_minutes"])
+            if ttl < 1:
+                return jsonify({"error": "message_default_ttl_minutes must be at least 1"}), 400
+            updates["message_default_ttl_minutes"] = ttl
+        except (TypeError, ValueError):
+            return jsonify({"error": "message_default_ttl_minutes must be an integer"}), 400
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)

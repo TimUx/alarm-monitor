@@ -991,3 +991,154 @@ def test_delete_message_invalid_id_returns_400(client) -> None:
     )
     assert response.status_code == 400
 
+
+# ---------------------------------------------------------------------------
+# Settings – ntfy / message TTL fields
+# ---------------------------------------------------------------------------
+
+
+def test_get_settings_returns_ntfy_fields(client) -> None:
+    """GET /api/settings must include ntfy_topic_url, ntfy_poll_interval and message_default_ttl_minutes."""
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "ntfy_topic_url" in data
+    assert "ntfy_poll_interval" in data
+    assert "message_default_ttl_minutes" in data
+
+
+def test_post_settings_saves_ntfy_topic_url(client, flask_app) -> None:
+    """POST /api/settings should persist ntfy_topic_url."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "ntfy_topic_url": "https://ntfy.sh/meine-fw-test",
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("ntfy_topic_url") == "https://ntfy.sh/meine-fw-test"
+
+
+def test_post_settings_saves_ntfy_poll_interval(client, flask_app) -> None:
+    """POST /api/settings should persist ntfy_poll_interval."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "ntfy_poll_interval": 120,
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("ntfy_poll_interval") == 120
+
+
+def test_post_settings_rejects_invalid_ntfy_poll_interval(client) -> None:
+    """POST /api/settings with ntfy_poll_interval < 10 should return 400."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "ntfy_poll_interval": 5},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 400
+    assert "ntfy_poll_interval" in response.get_json()["error"]
+
+
+def test_post_settings_saves_message_default_ttl(client, flask_app) -> None:
+    """POST /api/settings should persist message_default_ttl_minutes."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "message_default_ttl_minutes": 30,
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("message_default_ttl_minutes") == 30
+
+
+def test_post_settings_rejects_invalid_message_default_ttl(client) -> None:
+    """POST /api/settings with message_default_ttl_minutes < 1 should return 400."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "message_default_ttl_minutes": 0},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 400
+    assert "message_default_ttl_minutes" in response.get_json()["error"]
+
+
+def test_post_settings_clears_ntfy_topic_url_when_empty(client, flask_app) -> None:
+    """POST /api/settings with empty ntfy_topic_url should set it to None."""
+    from alarm_dashboard.app import generate_csrf_token
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+
+    # First set a URL
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({"ntfy_topic_url": "https://ntfy.sh/old-topic"})
+
+    # Then clear it
+    response = client.post(
+        "/api/settings",
+        json={"fire_department_name": "Test-FW", "ntfy_topic_url": ""},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+    assert settings_store.get("ntfy_topic_url") is None
+
+
+def test_get_settings_reflects_stored_ntfy_fields(client, flask_app) -> None:
+    """GET /api/settings should return stored ntfy fields."""
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({
+        "ntfy_topic_url": "https://ntfy.sh/my-fw",
+        "ntfy_poll_interval": 90,
+        "message_default_ttl_minutes": 45,
+    })
+
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["ntfy_topic_url"] == "https://ntfy.sh/my-fw"
+    assert data["ntfy_poll_interval"] == 90
+    assert data["message_default_ttl_minutes"] == 45

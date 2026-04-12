@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import sys
 import pytest
@@ -11,6 +12,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from alarm_dashboard.message_store import MessageStore
+from alarm_dashboard.ntfy_client import NtfyPoller
 
 
 # ---------------------------------------------------------------------------
@@ -218,3 +220,103 @@ def test_delete_persisted(tmp_path: Path):
 
     store2 = MessageStore(persistence_path=path)
     assert store2.get_active() == []
+
+
+# ---------------------------------------------------------------------------
+# NtfyPoller – settings-driven behaviour
+# ---------------------------------------------------------------------------
+
+
+def _make_settings(topic_url="https://ntfy.sh/test", poll_interval=60, default_ttl=60):
+    return {
+        "ntfy_topic_url": topic_url,
+        "ntfy_poll_interval": poll_interval,
+        "message_default_ttl_minutes": default_ttl,
+    }
+
+
+def test_ntfy_poller_uses_default_ttl_from_settings():
+    """NtfyPoller._resolve_expires should fall back to settings default_ttl."""
+    event_without_expires = {"event": "message", "message": "Test"}
+    result = NtfyPoller._resolve_expires(event_without_expires, default_ttl_minutes=30)
+    delta = result - datetime.now(timezone.utc)
+    # Allow ±5 seconds tolerance
+    assert timedelta(minutes=29, seconds=55) <= delta <= timedelta(minutes=30, seconds=5)
+
+
+def test_ntfy_poller_uses_ntfy_expires_when_present():
+    """NtfyPoller._resolve_expires should honour ntfy-provided expires timestamp."""
+    future = datetime.now(timezone.utc) + timedelta(hours=2)
+    event_with_expires = {
+        "event": "message",
+        "message": "Test",
+        "expires": future.timestamp(),
+    }
+    result = NtfyPoller._resolve_expires(event_with_expires, default_ttl_minutes=30)
+    # Should match future within a second
+    assert abs((result - future).total_seconds()) < 2
+
+
+def test_ntfy_poller_skips_poll_when_no_topic_url():
+    """NtfyPoller._poll_once should do nothing when ntfy_topic_url is empty."""
+    store = MessageStore()
+    settings = _make_settings(topic_url="")
+    poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
+
+    # _poll_once should return without calling requests
+    with patch("alarm_dashboard.ntfy_client.requests.get") as mock_get:
+        poller._poll_once()
+    mock_get.assert_not_called()
+    assert store.get_active() == []
+
+
+def test_ntfy_poller_applies_default_ttl_when_no_expires_in_event():
+    """NtfyPoller should store a message with default TTL when no expires field."""
+    store = MessageStore()
+    settings = _make_settings(topic_url="https://ntfy.sh/test", default_ttl=45)
+    poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
+
+    ntfy_response = '{"id":"abc","event":"message","message":"Übung fällt aus"}\n'
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status.return_value = None
+    mock_resp.text = ntfy_response
+
+    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+        poller._poll_once()
+
+    active = store.get_active()
+    assert len(active) == 1
+    assert active[0]["text"] == "Übung fällt aus"
+
+    expires_at = datetime.fromisoformat(active[0]["expires_at"])
+    delta = expires_at - datetime.now(timezone.utc)
+    # Should be around 45 minutes
+    assert timedelta(minutes=44) <= delta <= timedelta(minutes=46)
+
+
+def test_ntfy_poller_resets_last_poll_time_on_url_change():
+    """NtfyPoller should reset its poll history when the topic URL changes."""
+    store = MessageStore()
+    settings = {"ntfy_topic_url": "https://ntfy.sh/topic-a", "ntfy_poll_interval": 60, "message_default_ttl_minutes": 60}
+    poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
+
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status.return_value = None
+    mock_resp.text = '{"id":"1","event":"message","message":"Msg A"}\n'
+
+    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+        poller._poll_once()
+
+    assert poller._last_topic_url == "https://ntfy.sh/topic-a"
+    first_poll_time = poller._last_poll_time
+
+    # Change the URL
+    settings["ntfy_topic_url"] = "https://ntfy.sh/topic-b"
+    mock_resp.text = '{"id":"2","event":"message","message":"Msg B"}\n'
+
+    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+        poller._poll_once()
+
+    # Should have reset and used the new URL
+    assert poller._last_topic_url == "https://ntfy.sh/topic-b"
+
