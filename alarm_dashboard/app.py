@@ -89,6 +89,7 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "default_longitude": stored.get("default_longitude", config.default_longitude),
         "default_location_name": stored.get("default_location_name", config.default_location_name),
         "activation_groups": stored.get("activation_groups", config.activation_groups),
+        "calendar_urls": stored.get("calendar_urls", config.calendar_urls),
     }
 
 

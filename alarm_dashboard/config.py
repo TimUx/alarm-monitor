@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional, cast
 
@@ -44,6 +45,7 @@ class AppConfig:
     messenger_server_url: Optional[str] = None
     messenger_api_key: Optional[str] = None
     settings_password: Optional[str] = None
+    calendar_urls: List[str] = field(default_factory=list)
 
 
 class MissingConfiguration(RuntimeError):
@@ -170,6 +172,15 @@ def load_config() -> AppConfig:
             "ALARM_DASHBOARD_SETTINGS_PASSWORD is not set — settings page is unprotected!"
         )
 
+    # Calendar URLs (newline or comma-separated iCal URLs)
+    calendar_urls_raw = _get_env("CALENDAR_URLS") or None
+    calendar_urls: List[str] = []
+    if calendar_urls_raw:
+        for item in re.split(r"[\n,]+", calendar_urls_raw):
+            item = item.strip()
+            if item:
+                calendar_urls.append(item)
+
     # Alarm messenger configuration
     messenger_server_url = _get_env("MESSENGER_SERVER_URL") or None
     messenger_api_key = _get_env("MESSENGER_API_KEY") or None
@@ -222,6 +233,7 @@ def load_config() -> AppConfig:
         messenger_server_url=messenger_server_url,
         messenger_api_key=messenger_api_key,
         settings_password=settings_password,
+        calendar_urls=calendar_urls,
     )
 
 

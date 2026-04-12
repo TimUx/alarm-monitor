@@ -25,6 +25,8 @@
                 document.getElementById('default_longitude').value = data.default_longitude || '';
                 document.getElementById('default_location_name').value = data.default_location_name || '';
                 document.getElementById('activation_groups').value = data.activation_groups || '';
+                const calendarEl = document.getElementById('calendar_urls');
+                if (calendarEl) { calendarEl.value = data.calendar_urls || ''; }
             })
             .catch(error => {
                 console.error('Error loading settings:', error);
@@ -43,6 +45,7 @@
             default_longitude: formData.get('default_longitude'),
             default_location_name: formData.get('default_location_name'),
             activation_groups: formData.get('activation_groups'),
+            calendar_urls: formData.get('calendar_urls') || '',
         };
         const password = formData.get('settings_password') || '';
 

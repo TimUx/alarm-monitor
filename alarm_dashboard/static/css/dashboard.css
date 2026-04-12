@@ -381,16 +381,6 @@ body {
     line-height: 1;
 }
 
-.idle-weather .weather-summary {
-    font-size: clamp(1.8rem, 1.4rem + 0.8vw, 2.3rem);
-    margin-top: -0.25rem;
-    margin-bottom: 0.75rem;
-}
-
-.idle-weather .weather-summary .weather-icon {
-    font-size: clamp(2.4rem, 2rem + 0.8vw, 3.1rem);
-}
-
 .weather-details {
     display: grid;
     gap: 0.5rem;
@@ -469,9 +459,49 @@ body {
 }
 
 .idle-timebox {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    min-width: 0;
+}
+
+.idle-header-weather {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.idle-header-weather-main {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 1.2rem + 0.7vw, 1.8rem);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.idle-header-weather-icon {
+    font-size: clamp(1.6rem, 1.4rem + 0.6vw, 2.1rem);
+    line-height: 1;
+}
+
+.idle-header-weather-chips {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: clamp(1.15rem, 1.0rem + 0.5vw, 1.5rem);
+    color: var(--text-secondary);
+}
+
+.idle-header-weather-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
 }
 
 .idle-time {
@@ -493,8 +523,8 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.idle-weather,
-.idle-last-alarm {
+.idle-last-alarm,
+.idle-calendar {
     background: var(--surface-muted);
     border-radius: 18px;
     padding: 1.5rem;
@@ -504,29 +534,13 @@ body {
     gap: 1rem;
 }
 
-.idle-weather h3,
-.idle-last-alarm h3 {
+.idle-last-alarm h3,
+.idle-calendar h3 {
     margin: 0;
     font-size: clamp(2rem, 1.6rem + 0.8vw, 2.6rem);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
-}
-
-.idle-weather-details {
-    display: grid;
-    gap: 0.75rem;
-    font-size: clamp(1.6rem, 1.3rem + 0.6vw, 2.1rem);
-    color: var(--text-primary);
-}
-
-.idle-weather-details strong {
-    color: var(--accent);
-}
-
-.idle-weather p {
-    margin: 0;
-    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
 }
 
 .idle-last-alarm p {
@@ -537,6 +551,40 @@ body {
 
 .idle-last-alarm strong {
     color: var(--accent);
+}
+
+.idle-calendar p {
+    margin: 0;
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
+    color: var(--text-primary);
+}
+
+.idle-calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.idle-calendar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    border-left: 3px solid var(--accent);
+    padding-left: 0.75rem;
+}
+
+.idle-calendar-item-date {
+    font-size: clamp(1.2rem, 1.0rem + 0.5vw, 1.6rem);
+    color: var(--text-secondary);
+}
+
+.idle-calendar-item-title {
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .bottom-nav {
@@ -832,24 +880,23 @@ body.mode-alarm .app-main {
         gap: 1.15rem;
     }
 
-    .idle-weather,
-    .idle-last-alarm {
+    .idle-last-alarm,
+    .idle-calendar {
         padding: 1.2rem;
         gap: 0.8rem;
     }
 
-    .idle-weather h3,
-    .idle-last-alarm h3 {
+    .idle-last-alarm h3,
+    .idle-calendar h3 {
         font-size: clamp(1.18rem, 3.6vw, 1.38rem);
     }
 
-    .idle-weather-details {
+    .idle-calendar-item-date {
         font-size: clamp(1.02rem, 3.4vw, 1.26rem);
-        gap: 0.6rem;
     }
 
-    .idle-weather p,
-    .idle-last-alarm p {
+    .idle-last-alarm p,
+    .idle-calendar p {
         font-size: clamp(1.02rem, 3.3vw, 1.24rem);
     }
 
@@ -935,26 +982,26 @@ body.mode-alarm .app-main {
         font-size: clamp(0.85rem, 2.6vw, 1rem);
     }
 
-    .idle-weather,
-    .idle-last-alarm {
+    .idle-last-alarm,
+    .idle-calendar {
         padding: 1.05rem;
     }
 
-    .idle-weather h3,
-    .idle-last-alarm h3 {
+    .idle-last-alarm h3,
+    .idle-calendar h3 {
         font-size: clamp(1.12rem, 3.4vw, 1.32rem);
     }
 
-    .idle-weather-details {
+    .idle-calendar-item-date {
         font-size: clamp(1rem, 3.2vw, 1.2rem);
     }
 
-    .idle-weather p,
-    .idle-last-alarm p {
+    .idle-last-alarm p,
+    .idle-calendar p {
         font-size: clamp(1rem, 3.1vw, 1.18rem);
     }
 
-.idle-last-alarm strong {
+    .idle-last-alarm strong {
         font-size: clamp(1.05rem, 3.2vw, 1.25rem);
     }
 }
