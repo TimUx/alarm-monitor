@@ -536,10 +536,11 @@ const navigationNavItem = document.getElementById('nav-navigation');
 const timestampEl = document.getElementById('timestamp');
 const idleTimeEl = document.getElementById('idle-time');
 const idleDateEl = document.getElementById('idle-date');
-const idleWeatherEl = document.getElementById('idle-weather');
+const idleHeaderWeatherEl = document.getElementById('idle-header-weather');
 const headerWeatherEl = document.getElementById('header-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
+const idleCalendarEl = document.getElementById('idle-calendar');
 const keywordHeadingEl = document.getElementById('keyword');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const alarmMetaSeparatorEl = document.getElementById('alarm-meta-separator');
@@ -814,54 +815,126 @@ function updateHeaderWeather(weather) {
     headerWeatherEl.classList.remove('hidden');
 }
 
-function updateIdleWeather(weather) {
-    idleWeatherEl.innerHTML = '';
-    const title = document.createElement('h3');
-    title.textContent = 'Aktuelles Wetter';
-    idleWeatherEl.appendChild(title);
+function createIdleHeaderWeatherChip(icon, value) {
+    const chip = document.createElement('span');
+    chip.classList.add('idle-header-weather-chip');
+    const iconEl = document.createElement('span');
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = icon;
+    const textEl = document.createElement('span');
+    textEl.textContent = value;
+    chip.appendChild(iconEl);
+    chip.appendChild(textEl);
+    return chip;
+}
+
+function updateIdleHeaderWeather(weather) {
+    if (!idleHeaderWeatherEl) {
+        return;
+    }
+    idleHeaderWeatherEl.innerHTML = '';
 
     if (!weather) {
-        const empty = document.createElement('p');
-        empty.textContent = 'Keine Daten verfügbar';
-        idleWeatherEl.appendChild(empty);
+        idleHeaderWeatherEl.classList.add('hidden');
         return;
     }
 
-    const summary = createWeatherSummaryElement(weather);
-    if (summary) {
-        idleWeatherEl.appendChild(summary);
+    const info = describeWeatherCode(Number(weather?.weathercode));
+
+    const main = document.createElement('div');
+    main.classList.add('idle-header-weather-main');
+    if (info?.icon) {
+        const icon = document.createElement('span');
+        icon.classList.add('idle-header-weather-icon');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = info.icon;
+        main.appendChild(icon);
     }
+    const tempSpan = document.createElement('span');
+    tempSpan.textContent = formatTemperature(Number(weather.temperature)) ?? '–';
+    main.appendChild(tempSpan);
+    idleHeaderWeatherEl.appendChild(main);
 
-    const list = document.createElement('div');
-    list.classList.add('idle-weather-details');
+    const chips = document.createElement('div');
+    chips.classList.add('idle-header-weather-chips');
 
-    const temperatureText = formatTemperature(Number(weather.temperature)) ?? '–';
     const windSpeedText = formatWindSpeed(Number(weather.windspeed)) ?? '–';
     const windInfo = describeWindDirection(Number(weather.winddirection));
-    const directionText = windInfo
-        ? windInfo.abbr
-        : formatMeasurement(Number(weather.winddirection), '°');
+    const windValue = windInfo ? `${windSpeedText} ${windInfo.abbr}` : windSpeedText;
+    chips.appendChild(createIdleHeaderWeatherChip('🌬️', windValue));
 
-    const temperature = createLabeledValueElement('div', 'Temperatur', temperatureText);
-    const wind = createLabeledValueElement('div', 'Wind', windSpeedText);
-    const direction = createLabeledValueElement('div', 'Richtung', directionText);
-    if (windInfo) {
-        const degreesText = formatDegrees(windInfo.degrees);
-        if (degreesText) {
-            direction.title = `≈ ${degreesText}`;
+    const precipProb = Number(weather.precipitation_probability);
+    if (isValidNumber(precipProb)) {
+        const unit = typeof weather.precipitation_probability_unit === 'string'
+            ? weather.precipitation_probability_unit
+            : '%';
+        const probText = formatProbability(precipProb, unit);
+        if (probText) {
+            chips.appendChild(createIdleHeaderWeatherChip('��', probText));
         }
     }
 
-    list.appendChild(temperature);
-    list.appendChild(wind);
-    list.appendChild(direction);
+    idleHeaderWeatherEl.appendChild(chips);
+    idleHeaderWeatherEl.classList.remove('hidden');
+}
 
-    collectPrecipitationDetails(weather).forEach((entry) => {
-        const element = createLabeledValueElement('div', entry.label, entry.value);
-        list.appendChild(element);
+function updateIdleCalendar(events) {
+    if (!idleCalendarEl) {
+        return;
+    }
+    idleCalendarEl.innerHTML = '';
+    const title = document.createElement('h3');
+    title.textContent = 'Nächste Termine';
+    idleCalendarEl.appendChild(title);
+
+    if (!events || events.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Keine Termine verfügbar';
+        idleCalendarEl.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.classList.add('idle-calendar-list');
+
+    events.forEach((event) => {
+        const item = document.createElement('li');
+        item.classList.add('idle-calendar-item');
+
+        const dateEl = document.createElement('span');
+        dateEl.classList.add('idle-calendar-item-date');
+        const start = new Date(event.start);
+        dateEl.textContent = start.toLocaleString('de-DE', {
+            weekday: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        item.appendChild(dateEl);
+
+        const titleEl = document.createElement('span');
+        titleEl.classList.add('idle-calendar-item-title');
+        titleEl.textContent = event.summary || '(kein Titel)';
+        item.appendChild(titleEl);
+
+        list.appendChild(item);
     });
 
-    idleWeatherEl.appendChild(list);
+    idleCalendarEl.appendChild(list);
+}
+
+async function fetchCalendarEvents() {
+    try {
+        const response = await fetch('/api/calendar');
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        return data.events ?? null;
+    } catch (error) {
+        return null;
+    }
 }
 
 function updateIdleClock() {
@@ -1242,8 +1315,9 @@ function updateDashboard(data) {
             timestampEl.textContent = 'Keine aktuellen Einsätze';
             timestampEl.classList.remove('hidden');
         }
-        updateIdleWeather(data.weather);
+        updateIdleHeaderWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
+        fetchCalendarEvents().then(updateIdleCalendar);
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = '';
             keywordSecondaryEl.classList.add('hidden');

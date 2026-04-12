@@ -333,12 +333,15 @@ def api_get_settings():
     """Get current settings."""
     effective_settings = _get_effective_settings()
     groups_str = ",".join(effective_settings.get("activation_groups", []))
+    calendar_urls = effective_settings.get("calendar_urls", [])
+    calendar_urls_str = "\n".join(calendar_urls) if calendar_urls else ""
     resp = jsonify({
         "fire_department_name": effective_settings["fire_department_name"],
         "default_latitude": effective_settings["default_latitude"],
         "default_longitude": effective_settings["default_longitude"],
         "default_location_name": effective_settings["default_location_name"],
         "activation_groups": groups_str,
+        "calendar_urls": calendar_urls_str,
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -408,10 +411,42 @@ def api_update_settings():
             groups = []
         updates["activation_groups"] = groups
 
+    if "calendar_urls" in data:
+        import re as _re
+        raw_urls = str(data["calendar_urls"]).strip() if data["calendar_urls"] else ""
+        if raw_urls:
+            calendar_urls = [u.strip() for u in _re.split(r"[\n,]+", raw_urls) if u.strip()]
+        else:
+            calendar_urls = []
+        updates["calendar_urls"] = calendar_urls
+
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)
 
     resp = jsonify({"status": "ok", "settings": updates})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@api_bp.route("/api/calendar")
+def api_calendar():
+    """Return upcoming calendar events from configured iCal URLs."""
+    from ..calendar_service import fetch_calendar_events
+    effective_settings = _get_effective_settings()
+    calendar_urls = effective_settings.get("calendar_urls", [])
+
+    if not calendar_urls:
+        resp = jsonify({"events": []})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    try:
+        events = fetch_calendar_events(calendar_urls)
+    except Exception:
+        LOGGER.error("Failed to fetch calendar events", exc_info=True)
+        events = []
+
+    resp = jsonify({"events": events})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

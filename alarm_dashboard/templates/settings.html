@@ -101,6 +101,17 @@
                             <small class="form-hint">Kommagetrennte Liste von TME-Codes. Leer lassen für alle Alarme.</small>
                         </div>
 
+                        <div class="form-group">
+                            <label for="calendar_urls">Kalender-URLs (iCal)</label>
+                            <textarea
+                                id="calendar_urls"
+                                name="calendar_urls"
+                                rows="4"
+                                placeholder="https://calendar.google.com/calendar/ical/...&#10;https://nextcloud.example.com/remote.php/dav/calendars/..."
+                            ></textarea>
+                            <small class="form-hint">Eine iCal-URL pro Zeile (Google Calendar, Nextcloud, etc.). Unterstützt werden nur https:// und http:// Adressen.</small>
+                        </div>
+
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Speichern</button>
                             <button type="button" class="btn btn-secondary" id="cancel-btn">Abbrechen</button>

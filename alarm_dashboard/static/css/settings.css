@@ -158,6 +158,29 @@ body {
     opacity: 0.6;
 }
 
+.form-group textarea {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 2px solid var(--divider);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+    resize: vertical;
+    min-height: 5rem;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-group textarea::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
 .form-hint {
     font-size: 0.85rem;
     color: var(--text-secondary);
