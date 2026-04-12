@@ -589,6 +589,7 @@ def api_delete_logo():
     return resp
 
 
+@api_bp.route("/api/calendar")
 def api_calendar():
     """Return upcoming calendar events from configured iCal URLs."""
     from ..calendar_service import fetch_calendar_events
