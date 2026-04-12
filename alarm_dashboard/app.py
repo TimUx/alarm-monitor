@@ -21,6 +21,8 @@ from flask_limiter.util import get_remote_address
 
 from .config import AppConfig, load_config
 from .messenger import create_messenger
+from .message_store import MessageStore
+from .ntfy_client import create_ntfy_poller
 from .storage import AlarmStore, SettingsStore
 from .weather_cache import WeatherCache
 
@@ -177,6 +179,37 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
         config.messenger_server_url, config.messenger_api_key
     )
     app.config["ALARM_MESSENGER"] = messenger
+
+    # Initialize message store
+    if config.messages_file:
+        messages_path = Path(config.messages_file)
+    else:
+        messages_path = Path(app.instance_path) / "messages.json"
+    message_store = MessageStore(
+        max_ttl_hours=config.message_max_ttl_hours,
+        persistence_path=messages_path,
+    )
+    app.config["MESSAGE_STORE"] = message_store
+
+    # Start optional ntfy poller
+    # The callback triggers SSE subscribers so connected dashboards refresh immediately
+    _ntfy_subscribers: List[threading.Event] = app.config["SSE_SUBSCRIBERS"]
+    _ntfy_subscribers_lock: threading.Lock = app.config["SSE_SUBSCRIBERS_LOCK"]
+
+    def _trigger_sse_for_message() -> None:
+        with _ntfy_subscribers_lock:
+            for evt in _ntfy_subscribers:
+                evt.set()
+
+    ntfy_poller = create_ntfy_poller(
+        config.ntfy_topic_url,
+        message_store,
+        config.ntfy_poll_interval,
+        on_message=_trigger_sse_for_message,
+    )
+    if ntfy_poller:
+        ntfy_poller.start()
+    app.config["NTFY_POLLER"] = ntfy_poller
 
     # Register blueprints – all route handlers live in routes/api.py and routes/views.py
     from .routes.api import api_bp

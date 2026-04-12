@@ -40,6 +40,7 @@ def config(tmp_path: Path) -> AppConfig:
         settings_password=SETTINGS_PASSWORD,
         history_file=str(tmp_path / "history.json"),
         settings_file=str(tmp_path / "settings.json"),
+        messages_file=str(tmp_path / "messages.json"),
         display_duration_minutes=30,
     )
 
@@ -816,3 +817,177 @@ def test_html_pages_have_no_cache_headers(client, path) -> None:
     cache_control = response.headers.get("Cache-Control", "")
     assert "no-store" in cache_control, f"Expected no-store in Cache-Control for {path}, got: {cache_control!r}"
     assert "no-cache" in cache_control, f"Expected no-cache in Cache-Control for {path}, got: {cache_control!r}"
+
+
+# ---------------------------------------------------------------------------
+# GET /api/messages
+# ---------------------------------------------------------------------------
+
+
+def test_get_messages_returns_empty_list_when_no_messages(client) -> None:
+    """GET /api/messages should return an empty list when no messages exist."""
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["messages"] == []
+
+
+def test_get_messages_returns_active_messages(client, flask_app) -> None:
+    """GET /api/messages should return stored active messages."""
+    store = flask_app.config["MESSAGE_STORE"]
+    store.add("Hallo Dashboard", ttl_minutes=60)
+
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data["messages"]) == 1
+    assert data["messages"][0]["text"] == "Hallo Dashboard"
+
+
+def test_get_messages_no_auth_required(client) -> None:
+    """GET /api/messages must be accessible without authentication."""
+    response = client.get("/api/messages")
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# POST /api/messages
+# ---------------------------------------------------------------------------
+
+
+def test_post_message_creates_message(client, flask_app) -> None:
+    """POST /api/messages with valid auth and body should create a message."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Übung heute 19:00 Uhr", "ttl_minutes": 120},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert data["message"]["text"] == "Übung heute 19:00 Uhr"
+    assert "id" in data["message"]
+
+    store = flask_app.config["MESSAGE_STORE"]
+    assert len(store.get_active()) == 1
+
+
+def test_post_message_without_api_key_returns_401(client) -> None:
+    """POST /api/messages without X-API-Key should return 401."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Unauthorized"},
+    )
+    assert response.status_code == 401
+
+
+def test_post_message_with_wrong_api_key_returns_401(client) -> None:
+    """POST /api/messages with wrong key should return 401."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Wrong key"},
+        headers={"X-API-Key": "wrong-key"},
+    )
+    assert response.status_code == 401
+
+
+def test_post_message_missing_text_returns_400(client) -> None:
+    """POST /api/messages without 'text' field should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"ttl_minutes": 60},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "text" in response.get_json()["error"]
+
+
+def test_post_message_empty_text_returns_400(client) -> None:
+    """POST /api/messages with empty text should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "   "},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_message_text_too_long_returns_400(client) -> None:
+    """POST /api/messages with text longer than 500 chars should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "x" * 501},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+    assert "500" in response.get_json()["error"]
+
+
+def test_post_message_invalid_ttl_returns_400(client) -> None:
+    """POST /api/messages with non-integer ttl_minutes should return 400."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Test", "ttl_minutes": "abc"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
+def test_post_message_default_ttl(client, flask_app) -> None:
+    """POST /api/messages without ttl_minutes should use default TTL of 60 minutes."""
+    response = client.post(
+        "/api/messages",
+        json={"text": "Default TTL"},
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 201
+    store = flask_app.config["MESSAGE_STORE"]
+    active = store.get_active()
+    assert len(active) == 1
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/messages/<id>
+# ---------------------------------------------------------------------------
+
+
+def test_delete_message_removes_it(client, flask_app) -> None:
+    """DELETE /api/messages/<id> should remove the message."""
+    store = flask_app.config["MESSAGE_STORE"]
+    msg = store.add("Zu löschen", ttl_minutes=60)
+
+    response = client.delete(
+        f"/api/messages/{msg['id']}",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "ok"
+    assert store.get_active() == []
+
+
+def test_delete_message_without_api_key_returns_401(client, flask_app) -> None:
+    """DELETE /api/messages/<id> without auth should return 401."""
+    store = flask_app.config["MESSAGE_STORE"]
+    msg = store.add("Test", ttl_minutes=60)
+
+    response = client.delete(f"/api/messages/{msg['id']}")
+    assert response.status_code == 401
+
+
+def test_delete_message_not_found_returns_404(client) -> None:
+    """DELETE /api/messages/<id> for unknown ID should return 404."""
+    response = client.delete(
+        "/api/messages/00000000-0000-0000-0000-000000000000",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 404
+
+
+def test_delete_message_invalid_id_returns_400(client) -> None:
+    """DELETE /api/messages/<id> with a malformed ID should return 400."""
+    response = client.delete(
+        "/api/messages/not-a-valid-uuid",
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+

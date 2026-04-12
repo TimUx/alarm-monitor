@@ -541,6 +541,8 @@ const headerWeatherEl = document.getElementById('header-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const idleCalendarEl = document.getElementById('idle-calendar');
+const idleMessagesEl = document.getElementById('idle-messages');
+const idleMessagesListEl = document.getElementById('idle-messages-list');
 const keywordHeadingEl = document.getElementById('keyword');
 const keywordSecondaryEl = document.getElementById('keyword-secondary');
 const alarmMetaSeparatorEl = document.getElementById('alarm-meta-separator');
@@ -937,6 +939,73 @@ async function fetchCalendarEvents() {
     }
 }
 
+async function fetchMessages() {
+    try {
+        const response = await fetch('/api/messages');
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        return data.messages ?? null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function formatMessageTtl(expiresAtIso) {
+    if (!expiresAtIso) {
+        return null;
+    }
+    const expiresAt = new Date(expiresAtIso);
+    const remainingMs = expiresAt.getTime() - Date.now();
+    if (remainingMs <= 0) {
+        return null;
+    }
+    const minutes = Math.floor(remainingMs / 60000);
+    if (minutes < 60) {
+        return `noch ${minutes}\u00A0Min.`;
+    }
+    const hours = Math.floor(minutes / 60);
+    return `noch ${hours}\u00A0Std.`;
+}
+
+function updateIdleMessages(messages) {
+    if (!idleMessagesEl || !idleMessagesListEl) {
+        return;
+    }
+
+    if (!messages || messages.length === 0) {
+        idleMessagesEl.classList.add('hidden');
+        idleMessagesListEl.innerHTML = '';
+        return;
+    }
+
+    idleMessagesListEl.innerHTML = '';
+    messages.forEach((msg) => {
+        const li = document.createElement('li');
+        li.classList.add('idle-messages-item');
+
+        const textEl = document.createElement('span');
+        textEl.classList.add('idle-messages-item-text');
+        textEl.textContent = msg.text || '';
+        li.appendChild(textEl);
+
+        if (msg.expires_at) {
+            const ttlText = formatMessageTtl(msg.expires_at);
+            if (ttlText) {
+                const ttlEl = document.createElement('span');
+                ttlEl.classList.add('idle-messages-item-ttl');
+                ttlEl.textContent = ttlText;
+                li.appendChild(ttlEl);
+            }
+        }
+
+        idleMessagesListEl.appendChild(li);
+    });
+
+    idleMessagesEl.classList.remove('hidden');
+}
+
 function updateIdleClock() {
     const now = new Date();
     const time = now.toLocaleTimeString('de-DE', {
@@ -955,6 +1024,10 @@ function updateIdleClock() {
 
 setInterval(updateIdleClock, 1000);
 updateIdleClock();
+
+setInterval(() => {
+    fetchMessages().then(updateIdleMessages);
+}, 60000);
 
 function formatTimestamp(value) {
     if (!value) {
@@ -1318,6 +1391,7 @@ function updateDashboard(data) {
         updateIdleHeaderWeather(data.weather);
         updateIdleLastAlarm(data.last_alarm);
         fetchCalendarEvents().then(updateIdleCalendar);
+        fetchMessages().then(updateIdleMessages);
         if (keywordSecondaryEl) {
             keywordSecondaryEl.textContent = '';
             keywordSecondaryEl.classList.add('hidden');
