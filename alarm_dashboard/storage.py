@@ -38,13 +38,14 @@ class AlarmStore:
         with self._lock:
             payload = dict(payload)
             payload["received_at"] = datetime.now(timezone.utc)
-            self._alarm = payload
             self._history.insert(0, dict(payload))
             if len(self._history) > self._max_history:
                 self._history.pop()
             incident_number = (payload.get("alarm") or {}).get("incident_number")
             if incident_number:
                 self._incident_numbers.add(str(incident_number))
+            if self._alarm is None or self._is_newer(payload, self._alarm):
+                self._alarm = payload
             self._persist_locked()
 
     def update_enrichment(
@@ -108,6 +109,36 @@ class AlarmStore:
         with self._lock:
             return str(incident_number) in self._incident_numbers
 
+    @staticmethod
+    def _get_alarm_timestamp(payload: Dict[str, Any]) -> Optional[datetime]:
+        """Return the alarm's own timestamp, falling back to received_at."""
+        alarm = payload.get("alarm")
+        if isinstance(alarm, dict):
+            ts = alarm.get("timestamp")
+            if ts:
+                try:
+                    parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    return parsed
+                except (ValueError, TypeError):
+                    pass
+        received = payload.get("received_at")
+        if isinstance(received, datetime):
+            return received if received.tzinfo is not None else received.replace(tzinfo=timezone.utc)
+        return None
+
+    @staticmethod
+    def _is_newer(candidate: Dict[str, Any], current: Dict[str, Any]) -> bool:
+        """Return True if candidate is strictly newer than current by alarm timestamp."""
+        cand_ts = AlarmStore._get_alarm_timestamp(candidate)
+        curr_ts = AlarmStore._get_alarm_timestamp(current)
+        if cand_ts is None:
+            return False
+        if curr_ts is None:
+            return True
+        return cand_ts > curr_ts
+
     def _load_persisted_state(self) -> None:
         if self._persistence_path is None:
             return
@@ -149,10 +180,12 @@ class AlarmStore:
                 if num:
                     self._incident_numbers.add(str(num))
 
-        if isinstance(raw_alarm, dict):
-            self._alarm = self._restore_entry(raw_alarm)
-        elif self._history:
-            self._alarm = dict(self._history[0])
+        if self._history:
+            _min_dt = datetime.min.replace(tzinfo=timezone.utc)
+            self._alarm = dict(max(
+                self._history,
+                key=lambda x: AlarmStore._get_alarm_timestamp(x) or _min_dt,
+            ))
 
     def _persist_locked(self) -> None:
         if self._persistence_path is None:
