@@ -24,7 +24,7 @@ def _get_effective_settings():
 @views_bp.route("/")
 def dashboard() -> str:
     config = _get_config()
-    crest_url = url_for("static", filename="img/crest.png")
+    crest_url = url_for("api.api_logo")
     effective_settings = _get_effective_settings()
     return render_template(
         "dashboard.html",
@@ -39,7 +39,7 @@ def dashboard() -> str:
 @views_bp.route("/navigation")
 def navigation_page() -> str:
     config = _get_config()
-    crest_url = url_for("static", filename="img/crest.png")
+    crest_url = url_for("api.api_logo")
     effective_settings = _get_effective_settings()
     return render_template(
         "navigation.html",
@@ -56,7 +56,7 @@ def navigation_page() -> str:
 @views_bp.route("/history")
 def history_page() -> str:
     config = _get_config()
-    crest_url = url_for("static", filename="img/crest.png")
+    crest_url = url_for("api.api_logo")
     effective_settings = _get_effective_settings()
     return render_template(
         "history.html",
@@ -70,7 +70,7 @@ def history_page() -> str:
 @views_bp.route("/mobile")
 def mobile_dashboard() -> str:
     config = _get_config()
-    crest_url = url_for("static", filename="img/crest.png")
+    crest_url = url_for("api.api_logo")
     effective_settings = _get_effective_settings()
     return render_template(
         "mobile.html",
@@ -86,7 +86,7 @@ def settings_page() -> str:
     """Settings configuration page."""
     from ..app import generate_csrf_token
     config = _get_config()
-    crest_url = url_for("static", filename="img/crest.png")
+    crest_url = url_for("api.api_logo")
     effective_settings = _get_effective_settings()
     csrf_token = generate_csrf_token(config.settings_password) if config.settings_password else ""
     return render_template(

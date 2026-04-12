@@ -121,6 +121,32 @@
                     </form>
                 </div>
             </section>
+
+            <section class="settings-section" aria-labelledby="logo-section-title">
+                <h2 id="logo-section-title" class="settings-section-title">Feuerwehr-Logo</h2>
+                <div class="settings-form-wrap">
+                    <div class="logo-upload-group">
+                        <div class="logo-preview-wrap">
+                            <img id="logo-preview" src="{{ crest_url }}" alt="Aktuelles Logo" class="logo-preview-img">
+                            <p class="form-hint">Aktuell verwendetes Logo</p>
+                        </div>
+                        <div class="logo-upload-controls">
+                            <label for="logo-file-input" class="form-group-label">Neues Logo hochladen</label>
+                            <div class="logo-file-row">
+                                <label for="logo-file-input" class="btn btn-secondary logo-file-label">Datei wählen</label>
+                                <span id="logo-file-name" class="logo-file-name">Keine Datei ausgewählt</span>
+                            </div>
+                            <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="logo-file-input-hidden">
+                            <small class="form-hint">Erlaubte Formate: PNG, JPEG, WebP, SVG. Maximale Dateigröße: 2 MB.</small>
+                            <div class="logo-upload-actions">
+                                <button type="button" class="btn btn-primary" id="logo-upload-btn">Logo hochladen</button>
+                                <button type="button" class="btn btn-secondary" id="logo-reset-btn">Standard wiederherstellen</button>
+                            </div>
+                            <div id="logo-message" class="message" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
         <nav class="bottom-nav" aria-label="Hauptnavigation">
             <a href="/" class="bottom-nav__item" aria-label="Zurück zum Dashboard">
