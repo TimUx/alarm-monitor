@@ -26,6 +26,15 @@ def _is_safe_url(url: str) -> bool:
         return False
 
 
+def _safe_log_url(url: str) -> str:
+    """Return a sanitised URL string safe for logging (host only, no tokens)."""
+    try:
+        parsed = urlparse(url)
+        return f"{parsed.scheme}://{parsed.netloc}/..."
+    except Exception:
+        return "<invalid URL>"
+
+
 def _parse_ical_dt(value: str) -> Optional[datetime]:
     """Parse an iCal date or datetime value into a UTC-aware datetime.
 
@@ -131,7 +140,7 @@ def fetch_calendar_events(
         if not url:
             continue
         if not _is_safe_url(url):
-            LOGGER.warning("Skipping unsafe calendar URL: %.80s", url)
+            LOGGER.warning("Skipping unsafe calendar URL: %s", _safe_log_url(url))
             continue
 
         try:
@@ -148,7 +157,7 @@ def fetch_calendar_events(
                 content += chunk
                 if len(content) > _MAX_CALENDAR_SIZE:
                     LOGGER.warning(
-                        "Calendar response too large, truncating: %.80s", url
+                        "Calendar response too large, truncating: %s", _safe_log_url(url)
                     )
                     break
 
@@ -163,9 +172,9 @@ def fetch_calendar_events(
                     all_events.append(event)
 
         except requests.RequestException as exc:
-            LOGGER.warning("Failed to fetch calendar %.80s: %s", url, exc)
+            LOGGER.warning("Failed to fetch calendar %s: %s", _safe_log_url(url), exc)
         except Exception as exc:  # pragma: no cover - defensive
-            LOGGER.warning("Error processing calendar %.80s: %s", url, exc)
+            LOGGER.warning("Error processing calendar %s: %s", _safe_log_url(url), exc)
 
     all_events.sort(key=lambda e: e["start"])
 
