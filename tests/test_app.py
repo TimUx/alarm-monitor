@@ -816,3 +816,199 @@ def test_html_pages_have_no_cache_headers(client, path) -> None:
     cache_control = response.headers.get("Cache-Control", "")
     assert "no-store" in cache_control, f"Expected no-store in Cache-Control for {path}, got: {cache_control!r}"
     assert "no-cache" in cache_control, f"Expected no-cache in Cache-Control for {path}, got: {cache_control!r}"
+
+
+# ---------------------------------------------------------------------------
+# Logo upload / GET /api/logo / DELETE /api/settings/logo
+# ---------------------------------------------------------------------------
+
+# Minimal valid PNG (1x1 pixel)
+_MINIMAL_PNG = (
+    b"\x89PNG\r\n\x1a\n"              # signature
+    b"\x00\x00\x00\rIHDR"             # IHDR chunk length + type
+    b"\x00\x00\x00\x01"               # width = 1
+    b"\x00\x00\x00\x01"               # height = 1
+    b"\x08\x02\x00\x00\x00"           # bit depth, color type, etc.
+    b"\x90wS\xde"                     # CRC
+    b"\x00\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N"
+    b"\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
+# Minimal valid JPEG (SOI + EOI markers only)
+_MINIMAL_JPEG = b"\xff\xd8\xff\xe0\x00\x10JFIF\x00" + b"\x00" * 20 + b"\xff\xd9"
+
+# Minimal WebP (12-byte RIFF header)
+_MINIMAL_WEBP = b"RIFF\x1c\x00\x00\x00WEBP" + b"VP8 " + b"\x00" * 8
+
+# Minimal SVG
+_MINIMAL_SVG = b"<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'></svg>"
+
+
+def _logo_headers(password: str, csrf_token: str) -> dict:
+    return {
+        "X-Settings-Password": password,
+        "X-CSRF-Token": csrf_token,
+    }
+
+
+def test_get_logo_redirects_to_default_when_no_custom_logo(client) -> None:
+    """GET /api/logo with no custom logo should redirect to the default crest."""
+    response = client.get("/api/logo")
+    assert response.status_code in (301, 302, 303, 307, 308)
+    assert "crest.png" in response.headers.get("Location", "")
+
+
+def test_upload_logo_unauthorized_returns_401(client) -> None:
+    """POST /api/settings/logo with wrong password should return 401."""
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (b"data", "logo.png", "image/png")},
+        headers={"X-Settings-Password": "wrong", "X-CSRF-Token": "x"},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 401
+
+
+def test_upload_logo_invalid_csrf_returns_403(client) -> None:
+    """POST /api/settings/logo with invalid CSRF token should return 403."""
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (_MINIMAL_PNG, "logo.png", "image/png")},
+        headers={"X-Settings-Password": SETTINGS_PASSWORD, "X-CSRF-Token": "bad-token"},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 403
+
+
+def test_upload_logo_no_file_returns_400(client) -> None:
+    """POST /api/settings/logo without a file should return 400."""
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings/logo",
+        data={},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+
+
+def test_upload_logo_unsupported_format_returns_415(client) -> None:
+    """POST /api/settings/logo with a non-image file should return 415."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(b"not an image at all"), "logo.bmp")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 415
+
+
+def test_upload_logo_too_large_returns_413(client) -> None:
+    """POST /api/settings/logo with a file > 2 MB should return 413."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    big_data = _MINIMAL_PNG + b"\x00" * (2 * 1024 * 1024 + 1)
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(big_data), "big.png")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 413
+
+
+def test_upload_png_logo_and_serve_it(client, flask_app) -> None:
+    """Uploading a valid PNG logo should persist it and GET /api/logo should serve it."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(_MINIMAL_PNG), "fw_logo.png")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "ok"
+    assert data["filename"] == "custom_logo.png"
+
+    # The logo file should exist on disk.
+    logo_dir = Path(flask_app.config["LOGO_DIR"])
+    assert (logo_dir / "custom_logo.png").exists()
+
+    # GET /api/logo should now serve the custom file directly (not redirect).
+    get_resp = client.get("/api/logo")
+    assert get_resp.status_code == 200
+    assert get_resp.mimetype == "image/png"
+    assert get_resp.data == _MINIMAL_PNG
+
+
+def test_upload_svg_logo_detected_by_content(client, flask_app) -> None:
+    """Uploading an SVG file should be detected from content (not just extension)."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(_MINIMAL_SVG), "logo.svg")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 200
+    assert response.get_json()["filename"] == "custom_logo.svg"
+
+
+def test_delete_logo_removes_file_and_reverts_to_default(client, flask_app) -> None:
+    """DELETE /api/settings/logo should remove the file and revert GET /api/logo to redirect."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    # First upload a logo.
+    client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(_MINIMAL_PNG), "logo.png")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+
+    # Now delete it.
+    del_resp = client.delete(
+        "/api/settings/logo",
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+    )
+    assert del_resp.status_code == 200
+    assert del_resp.get_json()["status"] == "ok"
+
+    # File should be gone.
+    logo_dir = Path(flask_app.config["LOGO_DIR"])
+    assert not (logo_dir / "custom_logo.png").exists()
+
+    # GET /api/logo should redirect to default again.
+    get_resp = client.get("/api/logo")
+    assert get_resp.status_code in (301, 302, 303, 307, 308)
+    assert "crest.png" in get_resp.headers.get("Location", "")
+
+
+def test_delete_logo_unauthorized_returns_401(client) -> None:
+    """DELETE /api/settings/logo with wrong password should return 401."""
+    response = client.delete(
+        "/api/settings/logo",
+        headers={"X-Settings-Password": "bad", "X-CSRF-Token": "x"},
+    )
+    assert response.status_code == 401
+
+
+def test_upload_jpeg_logo(client, flask_app) -> None:
+    """Uploading a JPEG logo should be stored as custom_logo.jpg."""
+    from io import BytesIO
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings/logo",
+        data={"logo": (BytesIO(_MINIMAL_JPEG), "photo.jpg")},
+        headers=_logo_headers(SETTINGS_PASSWORD, csrf),
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 200
+    assert response.get_json()["filename"] == "custom_logo.jpg"
+    logo_dir = Path(flask_app.config["LOGO_DIR"])
+    assert (logo_dir / "custom_logo.jpg").exists()

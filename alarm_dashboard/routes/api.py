@@ -8,10 +8,11 @@ import logging
 import re
 import threading
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests as http_requests
-from flask import Blueprint, Response, current_app, jsonify, request, stream_with_context
+from flask import Blueprint, Response, current_app, jsonify, redirect, request, send_file, stream_with_context, url_for
 
 from ..alarm_processor import _serialize_history_entry, process_alarm
 from ..app import _limiter
@@ -21,6 +22,59 @@ LOGGER = logging.getLogger(__name__)
 api_bp = Blueprint("api", __name__)
 
 _INCIDENT_NUMBER_RE = re.compile(r'^[A-Za-z0-9\-_]{1,50}$')
+
+# ---------------------------------------------------------------------------
+# Logo upload helpers
+# ---------------------------------------------------------------------------
+
+_MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2 MB
+
+_MIME_TO_EXT: Dict[str, str] = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+    "image/svg+xml": ".svg",
+}
+
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_JPEG_MAGIC = b"\xff\xd8\xff"
+_WEBP_RIFF = b"RIFF"
+_WEBP_WEBP = b"WEBP"
+
+
+def _detect_image_mime(data: bytes) -> Optional[str]:
+    """Return the MIME type of *data* based on magic bytes, or None if unknown."""
+    if data[:8] == _PNG_MAGIC:
+        return "image/png"
+    if data[:3] == _JPEG_MAGIC:
+        return "image/jpeg"
+    if data[:4] == _WEBP_RIFF and data[8:12] == _WEBP_WEBP:
+        return "image/webp"
+    # SVG is text-based; look for the root element in the first 512 bytes.
+    try:
+        text = data[:512].decode("utf-8", errors="replace").lstrip()
+    except Exception:
+        return None
+    lower = text.lower()
+    if lower.startswith("<?xml") or lower.startswith("<svg"):
+        return "image/svg+xml"
+    return None
+
+
+def _get_logo_dir() -> Path:
+    return Path(current_app.config["LOGO_DIR"])
+
+
+def _get_custom_logo_path() -> Optional[Path]:
+    """Return the path of the uploaded custom logo, or None if none exists."""
+    settings_store = _get_settings_store()
+    filename = settings_store.get("logo_filename")
+    if not filename:
+        return None
+    logo_path = _get_logo_dir() / filename
+    if logo_path.exists():
+        return logo_path
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -424,6 +478,113 @@ def api_update_settings():
     LOGGER.info("Settings updated: %s", updates)
 
     resp = jsonify({"status": "ok", "settings": updates})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@api_bp.route("/api/logo")
+def api_logo():
+    """Serve the custom fire-department logo, or redirect to the built-in default."""
+    logo_path = _get_custom_logo_path()
+    if logo_path is None:
+        return redirect(url_for("static", filename="img/crest.png"))
+
+    ext = logo_path.suffix.lower()
+    mime = {v: k for k, v in _MIME_TO_EXT.items()}.get(ext, "image/png")
+    return send_file(str(logo_path), mimetype=mime)
+
+
+@api_bp.route("/api/settings/logo", methods=["POST"])
+def api_upload_logo():
+    """Upload a custom fire-department logo (PNG, JPEG, WebP or SVG, max 2 MB).
+
+    Authentication: X-Settings-Password + X-CSRF-Token headers (same as
+    POST /api/settings).
+    Request: multipart/form-data with a ``logo`` file field.
+    """
+    from ..app import generate_csrf_token, generate_csrf_token_for_hour_offset
+    config = _get_config()
+    settings_store = _get_settings_store()
+
+    provided = request.headers.get("X-Settings-Password") or ""
+    if not config.settings_password or not hmac.compare_digest(provided, config.settings_password):
+        LOGGER.warning("Unauthorized logo upload attempt")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    csrf_header = request.headers.get("X-CSRF-Token") or ""
+    current_token = generate_csrf_token(config.settings_password)
+    prev_token = generate_csrf_token_for_hour_offset(config.settings_password, -1)
+    if not (hmac.compare_digest(csrf_header, current_token) or
+            hmac.compare_digest(csrf_header, prev_token)):
+        LOGGER.warning("Invalid CSRF token on logo upload")
+        return jsonify({"error": "Invalid CSRF token"}), 403
+
+    if "logo" not in request.files:
+        return jsonify({"error": "No logo file provided"}), 400
+
+    file = request.files["logo"]
+    if not file.filename:
+        return jsonify({"error": "No logo file provided"}), 400
+
+    data = file.read(_MAX_LOGO_BYTES + 1)
+    if len(data) > _MAX_LOGO_BYTES:
+        return jsonify({"error": "Logo file exceeds maximum size of 2 MB"}), 413
+
+    mime = _detect_image_mime(data)
+    if mime not in _MIME_TO_EXT:
+        return jsonify({"error": "Unsupported image format. Allowed: PNG, JPEG, WebP, SVG"}), 415
+
+    ext = _MIME_TO_EXT[mime]
+    logo_dir = _get_logo_dir()
+    new_filename = f"custom_logo{ext}"
+    dest_path = logo_dir / new_filename
+
+    # Remove any previously uploaded logo with a different extension.
+    for old_ext in _MIME_TO_EXT.values():
+        old_path = logo_dir / f"custom_logo{old_ext}"
+        if old_path != dest_path:
+            old_path.unlink(missing_ok=True)
+
+    dest_path.write_bytes(data)
+    settings_store.update({"logo_filename": new_filename})
+    LOGGER.info("Custom logo uploaded: %s (%d bytes)", new_filename, len(data))
+
+    resp = jsonify({"status": "ok", "filename": new_filename})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@api_bp.route("/api/settings/logo", methods=["DELETE"])
+def api_delete_logo():
+    """Remove the custom fire-department logo and revert to the built-in default.
+
+    Authentication: X-Settings-Password + X-CSRF-Token headers.
+    """
+    from ..app import generate_csrf_token, generate_csrf_token_for_hour_offset
+    config = _get_config()
+    settings_store = _get_settings_store()
+
+    provided = request.headers.get("X-Settings-Password") or ""
+    if not config.settings_password or not hmac.compare_digest(provided, config.settings_password):
+        LOGGER.warning("Unauthorized logo delete attempt")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    csrf_header = request.headers.get("X-CSRF-Token") or ""
+    current_token = generate_csrf_token(config.settings_password)
+    prev_token = generate_csrf_token_for_hour_offset(config.settings_password, -1)
+    if not (hmac.compare_digest(csrf_header, current_token) or
+            hmac.compare_digest(csrf_header, prev_token)):
+        LOGGER.warning("Invalid CSRF token on logo delete")
+        return jsonify({"error": "Invalid CSRF token"}), 403
+
+    logo_dir = _get_logo_dir()
+    for ext in _MIME_TO_EXT.values():
+        (logo_dir / f"custom_logo{ext}").unlink(missing_ok=True)
+
+    settings_store.update({"logo_filename": None})
+    LOGGER.info("Custom logo removed")
+
+    resp = jsonify({"status": "ok"})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

@@ -145,6 +145,11 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     settings_store = SettingsStore(persistence_path=settings_path)
     app.config["SETTINGS_STORE"] = settings_store
 
+    # Logo upload directory – same folder as the settings file
+    logo_dir = settings_path.parent
+    logo_dir.mkdir(parents=True, exist_ok=True)
+    app.config["LOGO_DIR"] = str(logo_dir)
+
     # Per-app weather cache instance
     weather_cache = WeatherCache()
     app.config["WEATHER_CACHE"] = weather_cache
