@@ -176,6 +176,129 @@
     loadSettings();
 })();
 
+// ---------------------------------------------------------------------------
+// Logo upload
+// ---------------------------------------------------------------------------
+
+(function () {
+    'use strict';
+
+    const fileInput = document.getElementById('logo-file-input');
+    const fileNameEl = document.getElementById('logo-file-name');
+    const uploadBtn = document.getElementById('logo-upload-btn');
+    const resetBtn = document.getElementById('logo-reset-btn');
+    const previewImg = document.getElementById('logo-preview');
+    const messageEl = document.getElementById('logo-message');
+
+    if (!fileInput || !uploadBtn || !resetBtn) { return; }
+
+    function getPassword() {
+        const pwField = document.getElementById('settings_password');
+        return pwField ? pwField.value : '';
+    }
+
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function showMessage(text, type, autoDismiss) {
+        messageEl.textContent = text;
+        messageEl.className = 'message message--' + type;
+        messageEl.style.display = 'block';
+        if (autoDismiss) {
+            setTimeout(() => { messageEl.style.display = 'none'; }, 3000);
+        }
+    }
+
+    fileInput.addEventListener('change', function () {
+        fileNameEl.textContent = fileInput.files.length > 0
+            ? fileInput.files[0].name
+            : 'Keine Datei ausgewählt';
+    });
+
+    uploadBtn.addEventListener('click', function () {
+        const password = getPassword();
+        if (!password) {
+            showMessage('Bitte zuerst das Einstellungs-Passwort eingeben.', 'error', false);
+            return;
+        }
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showMessage('Bitte eine Bilddatei auswählen.', 'error', false);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('logo', fileInput.files[0]);
+
+        uploadBtn.disabled = true;
+
+        fetch('/api/settings/logo', {
+            method: 'POST',
+            headers: {
+                'X-Settings-Password': password,
+                'X-CSRF-Token': getCsrfToken(),
+            },
+            body: formData,
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Upload fehlgeschlagen');
+                    });
+                }
+                return response.json();
+            })
+            .then(() => {
+                uploadBtn.disabled = false;
+                showMessage('Logo erfolgreich hochgeladen ✓', 'success', true);
+                // Refresh the preview by appending a timestamp to bust the cache.
+                previewImg.src = '/api/logo?t=' + Date.now();
+                fileInput.value = '';
+                fileNameEl.textContent = 'Keine Datei ausgewählt';
+            })
+            .catch(error => {
+                uploadBtn.disabled = false;
+                showMessage('Fehler: ' + error.message, 'error', false);
+            });
+    });
+
+    resetBtn.addEventListener('click', function () {
+        const password = getPassword();
+        if (!password) {
+            showMessage('Bitte zuerst das Einstellungs-Passwort eingeben.', 'error', false);
+            return;
+        }
+
+        resetBtn.disabled = true;
+
+        fetch('/api/settings/logo', {
+            method: 'DELETE',
+            headers: {
+                'X-Settings-Password': password,
+                'X-CSRF-Token': getCsrfToken(),
+            },
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Zurücksetzen fehlgeschlagen');
+                    });
+                }
+                return response.json();
+            })
+            .then(() => {
+                resetBtn.disabled = false;
+                showMessage('Standard-Logo wiederhergestellt ✓', 'success', true);
+                previewImg.src = '/api/logo?t=' + Date.now();
+            })
+            .catch(error => {
+                resetBtn.disabled = false;
+                showMessage('Fehler: ' + error.message, 'error', false);
+            });
+    });
+}());
+
 // Hide bottom navigation in browser fullscreen mode (F11 or Fullscreen API)
 (function () {
     function updateFullscreen() {

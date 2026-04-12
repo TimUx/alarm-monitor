@@ -391,6 +391,94 @@ body {
     font-weight: 600;
 }
 
+/* Logo upload section */
+.logo-upload-group {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.logo-preview-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.logo-preview-img {
+    width: clamp(72px, 60px + 3vw, 112px);
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid var(--divider);
+    background: var(--surface-muted);
+    padding: 0.25rem;
+    object-fit: contain;
+}
+
+.logo-upload-controls {
+    flex: 1;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.form-group-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.logo-file-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.logo-file-label {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.logo-file-name {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+}
+
+.logo-file-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.logo-upload-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+    .logo-upload-group {
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .logo-upload-actions .btn {
+        width: auto;
+    }
+}
+
 /* Hide bottom navigation in browser fullscreen mode */
 :fullscreen .bottom-nav,
 :-webkit-full-screen .bottom-nav,
