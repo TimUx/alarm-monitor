@@ -246,6 +246,9 @@ const mobileIdleDate = document.getElementById('mobile-idle-date');
 const mobileIdleWeather = document.getElementById('mobile-idle-weather');
 const mobileAlarmTime = document.getElementById('mobile-alarm-time');
 const mobileLastAlarm = document.getElementById('mobile-last-alarm');
+const mobileCalendarEl = document.getElementById('mobile-calendar');
+const mobileMessagesEl = document.getElementById('mobile-messages');
+const mobileMessagesListEl = document.getElementById('mobile-messages-list');
 const mobileKeywordSecondary = document.getElementById('mobile-keyword-secondary');
 const mobileDiagnosis = document.getElementById('mobile-diagnosis');
 const mobileRemark = document.getElementById('mobile-remark');
@@ -466,10 +469,144 @@ function updateMobileDashboard(data) {
     }
 }
 
+async function fetchMobileCalendar() {
+    try {
+        const response = await fetch('/api/calendar');
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        return data.events ?? null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function fetchMobileMessages() {
+    try {
+        const response = await fetch('/api/messages');
+        if (!response.ok) {
+            return null;
+        }
+        const data = await response.json();
+        return data.messages ?? null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function formatMobileMessageTtl(expiresAtIso) {
+    if (!expiresAtIso) {
+        return null;
+    }
+    const expiresAt = new Date(expiresAtIso);
+    const remainingMs = expiresAt.getTime() - Date.now();
+    if (remainingMs <= 0) {
+        return null;
+    }
+    const minutes = Math.floor(remainingMs / 60000);
+    if (minutes < 60) {
+        return `noch ${minutes}\u00A0Min.`;
+    }
+    const hours = Math.floor(minutes / 60);
+    return `noch ${hours}\u00A0Std.`;
+}
+
+function updateMobileCalendar(events) {
+    if (!mobileCalendarEl) {
+        return;
+    }
+
+    mobileCalendarEl.innerHTML = '<h3>Nächste Termine</h3>';
+
+    if (!events || events.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Keine Termine verfügbar';
+        mobileCalendarEl.appendChild(empty);
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.classList.add('mobile-calendar-list');
+
+    events.forEach((event) => {
+        const item = document.createElement('li');
+        item.classList.add('mobile-calendar-item');
+
+        const dateEl = document.createElement('span');
+        dateEl.classList.add('mobile-calendar-item-date');
+        const start = event.start ? new Date(event.start) : null;
+        if (start && !Number.isNaN(start.getTime())) {
+            dateEl.textContent = start.toLocaleDateString('de-DE', {
+                weekday: 'short',
+                day: '2-digit',
+                month: '2-digit',
+            });
+        } else {
+            dateEl.textContent = event.start || '';
+        }
+        item.appendChild(dateEl);
+
+        const titleEl = document.createElement('span');
+        titleEl.classList.add('mobile-calendar-item-title');
+        titleEl.textContent = event.summary || '(kein Titel)';
+        item.appendChild(titleEl);
+
+        list.appendChild(item);
+    });
+
+    mobileCalendarEl.appendChild(list);
+}
+
+function updateMobileMessages(messages) {
+    if (!mobileMessagesEl || !mobileMessagesListEl) {
+        return;
+    }
+
+    if (!messages || messages.length === 0) {
+        mobileMessagesEl.classList.add('hidden');
+        mobileMessagesListEl.innerHTML = '';
+        return;
+    }
+
+    mobileMessagesListEl.innerHTML = '';
+    messages.forEach((msg) => {
+        const li = document.createElement('li');
+        li.classList.add('mobile-messages-item');
+
+        const textEl = document.createElement('span');
+        textEl.classList.add('mobile-messages-item-text');
+        textEl.textContent = msg.text || '';
+        li.appendChild(textEl);
+
+        if (msg.expires_at) {
+            const ttlText = formatMobileMessageTtl(msg.expires_at);
+            if (ttlText) {
+                const ttlEl = document.createElement('span');
+                ttlEl.classList.add('mobile-messages-item-ttl');
+                ttlEl.textContent = ttlText;
+                li.appendChild(ttlEl);
+            }
+        }
+
+        mobileMessagesListEl.appendChild(li);
+    });
+
+    mobileMessagesEl.classList.remove('hidden');
+}
+
 async function pollMobile() {
     try {
         const data = await fetchMobileAlarm();
         updateMobileDashboard(data);
+        if (data.mode !== 'alarm') {
+            const [events, messages] = await Promise.all([
+                fetchMobileCalendar(),
+                fetchMobileMessages(),
+            ]);
+            updateMobileCalendar(events);
+            updateMobileMessages(messages);
+        }
     } catch (error) {
         console.error('Failed to refresh mobile dashboard', error);
     } finally {

@@ -646,6 +646,7 @@ body {
 }
 
 
+.bottom-nav {
     background: var(--surface);
     border-top: 1px solid var(--divider);
     box-shadow: 0 -12px 32px rgba(18, 32, 60, 0.08);

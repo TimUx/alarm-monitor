@@ -424,6 +424,88 @@ body {
     font-size: clamp(1.16rem, 1.08rem + 0.5vw, 1.36rem);
 }
 
+.mobile-calendar,
+.mobile-messages {
+    background: var(--surface-muted);
+    border-radius: 18px;
+    padding: 0.9rem;
+    border: 1px solid var(--divider);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.mobile-calendar h3,
+.mobile-messages h3 {
+    margin: 0;
+    font-size: clamp(1.34rem, 1.24rem + 0.5vw, 1.54rem);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+}
+
+.mobile-calendar p {
+    margin: 0;
+    font-size: clamp(1.08rem, 1rem + 0.42vw, 1.26rem);
+}
+
+.mobile-calendar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mobile-calendar-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: clamp(1.08rem, 1rem + 0.42vw, 1.26rem);
+}
+
+.mobile-calendar-item-date {
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.mobile-calendar-item-title {
+    color: var(--text-primary);
+}
+
+.mobile-messages-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mobile-messages-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: clamp(1.08rem, 1rem + 0.42vw, 1.26rem);
+    color: var(--text-primary);
+}
+
+.mobile-messages-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-messages-item-ttl {
+    font-size: clamp(0.9rem, 0.82rem + 0.4vw, 1.1rem);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .mobile-bottom-nav {
     position: sticky;
     bottom: 0;
@@ -653,7 +735,9 @@ body {
 
     .mobile-card--weather h3,
     .mobile-idle-weather h3,
-    .mobile-last-alarm h3 {
+    .mobile-last-alarm h3,
+    .mobile-calendar h3,
+    .mobile-messages h3 {
         font-size: clamp(1.16rem, 1.08rem + 0.45vw, 1.32rem);
     }
 
@@ -666,7 +750,10 @@ body {
     }
 
     .mobile-idle-weather p,
-    .mobile-last-alarm p {
+    .mobile-last-alarm p,
+    .mobile-calendar p,
+    .mobile-calendar-item,
+    .mobile-messages-item {
         font-size: clamp(0.94rem, 0.88rem + 0.38vw, 1.1rem);
     }
 
