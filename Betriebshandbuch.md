@@ -61,6 +61,9 @@ Der alarm-monitor benötigt ausgehende Verbindungen zu:
 | Nominatim | nominatim.openstreetmap.org | 443 | Geokodierung |
 | Open-Meteo | api.open-meteo.com | 443 | Wetterdaten |
 | OpenStreetMap | tile.openstreetmap.org | 443 | Kartenkacheln |
+| iCal-Server | Konfigurierbar (optional) | 443 | Kalendertermine |
+| ntfy.sh | ntfy.sh oder eigene Instanz (optional) | 443 | Dashboard-Nachrichten |
+| OpenRouteService | api.openrouteservice.org (optional) | 443 | Routenplanung |
 | alarm-messenger | Konfigurierbar (optional) | 443/3000 | Teilnehmerrückmeldungen |
 
 **Hinweis:** Der E-Mail-Abruf (IMAP) wird vom separaten **alarm-mail Service**
@@ -132,23 +135,34 @@ ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...
 # Generieren mit: openssl rand -hex 16
 ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
 
-# Gruppenfilter (optional, kommagetrennt)
-ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41
+# Gruppenfilter (optional, kommagetrennt – kann auch in der Web-UI gesetzt werden)
+# ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41
 
 # Anzeigedauer eines Alarms in Minuten
 ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 
-# Feuerwehrname für die Anzeige
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
+# Feuerwehrname für die Anzeige (kann auch in der Web-UI gesetzt werden)
+# ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
 
-# Standardkoordinaten für die Idle-Ansicht
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
+# Standardkoordinaten für die Idle-Ansicht (kann auch in der Web-UI gesetzt werden)
+# ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
+# ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
+# ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
+
+# Kalender-Integration (optional, kann auch in der Web-UI gesetzt werden)
+# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+
+# Nachrichten via ntfy.sh (optional, kann auch in der Web-UI gesetzt werden)
+# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
+# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
 
 # Alarm-Messenger Integration (optional)
 # ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
 # ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
+
+# OpenRouteService für Routenplanung (optional)
+# ALARM_DASHBOARD_ORS_API_KEY=your-ors-api-key-here
 
 # Prometheus-Metriken-Endpoint aktivieren (optional)
 # ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
@@ -162,8 +176,18 @@ ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 | `SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (Web-UI deaktiviert) |
 | `DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
 | `GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
+| `FIRE_DEPARTMENT_NAME` | Feuerwehr-Name (auch via Web-UI) | Alarm-Monitor |
+| `DEFAULT_LATITUDE` | Standard-Breitengrad für Idle-Wetter | (leer) |
+| `DEFAULT_LONGITUDE` | Standard-Längengrad für Idle-Wetter | (leer) |
+| `DEFAULT_LOCATION_NAME` | Standortname für Idle-Ansicht | (leer) |
+| `CALENDAR_URLS` | Komma-/zeilengetrennte iCal-URLs | (leer) |
+| `NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
+| `NTFY_POLL_INTERVAL` | ntfy Abfrage-Intervall in Sekunden | 60 |
+| `MESSAGES_FILE` | Pfad zur Nachrichten-Datei | instance/messages.json |
+| `MESSAGE_MAX_TTL_HOURS` | Maximale Nachrichten-TTL in Stunden | 72 |
 | `MESSENGER_SERVER_URL` | URL des Alarm-Messenger-Servers | (deaktiviert) |
 | `MESSENGER_API_KEY` | API-Key für Messenger-Authentifizierung | (deaktiviert) |
+| `ORS_API_KEY` | OpenRouteService-API-Key für Navigation | (deaktiviert) |
 | `METRICS_TOKEN` | Bearer-Token für `/api/metrics` Endpunkt | (deaktiviert) |
 | `HISTORY_FILE` | Pfad zur Historie-Datei | instance/alarm_history.json |
 | `SETTINGS_FILE` | Pfad zur Einstellungs-Datei | instance/settings.json |

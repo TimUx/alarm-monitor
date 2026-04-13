@@ -132,16 +132,41 @@ Standard ist 30 Minuten. Ändern via `.env`:
 ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=45
 ```
 
-### Wie kann ich mein Feuerwehr-Wappen einbinden?
+### Wie kann ich mein Feuerwehr-Logo einbinden?
 
-1. Wappen als PNG mit transparentem Hintergrund vorbereiten
-2. Datei ersetzen:
+**Empfohlen**: Über die Einstellungs-Seite im Browser:
+1. Öffnen Sie `http://server-ip:8000/settings`
+2. Scrollen Sie zu **"Feuerwehr-Logo"**
+3. Wählen Sie eine Bilddatei (PNG/JPEG/WebP/SVG, max. 2 MB)
+4. Klicken Sie auf **"Logo hochladen"**
+
+Das Logo wird gespeichert und bleibt auch nach einem Neustart erhalten. Mit **"Standard-Logo wiederherstellen"** kehren Sie zum Standard-Wappen zurück.
+
+### Wie richte ich die Kalender-Integration ein?
+
+1. Öffnen Sie `http://server-ip:8000/settings`
+2. Fügen Sie Ihre iCal-URLs ein (z.B. Google Calendar, Nextcloud)
+3. Speichern Sie – Termine erscheinen sofort in der Idle-Ansicht
+
+**Unterstützte Kalender**: Alle iCal-kompatiblen Dienste (Google Calendar, Apple iCloud, Nextcloud, Outlook, etc.)
+
+### Wie richte ich ntfy.sh-Nachrichten ein?
+
+1. Erstellen Sie ein ntfy-Topic auf [ntfy.sh](https://ntfy.sh) (oder eigenem Server)
+2. Öffnen Sie `http://server-ip:8000/settings`
+3. Tragen Sie die Topic-URL ein (z.B. `https://ntfy.sh/meine-fw-abc123`)
+4. Speichern Sie
+
+**Nachrichten senden**:
 ```bash
-cp mein-wappen.png alarm_dashboard/static/img/crest.png
-```
-3. Container neu starten:
-```bash
-docker compose restart
+# Via ntfy
+curl -d "Dienstbesprechung heute 19:00 Uhr!" https://ntfy.sh/meine-fw-abc123
+
+# Via API (mit API-Key)
+curl -X POST http://server-ip:8000/api/messages \
+  -H "X-API-Key: IHR-API-KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Dienstbesprechung heute 19:00 Uhr!", "ttl_minutes": 1440}'
 ```
 
 ### Wie ändere ich die Farben des Dashboards?

@@ -87,8 +87,10 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 │  │  │   └─▶ Navigation Views            │ │                        │
 │  │  └─────────────────────────────────┘ │                        │
 │  └────────────────┬───────────────────────┘                        │
-│                   │                                                 │
-└───────────────────┼─────────────────────────────────────────────────┘
+│                   │  ▲ ntfy.sh Polling (optional)                  │
+└───────────────────┼──┼──────────────────────────────────────────────┘
+                    │  │
+                    │  └───── ntfy.sh Topic (https://ntfy.sh/...)
                     │
                     │ HTTP/HTTPS (Web Interface)
                     │
@@ -293,20 +295,24 @@ MESSENGER_API_KEY = "..."  # Optional
 - Blueprint-Registrierung (`routes/api.py` und `routes/views.py`)
 
 #### `routes/api.py` – REST API
-- `/api/alarm` – Alarm empfangen (POST) und abrufen (GET)
-- `/api/stream` – Server-Sent Events für Echtzeit-Updates
-- `/api/alarm/participants/<nr>` – Teilnehmerrückmeldungen
-- `/api/history` – Alarm-Historie
-- `/api/route` – Routing-Proxy (OpenRouteService)
-- `/api/settings` – Einstellungen lesen und speichern
-- `/api/metrics` – Prometheus-Metriken
+- `POST /api/alarm` – Alarm empfangen
+- `GET /api/alarm` – Aktuellen Alarm/Idle-Status abrufen
+- `GET /api/stream` – Server-Sent Events für Echtzeit-Updates
+- `GET /api/alarm/participants/<nr>` – Teilnehmerrückmeldungen
+- `GET /api/history` – Alarm-Historie
+- `GET /api/calendar` – iCal-Termine abrufen
+- `GET|POST|DELETE /api/messages` – Dashboard-Nachrichten verwalten
+- `GET /api/route` – Routing-Proxy (OpenRouteService)
+- `GET|POST /api/settings` – Einstellungen lesen und speichern
+- `POST|DELETE /api/settings/logo` – Feuerwehr-Logo hochladen/zurücksetzen
+- `GET /api/metrics` – Prometheus-Metriken
 
 #### `routes/views.py` – HTML-Seiten
-- `/` – Haupt-Dashboard
+- `/` – Haupt-Dashboard (Alarm/Idle)
 - `/mobile` – Mobile Ansicht
 - `/history` – Einsatzhistorie
 - `/navigation` – Navigationsansicht
-- `/settings` – Einstellungs-Oberfläche
+- `/settings` – Einstellungs-Oberfläche mit Logo-Upload
 - `/health` – Health-Check
 
 #### `config.py` – Konfiguration
@@ -396,18 +402,91 @@ class MessengerClient:
         """Ruft Teilnehmerliste vom Messenger ab"""
 ```
 
+#### `calendar_client.py` – Kalender-Integration
+```python
+def fetch_calendar_events(
+    calendar_urls: list[str],
+    max_events: int = 5
+) -> list[dict]:
+    """
+    Ruft bevorstehende Termine aus iCal-URLs ab
+    Rückgabe: Liste mit {summary, start, end, location, ...}
+    """
+```
+
+#### `message_store.py` – Nachrichten-Verwaltung
+```python
+class MessageStore:
+    def __init__(self, max_ttl_hours: int = 72, persistence_path: Optional[Path] = None):
+        """In-Memory + optionale Persistenz für Dashboard-Nachrichten"""
+
+    def add(self, text: str, ttl_minutes: int = 60) -> dict:
+        """Neue Nachricht erstellen mit UUID und Ablaufzeit"""
+    
+    def get_active(self) -> list[dict]:
+        """Alle noch aktiven (nicht abgelaufenen) Nachrichten abrufen"""
+    
+    def delete(self, message_id: str) -> bool:
+        """Nachricht nach ID löschen"""
+    
+    def cleanup_expired(self) -> int:
+        """Abgelaufene Nachrichten entfernen und Anzahl zurückgeben"""
+```
+
+#### `ntfy_client.py` – ntfy.sh Polling
+```python
+def create_ntfy_poller(
+    topic_url: str,
+    poll_interval: int,
+    message_store: MessageStore,
+    default_ttl_minutes: int
+) -> threading.Thread:
+    """
+    Erstellt und startet einen Hintergrund-Thread der das ntfy-Topic
+    regelmäßig abfragt und neue Nachrichten in den MessageStore speichert
+    """
+```
+
 **Datenpersistenz**:
 ```json
 // instance/alarm_history.json
 {
-  "current": { ... },
-  "history": [
-    {
+  "alarm": {
+    "alarm": {
       "incident_number": "2024-001",
-      "timestamp": "2024-01-01T12:00:00",
-      "keyword": "F3Y",
-      "description": "Brand",
+      "keyword": "B3 - Wohnungsbrand",
+      "location": "Musterstraße 1",
       ...
+    },
+    "coordinates": {"lat": 51.2345, "lon": 9.8765},
+    "weather": {...},
+    "received_at": "2024-01-01T12:00:00+00:00"
+  },
+  "history": [
+    { ... }
+  ]
+}
+
+// instance/settings.json
+{
+  "fire_department_name": "Feuerwehr Willingshausen",
+  "default_latitude": 50.9333,
+  "default_longitude": 9.3167,
+  "activation_groups": ["WIL26", "WIL41"],
+  "calendar_urls": ["https://..."],
+  "ntfy_topic_url": "https://ntfy.sh/...",
+  "ntfy_poll_interval": 60,
+  "message_default_ttl_minutes": 60
+}
+
+// instance/messages.json
+{
+  "messages": [
+    {
+      "id": "uuid-...",
+      "text": "Dienstbesprechung heute 19:00 Uhr!",
+      "created_at": "2024-01-01T10:00:00+00:00",
+      "expires_at": "2024-01-01T11:00:00+00:00"
     }
   ]
 }
@@ -455,28 +534,24 @@ Siehe [alarm-messenger Repository](https://github.com/TimUx/alarm-messenger) fü
 ```json
 {
   "incident_number": "2024-001",
-  "keyword": "F3Y",
-  "keyword_sub": "Brand",
-  "timestamp": "2024-01-01T12:00:00",
-  "description": "Brand in Wohngebäude",
-  "remarks": "Mehrere Anrufer",
-  "location": "Musterstraße 1",
-  "city": "Musterstadt",
-  "district": "Nordviertel",
+  "keyword": "B3 - Wohnungsbrand",
+  "keyword_secondary": "Menschenleben in Gefahr",
+  "subject": "Vollbrand EFH",
+  "diagnosis": "Wohnungsbrand mit Menschengefährdung",
+  "remark": "2 Personen im Gebäude",
+  "location": "Musterstraße 1, 12345 Musterstadt",
   "latitude": 51.2345,
   "longitude": 9.8765,
-  "object": "Wohnhaus",
-  "sub_object": "Erdgeschoss",
-  "location_note": "Zufahrt über Ringstraße",
-  "resources": [
-    {
-      "name": "LF Musterstadt 1",
-      "dispatched_at": "2024-01-01T12:01:00"
-    }
-  ],
-  "fme_resources": [...],
-  "tme_resources": [...],
-  "dispatch_group_codes": ["WIL26", "WIL41"]
+  "timestamp": "2024-01-01T12:00:00+00:00",
+  "timestamp_display": "01.01.2024 12:00",
+  "groups": ["LF20-MST", "TLF4000-MST"],
+  "dispatch_group_codes": ["MST26", "MST41"],
+  "location_details": {
+    "town": "Musterstadt",
+    "village": "Nordviertel",
+    "street": "Musterstraße 1",
+    "additional": "EG links"
+  }
 }
 ```
 

@@ -139,6 +139,11 @@ Dokumentation aller Ansichten
 - [Architecture](ARCHITECTURE.md#schnittstellen) – API-Dokumentation
 - [README.md](../README.md#integration) – Überblick
 
+### Kalender & Nachrichten
+
+- [README.md](../README.md#konfiguration) – Kalender-URLs und ntfy.sh konfigurieren
+- [Betriebshandbuch](../Betriebshandbuch.md#konfiguration) – Umgebungsvariablen
+
 ### Fehlerbehebung
 
 - [FAQ](FAQ.md#fehlerbehebung) – Häufige Probleme
@@ -191,15 +196,15 @@ Dokumentation aller Ansichten
 
 | Dokument | Status | Letzte Aktualisierung | Vollständigkeit |
 |----------|--------|----------------------|-----------------|
-| README.md | ✅ Vollständig | Dezember 2024 | 100% |
-| Quick Start | ✅ Vollständig | Dezember 2024 | 100% |
-| Architecture | ✅ Vollständig | Dezember 2024 | 100% |
-| FAQ | ✅ Vollständig | Dezember 2024 | 100% |
-| Betriebshandbuch | ✅ Vollständig | Dezember 2024 | 100% |
-| Messenger-Integration | ✅ Vollständig | Dezember 2024 | 100% |
+| README.md | ✅ Vollständig | April 2026 | 100% |
+| Quick Start | ✅ Vollständig | April 2026 | 100% |
+| Architecture | ✅ Vollständig | April 2026 | 100% |
+| FAQ | ✅ Vollständig | April 2026 | 100% |
+| Betriebshandbuch | ✅ Vollständig | April 2026 | 100% |
+| Messenger-Integration | ✅ Vollständig | April 2026 | 100% |
 | Raspberry Pi 3 Setup | ✅ Vollständig | April 2026 | 100% |
-| Screenshots | ⚠️ Teilweise | Dezember 2024 | 60% |
-| Contributing | ✅ Vollständig | Dezember 2024 | 100% |
+| Screenshots | ✅ Vollständig | April 2026 | 100% |
+| Contributing | ✅ Vollständig | April 2026 | 100% |
 
 **Legende**:
 - ✅ Vollständig und aktuell
