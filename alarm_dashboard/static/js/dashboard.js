@@ -884,17 +884,17 @@ function updateIdleCalendar(events) {
     if (!idleCalendarEl) {
         return;
     }
+
+    if (!events || events.length === 0) {
+        idleCalendarEl.classList.add('hidden');
+        return;
+    }
+
+    idleCalendarEl.classList.remove('hidden');
     idleCalendarEl.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Nächste Termine';
     idleCalendarEl.appendChild(title);
-
-    if (!events || events.length === 0) {
-        const empty = document.createElement('p');
-        empty.textContent = 'Keine Termine verfügbar';
-        idleCalendarEl.appendChild(empty);
-        return;
-    }
 
     const list = document.createElement('ul');
     list.classList.add('idle-calendar-list');
