@@ -108,12 +108,14 @@ Alle Screenshots wurden in **Full HD (1920×1080)** aufgenommen.
 - ✅ Digitale Uhr und Datum
 - ✅ Aktuelles Wetter
 - ✅ Letzter Einsatz (kompakt)
+- ✅ Nächste Termine (Kalender)
+- ✅ Nachrichten / Meldungen
 - ✅ Navigation zur Historie und Einstellungen
 
 **Besonderheiten**:
 - Optimiert für Touch-Bedienung (Hochformat)
 - Automatische Schriftgrößenanpassung
-- Weniger Details als Desktop-Version
+- Kalender- und Nachrichten-Widgets identisch zum Desktop
 
 **Verwendung**: Zugriff von Smartphones und Tablets, ideal für unterwegs
 
