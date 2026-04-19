@@ -1480,9 +1480,6 @@ if (idleCalendarEl && typeof window.ResizeObserver === 'function') {
     idleCalendarResizeObserver.observe(idleCalendarEl);
 } else {
     window.addEventListener('resize', handleIdleCalendarWindowResize);
-    window.addEventListener('beforeunload', () => {
-        window.removeEventListener('resize', handleIdleCalendarWindowResize);
-    });
 }
 
 async function poll() {
