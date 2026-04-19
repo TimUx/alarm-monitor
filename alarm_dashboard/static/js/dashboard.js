@@ -557,6 +557,11 @@ let leafletMapInstance = null;
 let leafletMarkerInstance = null;
 let leafletMarkerLabel = null;
 let alarmExpiryTimer = null;
+let idleCalendarEventsCache = [];
+let idleCalendarRenderScheduled = false;
+
+const IDLE_CALENDAR_MAX_ROWS = 3;
+const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
 
 function scheduleAlarmExpiry(payload) {
     clearAlarmExpiryTimer();
@@ -881,10 +886,37 @@ function updateIdleHeaderWeather(weather) {
 }
 
 function updateIdleCalendar(events) {
+    idleCalendarEventsCache = Array.isArray(events) ? events : [];
+    requestIdleCalendarRender();
+}
+
+function requestIdleCalendarRender() {
+    if (idleCalendarRenderScheduled) {
+        return;
+    }
+
+    idleCalendarRenderScheduled = true;
+    window.requestAnimationFrame(() => {
+        idleCalendarRenderScheduled = false;
+        renderIdleCalendar();
+    });
+}
+
+function calculateIdleCalendarColumns() {
+    if (!idleCalendarEl) {
+        return 1;
+    }
+
+    const availableWidth = Math.max(1, idleCalendarEl.clientWidth);
+    return Math.max(1, Math.floor(availableWidth / IDLE_CALENDAR_MIN_COLUMN_WIDTH));
+}
+
+function renderIdleCalendar() {
     if (!idleCalendarEl) {
         return;
     }
 
+    const events = idleCalendarEventsCache;
     if (!events || events.length === 0) {
         idleCalendarEl.classList.add('hidden');
         return;
@@ -896,10 +928,15 @@ function updateIdleCalendar(events) {
     title.textContent = 'Nächste Termine';
     idleCalendarEl.appendChild(title);
 
+    const columns = calculateIdleCalendarColumns();
+    const maxVisibleEvents = columns * IDLE_CALENDAR_MAX_ROWS;
+    const visibleEvents = events.slice(0, maxVisibleEvents);
+
     const list = document.createElement('ul');
     list.classList.add('idle-calendar-list');
+    list.style.setProperty('--idle-calendar-columns', String(columns));
 
-    events.forEach((event) => {
+    visibleEvents.forEach((event) => {
         const item = document.createElement('li');
         item.classList.add('idle-calendar-item');
 
@@ -1431,6 +1468,8 @@ if (keywordHeadingEl) {
     window.addEventListener('resize', requestKeywordResize);
     requestKeywordResize();
 }
+
+window.addEventListener('resize', requestIdleCalendarRender);
 
 async function poll() {
     try {
