@@ -902,6 +902,10 @@ function requestIdleCalendarRender() {
     });
 }
 
+function handleIdleCalendarWindowResize() {
+    requestIdleCalendarRender();
+}
+
 function calculateIdleCalendarColumns() {
     if (!idleCalendarEl) {
         return 1;
@@ -1475,7 +1479,10 @@ if (idleCalendarEl && typeof window.ResizeObserver === 'function') {
     });
     idleCalendarResizeObserver.observe(idleCalendarEl);
 } else {
-    window.addEventListener('resize', requestIdleCalendarRender);
+    window.addEventListener('resize', handleIdleCalendarWindowResize);
+    window.addEventListener('beforeunload', () => {
+        window.removeEventListener('resize', handleIdleCalendarWindowResize);
+    });
 }
 
 async function poll() {
