@@ -144,6 +144,25 @@ def test_delete_returns_false_for_invalid_id():
     assert result is False
 
 
+def test_delete_by_source_id_removes_matching_messages():
+    store = MessageStore()
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    store.add_with_absolute_expiry("A", expires, source_id="seq-1")
+    store.add_with_absolute_expiry("B", expires, source_id="seq-2")
+    result = store.delete_by_source_id("seq-1")
+    assert result is True
+    active = store.get_active()
+    assert len(active) == 1
+    assert active[0]["text"] == "B"
+
+
+def test_delete_by_source_id_returns_false_for_unknown_id():
+    store = MessageStore()
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    store.add_with_absolute_expiry("A", expires, source_id="seq-1")
+    assert store.delete_by_source_id("seq-unknown") is False
+
+
 # ---------------------------------------------------------------------------
 # prune_expired
 # ---------------------------------------------------------------------------
@@ -320,3 +339,38 @@ def test_ntfy_poller_resets_last_poll_time_on_url_change():
     # Should have reset and used the new URL
     assert poller._last_topic_url == "https://ntfy.sh/topic-b"
 
+
+def test_ntfy_poller_deletes_message_on_message_delete_event():
+    store = MessageStore()
+    settings = _make_settings(topic_url="https://ntfy.sh/test")
+    poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
+
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status.return_value = None
+    mock_resp.text = (
+        '{"id":"abc","event":"message","message":"Zu löschen"}\n'
+        '{"event":"message_delete","sequence_id":"abc"}\n'
+    )
+
+    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+        poller._poll_once()
+
+    assert store.get_active() == []
+
+
+def test_ntfy_poller_deletes_message_on_deleted_flag_event():
+    store = MessageStore()
+    settings = _make_settings(topic_url="https://ntfy.sh/test")
+    poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
+
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status.return_value = None
+    mock_resp.text = (
+        '{"id":"abc","event":"message","message":"Zu löschen"}\n'
+        '{"id":"abc","event":"message","deleted":true}\n'
+    )
+
+    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+        poller._poll_once()
+
+    assert store.get_active() == []

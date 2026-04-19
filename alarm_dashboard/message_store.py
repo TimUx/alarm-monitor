@@ -81,6 +81,7 @@ class MessageStore:
         self,
         text: str,
         expires_at: datetime,
+        source_id: Optional[str] = None,
         on_stored: Optional[Callable[[], None]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Add a message with an absolute expiry datetime (e.g. from ntfy).
@@ -107,6 +108,9 @@ class MessageStore:
             "created_at": now.isoformat(),
             "expires_at": clamped_expires_at.isoformat(),
         }
+        normalized_source_id = (source_id or "").strip()
+        if normalized_source_id:
+            message["source_id"] = normalized_source_id
 
         with self._lock:
             self._messages.insert(0, message)
@@ -121,6 +125,21 @@ class MessageStore:
                 LOGGER.warning("Error in on_stored callback", exc_info=True)
 
         return message
+
+    def delete_by_source_id(self, source_id: str) -> bool:
+        """Delete all messages linked to a source ID. Returns True if any were removed."""
+        normalized_source_id = (source_id or "").strip()
+        if not normalized_source_id:
+            return False
+        with self._lock:
+            original_len = len(self._messages)
+            self._messages = [
+                m for m in self._messages if m.get("source_id") != normalized_source_id
+            ]
+            deleted = len(self._messages) < original_len
+            if deleted:
+                self._persist_locked()
+        return deleted
 
     def get_active(self) -> List[Dict[str, Any]]:
         """Return all non-expired messages, newest first."""

@@ -23,6 +23,7 @@ LOGGER = logging.getLogger(__name__)
 
 _DEFAULT_POLL_INTERVAL = 60
 _DEFAULT_TTL_MINUTES = 60
+_TRUTHY_DELETE_VALUES = {True, 1, "1", "true", "True", "yes", "on"}
 
 
 class NtfyPoller:
@@ -142,7 +143,22 @@ class NtfyPoller:
             except Exception:
                 continue
 
-            if event.get("event") != "message":
+            event_type = str(event.get("event") or "")
+            if event_type not in {"message", "message_delete", "message_clear"}:
+                continue
+
+            source_id = self._resolve_source_id(event)
+
+            if event_type in {"message_delete", "message_clear"}:
+                if source_id and self._message_store.delete_by_source_id(source_id):
+                    LOGGER.info("Removed ntfy message by source_id=%s", source_id)
+                    self._notify_message_changed()
+                continue
+
+            if self._is_deleted_message_event(event):
+                if source_id and self._message_store.delete_by_source_id(source_id):
+                    LOGGER.info("Removed ntfy message by delete-flag source_id=%s", source_id)
+                    self._notify_message_changed()
                 continue
 
             text = (event.get("message") or "").strip()
@@ -151,7 +167,7 @@ class NtfyPoller:
 
             expires_at = self._resolve_expires(event, default_ttl_minutes)
             result = self._message_store.add_with_absolute_expiry(
-                text, expires_at, on_stored=self._on_message
+                text, expires_at, source_id=source_id, on_stored=self._on_message
             )
             if result:
                 LOGGER.info("New ntfy message stored (%.80s)", text)
@@ -172,6 +188,29 @@ class NtfyPoller:
             except (TypeError, ValueError, OSError):
                 pass
         return datetime.now(timezone.utc) + timedelta(minutes=default_ttl_minutes)
+
+    @staticmethod
+    def _resolve_source_id(event: dict) -> Optional[str]:
+        """Resolve a stable source ID for linking updates/deletes to stored messages."""
+        for key in ("sequence_id", "id"):
+            value = (event.get(key) or "").strip()
+            if value:
+                return value
+        return None
+
+    @staticmethod
+    def _is_deleted_message_event(event: dict) -> bool:
+        """Return True when a message event carries an explicit delete marker."""
+        deleted_flag = event.get("deleted")
+        return deleted_flag in _TRUTHY_DELETE_VALUES
+
+    def _notify_message_changed(self) -> None:
+        """Invoke callback used to notify subscribers about message list changes."""
+        if self._on_message:
+            try:
+                self._on_message()
+            except Exception:
+                LOGGER.warning("Error in on_message callback", exc_info=True)
 
 
 def create_ntfy_poller(
