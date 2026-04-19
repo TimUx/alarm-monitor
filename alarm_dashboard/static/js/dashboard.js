@@ -872,7 +872,7 @@ function updateIdleHeaderWeather(weather) {
             : '%';
         const probText = formatProbability(precipProb, unit);
         if (probText) {
-            chips.appendChild(createIdleHeaderWeatherChip('��', probText));
+            chips.appendChild(createIdleHeaderWeatherChip('💧', probText));
         }
     }
 
