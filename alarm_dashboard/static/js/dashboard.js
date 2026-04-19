@@ -907,7 +907,7 @@ function calculateIdleCalendarColumns() {
         return 1;
     }
 
-    const availableWidth = Math.max(1, idleCalendarEl.clientWidth);
+    const availableWidth = Math.max(1, idleCalendarEl.getBoundingClientRect().width);
     return Math.max(1, Math.floor(availableWidth / IDLE_CALENDAR_MIN_COLUMN_WIDTH));
 }
 
@@ -1469,7 +1469,14 @@ if (keywordHeadingEl) {
     requestKeywordResize();
 }
 
-window.addEventListener('resize', requestIdleCalendarRender);
+if (idleCalendarEl && typeof window.ResizeObserver === 'function') {
+    const idleCalendarResizeObserver = new window.ResizeObserver(() => {
+        requestIdleCalendarRender();
+    });
+    idleCalendarResizeObserver.observe(idleCalendarEl);
+} else {
+    window.addEventListener('resize', requestIdleCalendarRender);
+}
 
 async function poll() {
     try {
