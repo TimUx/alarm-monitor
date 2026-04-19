@@ -152,21 +152,13 @@ class NtfyPoller:
             if event_type in {"message_delete", "message_clear"}:
                 if source_id and self._message_store.delete_by_source_id(source_id):
                     LOGGER.info("Removed ntfy message by source_id=%s", source_id)
-                    if self._on_message:
-                        try:
-                            self._on_message()
-                        except Exception:
-                            LOGGER.warning("Error in on_message callback", exc_info=True)
+                    self._notify_message_changed()
                 continue
 
             if self._is_deleted_message_event(event):
                 if source_id and self._message_store.delete_by_source_id(source_id):
                     LOGGER.info("Removed ntfy message by delete-flag source_id=%s", source_id)
-                    if self._on_message:
-                        try:
-                            self._on_message()
-                        except Exception:
-                            LOGGER.warning("Error in on_message callback", exc_info=True)
+                    self._notify_message_changed()
                 continue
 
             text = (event.get("message") or "").strip()
@@ -211,6 +203,14 @@ class NtfyPoller:
         """Return True when a message event carries an explicit delete marker."""
         deleted_flag = event.get("deleted")
         return deleted_flag in _TRUTHY_DELETE_VALUES
+
+    def _notify_message_changed(self) -> None:
+        """Invoke callback used to notify subscribers about message list changes."""
+        if self._on_message:
+            try:
+                self._on_message()
+            except Exception:
+                LOGGER.warning("Error in on_message callback", exc_info=True)
 
 
 def create_ntfy_poller(
