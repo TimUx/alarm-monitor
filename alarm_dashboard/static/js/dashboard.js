@@ -560,7 +560,7 @@ let alarmExpiryTimer = null;
 let idleCalendarEventsCache = [];
 let idleCalendarRenderScheduled = false;
 
-const IDLE_CALENDAR_MAX_ROWS = 3;
+const IDLE_CALENDAR_MAX_ROWS = 6;
 const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
 
 function scheduleAlarmExpiry(payload) {
