@@ -34,6 +34,10 @@ class AppConfig:
     nominatim_base_url: str = "https://nominatim.openstreetmap.org/search"
     weather_base_url: str = "https://api.open-meteo.com/v1/forecast"
     weather_params: str = "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall&forecast_days=1"
+    dwd_warnings_url: str = (
+        "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/"
+        "gemeinde_warnings_v2.json"
+    )
     default_latitude: Optional[float] = None
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
@@ -124,6 +128,19 @@ def load_config() -> AppConfig:
             ),
         )
         or "current_weather=true&hourly=precipitation,precipitation_probability,rain,showers,snowfall&forecast_days=1"
+    )
+    dwd_warnings_url = (
+        _get_env(
+            "DWD_WARNINGS_URL",
+            default=(
+                "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/"
+                "gemeinde_warnings_v2.json"
+            ),
+        )
+        or (
+            "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/"
+            "gemeinde_warnings_v2.json"
+        )
     )
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
@@ -235,6 +252,7 @@ def load_config() -> AppConfig:
         fire_department_name=fire_department_name,
         weather_base_url=weather_base_url,
         weather_params=weather_params,
+        dwd_warnings_url=dwd_warnings_url,
         default_latitude=default_latitude_float,
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,

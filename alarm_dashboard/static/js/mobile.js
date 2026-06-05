@@ -451,7 +451,7 @@ function updateMobileDashboard(data) {
         setMobileMode('idle');
         mobileTimestamp.textContent = 'Keine aktuellen Einsätze';
         updateMobileIdleWeather(data.weather);
-        updateMobileLastAlarm(data.last_alarm);
+        updateMobileMainPanel(data.last_alarm, data.warnings);
         if (mobileKeywordSecondary) {
             mobileKeywordSecondary.textContent = '';
             mobileKeywordSecondary.classList.add('hidden');
@@ -633,17 +633,41 @@ function formatMobileTimestamp(value) {
     return value;
 }
 
-function updateMobileLastAlarm(info) {
-    if (!mobileLastAlarm) {
-        return;
-    }
+function hasActiveMobileSevereWarnings(warnings) {
+    return Boolean(
+        warnings
+        && warnings.active
+        && Array.isArray(warnings.items)
+        && warnings.items.length > 0,
+    );
+}
 
-    mobileLastAlarm.innerHTML = '<h3>Letzter Einsatz</h3>';
+function formatMobileWarningTimestamp(value) {
+    if (!value) {
+        return null;
+    }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString('de-DE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+    return value;
+}
+
+function appendMobileLastAlarmContent(container, info) {
+    const heading = document.createElement('h3');
+    heading.textContent = 'Letzter Einsatz';
+    container.appendChild(heading);
 
     if (!info) {
         const empty = document.createElement('p');
         empty.textContent = 'Keine Einsätze vorhanden';
-        mobileLastAlarm.appendChild(empty);
+        container.appendChild(empty);
         return;
     }
 
@@ -657,18 +681,100 @@ function updateMobileLastAlarm(info) {
 
     const keywordEl = document.createElement('p');
     keywordEl.innerHTML = `<strong>${keyword}</strong>`;
-    mobileLastAlarm.appendChild(keywordEl);
+    container.appendChild(keywordEl);
 
     if (location) {
         const locationEl = document.createElement('p');
         locationEl.textContent = location;
-        mobileLastAlarm.appendChild(locationEl);
+        container.appendChild(locationEl);
     }
 
     if (timestamp) {
         const timeEl = document.createElement('p');
         timeEl.textContent = timestamp;
-        mobileLastAlarm.appendChild(timeEl);
+        container.appendChild(timeEl);
+    }
+}
+
+function appendMobileNoWarningStatus(container) {
+    const separator = document.createElement('hr');
+    separator.className = 'mobile-warnings-separator';
+    container.appendChild(separator);
+
+    const status = document.createElement('p');
+    status.className = 'mobile-warnings-status mobile-warnings-status--none';
+    status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
+    container.appendChild(status);
+}
+
+function appendMobileActiveWarningsContent(container, warnings) {
+    const regionName = warnings?.bundesland?.name;
+
+    warnings.items.forEach((item) => {
+        const itemEl = document.createElement('article');
+        itemEl.className = 'mobile-warnings-item';
+        if (item.level) {
+            itemEl.classList.add(`mobile-warnings-item--level-${item.level}`);
+        }
+
+        if (item.headline) {
+            const headlineEl = document.createElement('p');
+            headlineEl.innerHTML = `<strong>${item.headline}</strong>`;
+            itemEl.appendChild(headlineEl);
+        }
+
+        if (item.description) {
+            const descriptionEl = document.createElement('p');
+            descriptionEl.textContent = item.description;
+            itemEl.appendChild(descriptionEl);
+        }
+
+        const start = formatMobileWarningTimestamp(item.start);
+        const end = formatMobileWarningTimestamp(item.end);
+        if (start || end) {
+            const validityEl = document.createElement('p');
+            validityEl.className = 'mobile-warnings-validity';
+            validityEl.textContent = start && end
+                ? `Gültig von ${start} bis ${end}`
+                : (start ? `Gültig ab ${start}` : `Gültig bis ${end}`);
+            itemEl.appendChild(validityEl);
+        }
+
+        container.appendChild(itemEl);
+    });
+
+    if (warnings.map_url) {
+        const mapWrap = document.createElement('div');
+        mapWrap.className = 'mobile-warnings-map';
+        const mapImg = document.createElement('img');
+        mapImg.src = warnings.map_url;
+        mapImg.alt = regionName
+            ? `DWD Warnkarte ${regionName}`
+            : 'DWD Warnkarte';
+        mapImg.loading = 'lazy';
+        mapWrap.appendChild(mapImg);
+        container.appendChild(mapWrap);
+    }
+}
+
+function updateMobileMainPanel(lastAlarm, warnings) {
+    if (!mobileLastAlarm) {
+        return;
+    }
+
+    const activeWarnings = hasActiveMobileSevereWarnings(warnings);
+    mobileLastAlarm.classList.toggle('mobile-warnings-active', activeWarnings);
+    mobileLastAlarm.innerHTML = '';
+
+    if (activeWarnings) {
+        appendMobileActiveWarningsContent(mobileLastAlarm, warnings);
+        return;
+    }
+
+    appendMobileLastAlarmContent(mobileLastAlarm, lastAlarm);
+
+    if (warnings != null) {
+        appendMobileNoWarningStatus(mobileLastAlarm);
     }
 }
 

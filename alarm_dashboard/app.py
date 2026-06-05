@@ -24,6 +24,7 @@ from .messenger import create_messenger
 from .message_store import MessageStore
 from .ntfy_client import create_ntfy_poller
 from .storage import AlarmStore, SettingsStore
+from .warnings_cache import WarningsCache
 from .weather_cache import WeatherCache
 
 LOGGER = logging.getLogger(__name__)
@@ -158,6 +159,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     # Per-app weather cache instance
     weather_cache = WeatherCache()
     app.config["WEATHER_CACHE"] = weather_cache
+
+    warnings_cache = WarningsCache()
+    app.config["WARNINGS_CACHE"] = warnings_cache
 
     # SSE subscriber registry – one threading.Event per connected client
     _subscribers: List[threading.Event] = []

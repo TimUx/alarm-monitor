@@ -557,6 +557,64 @@ body {
     color: var(--accent);
 }
 
+.idle-last-alarm.idle-warnings-active {
+    border-color: rgba(255, 152, 0, 0.45);
+}
+
+.idle-warnings-separator {
+    border: none;
+    border-top: 1px solid var(--divider);
+    margin: 0.75rem 0 1rem;
+}
+
+.idle-warnings-status {
+    margin: 0;
+    font-weight: 600;
+}
+
+.idle-warnings-status--none {
+    color: var(--text-secondary);
+}
+
+.idle-warnings-item {
+    display: grid;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+}
+
+.idle-warnings-item--level-4 .idle-warnings-headline strong {
+    color: #f44336;
+}
+
+.idle-warnings-item--level-3 .idle-warnings-headline strong {
+    color: #ff9800;
+}
+
+.idle-warnings-description {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.idle-warnings-validity {
+    margin: 0;
+    font-size: clamp(1.1rem, 0.95rem + 0.4vw, 1.45rem);
+    color: var(--text-secondary);
+}
+
+.idle-warnings-map {
+    margin-top: 0.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--divider);
+    background: #fff;
+}
+
+.idle-warnings-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .idle-calendar p {
     margin: 0;
     font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);

@@ -424,6 +424,55 @@ body {
     font-size: clamp(1.16rem, 1.08rem + 0.5vw, 1.36rem);
 }
 
+.mobile-last-alarm.mobile-warnings-active {
+    border-color: rgba(255, 152, 0, 0.45);
+}
+
+.mobile-warnings-separator {
+    border: none;
+    border-top: 1px solid var(--divider);
+    margin: 0.2rem 0 0.35rem;
+}
+
+.mobile-warnings-status {
+    margin: 0;
+    font-weight: 600;
+}
+
+.mobile-warnings-status--none {
+    color: var(--text-secondary);
+}
+
+.mobile-warnings-item p {
+    margin: 0;
+}
+
+.mobile-warnings-item--level-4 strong {
+    color: #f44336;
+}
+
+.mobile-warnings-item--level-3 strong {
+    color: #ff9800;
+}
+
+.mobile-warnings-validity {
+    font-size: clamp(0.95rem, 0.9rem + 0.35vw, 1.08rem);
+    color: var(--text-secondary);
+}
+
+.mobile-warnings-map {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--divider);
+    background: #fff;
+}
+
+.mobile-warnings-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .mobile-calendar,
 .mobile-messages {
     background: var(--surface-muted);

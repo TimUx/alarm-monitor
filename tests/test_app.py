@@ -28,6 +28,10 @@ def mock_network_calls():
     with (
         patch("alarm_dashboard.geocode.geocode_location", return_value=None),
         patch("alarm_dashboard.weather.fetch_weather", return_value=None),
+        patch(
+            "alarm_dashboard.warnings_cache.WarningsCache.get_warnings_for_coordinates",
+            return_value=None,
+        ),
     ):
         yield
 
