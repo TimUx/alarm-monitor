@@ -576,6 +576,19 @@ body {
     color: var(--text-secondary);
 }
 
+.idle-warnings-mock-badge {
+    margin: 0 0 0.75rem;
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    font-size: clamp(0.95rem, 0.85rem + 0.35vw, 1.15rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 .idle-warnings-item {
     display: grid;
     gap: 0.45rem;

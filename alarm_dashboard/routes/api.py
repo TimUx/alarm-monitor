@@ -141,27 +141,32 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
             lon,
             executor=_executor,
         )
-        warnings = _get_warnings_cache().get_warnings_for_coordinates(
-            config.dwd_warnings_url,
-            lat,
-            lon,
-            executor=_executor,
-        )
-        if warnings is None:
-            from ..bundesland import dwd_map_url, resolve_dwd_region
+        if effective_settings.get("dwd_warnings_mock"):
+            from ..dwd_warnings import build_mock_severe_warnings
 
-            region = resolve_dwd_region(lat, lon)
-            warnings = {
-                "active": False,
-                "bundesland": {
-                    "code": region.code,
-                    "name": region.name,
+            warnings = build_mock_severe_warnings(lat, lon)
+        else:
+            warnings = _get_warnings_cache().get_warnings_for_coordinates(
+                config.dwd_warnings_url,
+                lat,
+                lon,
+                executor=_executor,
+            )
+            if warnings is None:
+                from ..bundesland import dwd_map_url, resolve_dwd_region
+
+                region = resolve_dwd_region(lat, lon)
+                warnings = {
+                    "active": False,
+                    "bundesland": {
+                        "code": region.code,
+                        "name": region.name,
+                    }
+                    if region
+                    else None,
+                    "map_url": dwd_map_url(region.code) if region else None,
+                    "items": [],
                 }
-                if region
-                else None,
-                "map_url": dwd_map_url(region.code) if region else None,
-                "items": [],
-            }
     last_alarm_entry: Optional[Dict[str, Any]] = None
     if last_alarm:
         last_alarm_entry = _serialize_history_entry(last_alarm)
@@ -433,6 +438,7 @@ def api_get_settings():
         "ntfy_topic_url": effective_settings.get("ntfy_topic_url") or "",
         "ntfy_poll_interval": effective_settings.get("ntfy_poll_interval", 60),
         "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
+        "dwd_warnings_mock": effective_settings.get("dwd_warnings_mock", False),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -532,6 +538,9 @@ def api_update_settings():
             updates["message_default_ttl_minutes"] = ttl
         except (TypeError, ValueError):
             return jsonify({"error": "message_default_ttl_minutes must be an integer"}), 400
+
+    if "dwd_warnings_mock" in data:
+        updates["dwd_warnings_mock"] = bool(data["dwd_warnings_mock"])
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)

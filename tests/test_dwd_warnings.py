@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from alarm_dashboard.bundesland import resolve_dwd_region
 from alarm_dashboard.dwd_warnings import (
     SEVERE_WARNING_MIN_LEVEL,
+    build_mock_severe_warnings,
     warnings_for_location,
 )
 from alarm_dashboard.warnings_cache import WarningsCache
@@ -131,6 +132,17 @@ def test_warnings_cache_miss_triggers_background_fetch() -> None:
 
     assert result is None
     mock_executor.submit.assert_called_once()
+
+
+def test_build_mock_severe_warnings_returns_active_warning() -> None:
+    result = build_mock_severe_warnings(50.55, 9.0)
+
+    assert result["active"] is True
+    assert result["mock"] is True
+    assert result["bundesland"]["code"] == "hes"
+    assert len(result["items"]) == 1
+    assert result["items"][0]["level"] == 3
+    assert "Simulierte Testwarnung" in result["items"][0]["description"]
 
 
 def test_fetch_warnings_payload_decompresses_gzip() -> None:

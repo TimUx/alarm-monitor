@@ -24,6 +24,10 @@
                 document.getElementById('default_latitude').value = data.default_latitude || '';
                 document.getElementById('default_longitude').value = data.default_longitude || '';
                 document.getElementById('default_location_name').value = data.default_location_name || '';
+                const mockWarningsEl = document.getElementById('dwd_warnings_mock');
+                if (mockWarningsEl) {
+                    mockWarningsEl.checked = Boolean(data.dwd_warnings_mock);
+                }
                 document.getElementById('activation_groups').value = data.activation_groups || '';
                 const calendarEl = document.getElementById('calendar_urls');
                 if (calendarEl) { calendarEl.value = data.calendar_urls || ''; }
@@ -55,6 +59,7 @@
             ntfy_topic_url: formData.get('ntfy_topic_url') || '',
             ntfy_poll_interval: formData.get('ntfy_poll_interval') || '',
             message_default_ttl_minutes: formData.get('message_default_ttl_minutes') || '',
+            dwd_warnings_mock: formData.get('dwd_warnings_mock') === 'on',
         };
         const password = formData.get('settings_password') || '';
 

@@ -38,6 +38,7 @@ class AppConfig:
         "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/"
         "gemeinde_warnings_v2.json"
     )
+    dwd_warnings_mock: bool = False
     default_latitude: Optional[float] = None
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
@@ -142,6 +143,8 @@ def load_config() -> AppConfig:
             "gemeinde_warnings_v2.json"
         )
     )
+    dwd_warnings_mock_raw = (_get_env("DWD_WARNINGS_MOCK", default="false") or "false").lower()
+    dwd_warnings_mock = dwd_warnings_mock_raw in ("1", "true", "yes", "on")
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
@@ -253,6 +256,7 @@ def load_config() -> AppConfig:
         weather_base_url=weather_base_url,
         weather_params=weather_params,
         dwd_warnings_url=dwd_warnings_url,
+        dwd_warnings_mock=dwd_warnings_mock,
         default_latitude=default_latitude_float,
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,

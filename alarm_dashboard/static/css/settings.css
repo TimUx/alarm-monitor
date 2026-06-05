@@ -137,6 +137,22 @@ body {
     color: var(--text-primary);
 }
 
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.form-checkbox input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
 .form-group input {
     padding: 0.75rem 1rem;
     font-size: 1rem;

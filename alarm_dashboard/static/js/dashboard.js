@@ -1214,6 +1214,13 @@ function appendIdleNoWarningStatus(container) {
 function appendIdleActiveWarningsContent(container, warnings) {
     const regionName = warnings?.bundesland?.name;
 
+    if (warnings?.mock) {
+        const badge = document.createElement('p');
+        badge.className = 'idle-warnings-mock-badge';
+        badge.textContent = 'Simulierte Testwarnung';
+        container.appendChild(badge);
+    }
+
     warnings.items.forEach((item) => {
         const itemEl = document.createElement('article');
         itemEl.className = 'idle-warnings-item';

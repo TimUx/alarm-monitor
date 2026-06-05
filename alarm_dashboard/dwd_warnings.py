@@ -6,7 +6,7 @@ import gzip
 import json
 import logging
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Sequence
 
 import requests
@@ -206,10 +206,49 @@ def get_warnings_for_coordinates(
     return warnings_for_location(payload, lat, lon)
 
 
+def build_mock_severe_warnings(lat: float, lon: float) -> Dict[str, Any]:
+    """Return a simulated level-3 severe weather warning for UI testing."""
+    region = resolve_dwd_region(lat, lon)
+    region_code = region.code if region else "hes"
+    region_name = region.name if region else "Hessen"
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(hours=1)
+    end = now + timedelta(hours=6)
+
+    return {
+        "active": True,
+        "mock": True,
+        "bundesland": {
+            "code": region_code,
+            "name": region_name,
+        },
+        "map_url": dwd_map_url(region_code),
+        "items": [
+            {
+                "headline": "Amtliche UNWETTERWARNUNG vor STURMBÖEN",
+                "event": "STURMBÖEN",
+                "level": 3,
+                "level_label": WARNING_LEVEL_LABELS[3],
+                "description": (
+                    "Simulierte Testwarnung: Es treten Sturmböen mit Geschwindigkeiten "
+                    "bis 90 km/h (25 m/s, 48 kn, Bft 10) auf."
+                ),
+                "instruction": (
+                    "Dies ist nur ein Test. Aufenthalt im Freien vermeiden; "
+                    "lose Gegenstände sichern."
+                ),
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            }
+        ],
+    }
+
+
 __all__ = [
     "DEFAULT_DWD_WARNINGS_URL",
     "DwdWarningsError",
     "SEVERE_WARNING_MIN_LEVEL",
+    "build_mock_severe_warnings",
     "fetch_warnings_payload",
     "get_warnings_for_coordinates",
     "warnings_for_location",
