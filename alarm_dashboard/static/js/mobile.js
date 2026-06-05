@@ -225,7 +225,7 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
-if (mobileMapEl) {
+if (mobileMapEl && typeof L !== 'undefined') {
     mobileMap = L.map('mobile-map', {
         zoomControl: false,
     }).setView([51.1657, 10.4515], 6);
@@ -269,6 +269,8 @@ const MOBILE_SIDE_ROTATION_MS = 30000;
 function setMobileMode(mode) {
     const enteringIdle = mode === 'idle' && currentMobileMode !== 'idle';
     currentMobileMode = mode;
+    document.body.classList.toggle('mode-alarm', mode === 'alarm');
+    document.body.classList.toggle('mode-idle', mode === 'idle');
 
     if (mode === 'alarm') {
         mobileAlarmView.classList.remove('hidden');

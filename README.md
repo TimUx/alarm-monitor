@@ -120,45 +120,58 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 
 ## 📸 Screenshots
 
-### Dashboard – Alarmansicht
+Alle Ansichten mit Beispieldaten – im **Light-Modus** (Alarm, Verwaltung) und **Dark-Modus** (Ruhezustand, System-Dark-Theme). Vollständige Übersicht: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
+
+### Dashboard – Alarmansicht (Light)
 Bei einem aktiven Einsatz zeigt das Dashboard alle relevanten Informationen wie Stichwort, Einsatzort, alarmierte Fahrzeuge und Wetterdaten an.
 
-![Dashboard Alarmansicht](docs/screenshots/dashboard-alarm.png)
+![Dashboard Alarmansicht](docs/screenshots/dashboard-alarm-light.png)
 
-### Dashboard – Teilnehmerrückmeldungen
+### Dashboard – Teilnehmerrückmeldungen (Light)
 Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldungen der Einsatzkräfte in Echtzeit an.
 
-![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-feedback.png)
+![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-light.png)
 
-### Dashboard – Standardansicht (Idle)
-Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum und aktuelles Wetter. Links wird der letzte Einsatz angezeigt, rechts Termine und/oder DWD-Unwetterwarnungen (bei konfiguriertem Kalender im 30-Sekunden-Wechsel).
+### Dashboard – Ruhezustand (Dark)
+Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, Wetter, letzten Einsatz, Termine und DWD-Unwetterwarnungen.
 
-![Dashboard Standardansicht](docs/screenshots/dashboard-idle.png)
+![Dashboard Ruhezustand](docs/screenshots/dashboard-idle-dark.png)
 
-### Einsatzhistorie
+### Einsatzhistorie (Light / Dark)
 Übersichtliche Darstellung aller vergangenen Einsätze mit Filterfunktion und Sortierung.
 
-![Einsatzhistorie](docs/screenshots/history-alarm.png)
+| Light | Dark |
+|-------|------|
+| ![Einsatzhistorie Light](docs/screenshots/history-light.png) | ![Einsatzhistorie Dark](docs/screenshots/history-dark.png) |
 
-### Navigationsseite
+### Navigationsseite (Light / Dark)
 Dedizierte Navigationsseite mit interaktiver Karte und optionaler Routenplanung über OpenRouteService.
 
-![Navigation](docs/screenshots/navigation-page.png)
+| Light | Dark |
+|-------|------|
+| ![Navigation Light](docs/screenshots/navigation-light.png) | ![Navigation Dark](docs/screenshots/navigation-dark.png) |
 
-### Mobile Ansicht – Alarmansicht
-Optimiert für Smartphones und Tablets mit Touch-Bedienung, direkter Navigation und kompakter Darstellung.
+### Mobile – Alarmansicht (Light)
+Optimiert für Smartphones mit Touch-Bedienung, direkter Navigation und kompakter Darstellung.
 
-![Mobile Alarmansicht](docs/screenshots/mobile-alarm.png)
+![Mobile Alarmansicht](docs/screenshots/mobile-alarm-light.png)
 
-### Mobile Ansicht – Ruhezustand
-Mobile Ansicht im Ruhezustand mit Uhrzeit, Wetter und letztem Einsatz.
+### Mobile – Ruhezustand (Dark)
+Mobile Ansicht im Ruhezustand mit Uhrzeit, Wetter, letztem Einsatz und DWD-Unwetterwarnungen.
 
-![Mobile Idle](docs/screenshots/mobile-idle.png)
+![Mobile Ruhezustand](docs/screenshots/mobile-idle-dark.png)
 
-### Einstellungen
-Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen inkl. Kalender-URLs, ntfy.sh-Integration und Logo-Upload. Änderungen werden sofort übernommen und persistent gespeichert.
+### Mobile – Unwetterwarnung (Dark)
+Aktive DWD-Unwetterwarnung mit Warnkarte, optimiert für Smartphones im Hochformat.
 
-![Einstellungen](docs/screenshots/settings-page.png)
+![Mobile Unwetterwarnung](docs/screenshots/mobile-unwetter-dark.png)
+
+### Einstellungen (Light / Dark)
+Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen inkl. Kalender-URLs, ntfy.sh-Integration und Logo-Upload.
+
+| Light | Dark |
+|-------|------|
+| ![Einstellungen Light](docs/screenshots/settings-light.png) | ![Einstellungen Dark](docs/screenshots/settings-dark.png) |
 
 ---
 
@@ -741,7 +754,7 @@ GET /api/stream
 # data: {"type": "connected"}
 # data: {"type": "alarm", "alarm": { ... }, "coordinates": { ... }, "weather": { ... }, "received_at": "..."}
 # data: {"type": "idle"}
-# : heartbeat   (alle 30 Sekunden)
+# data: {"type": "heartbeat"}   (alle 30 Sekunden)
 
 # Max. 20 gleichzeitige Verbindungen; bei Überschreitung: 503
 ```
@@ -850,8 +863,9 @@ GET /api/settings
   "default_latitude": 51.2345,
   "default_longitude": 9.8765,
   "default_location_name": "Feuerwache Willingshausen",
-  "activation_groups": ["WIL26", "WIL41"],
-  "calendar_urls": ["https://calendar.google.com/..."],
+  "activation_groups": "WIL26,WIL41",
+  "calendar_urls": "https://calendar.google.com/...\nhttps://nextcloud.example.com/...",
+  "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/meine-fw",
   "ntfy_poll_interval": 60,
   "message_default_ttl_minutes": 60
@@ -886,6 +900,13 @@ X-CSRF-Token: <csrf-token>
 
 **Hinweis**: Das CSRF-Token wird stündlich generiert und ist auf der `/settings`-Seite eingebettet. Es wird automatisch vom Browser mitgesendet.
 
+#### Wappen abrufen
+```bash
+GET /api/logo
+
+# Liefert das hochgeladene Wappen (instance/custom_logo.*) oder das Standard-Wappen
+```
+
 #### Logo hochladen/löschen
 ```bash
 # Logo hochladen
@@ -894,7 +915,7 @@ Content-Type: multipart/form-data
 X-Settings-Password: <settings-passwort>
 X-CSRF-Token: <csrf-token>
 
-# Formulardaten: file=<Bilddatei> (PNG/JPEG/WebP/SVG, max. 2 MB)
+# Formulardaten: logo=<Bilddatei> (PNG/JPEG/WebP/SVG, max. 2 MB)
 
 # Logo auf Standard zurücksetzen
 DELETE /api/settings/logo
@@ -1045,7 +1066,7 @@ cd alarm-messenger
 
 # Konfiguration
 cp .env.example .env
-nano .env  # API_SECRET_KEY setzen
+nano .env  # ALARM_DASHBOARD_MESSENGER_API_KEY setzen (identisch mit alarm-messenger API-Key)
 
 # Starten
 docker compose up -d
@@ -1090,7 +1111,8 @@ Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION
 
 ### Spezial-Dokumentation
 - **[📱 Messenger-Integration](docs/MESSENGER_INTEGRATION.md)** – Details zur Integration mit alarm-messenger
-- **[📸 Screenshots](docs/SCREENSHOTS.md)** – Visuelle Dokumentation aller Ansichten
+- **[🍓 Raspberry Pi Setup](docs/RASPBERRY_PI_SETUP.md)** – Kiosk-Modus, Docker und Wachen-Display am RPi
+- **[📸 Screenshots](docs/SCREENSHOTS.md)** – Visuelle Dokumentation aller Ansichten (Light & Dark)
 - **[🤝 Contributing](CONTRIBUTING.md)** – Beiträge zum Projekt
 
 ### Externe Repositorys
@@ -1114,37 +1136,34 @@ Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION
 
 ```
 alarm-monitor/
-├── alarm_dashboard/           # Hauptanwendung
-│   ├── app.py                # Flask-Anwendung
-│   ├── config.py             # Konfiguration
-│   ├── storage.py            # Alarm-Speicherung
-│   ├── geocode.py            # Geokodierung
-│   ├── weather.py            # Wetterabfrage (Open-Meteo)
-│   ├── weather_cache.py      # Wetter-Cache
-│   ├── dwd_warnings.py       # DWD-Unwetterwarnungen
-│   ├── warnings_cache.py     # DWD-Warnungs-Cache
-│   ├── bundesland.py         # Bundesland-Erkennung für Warnkarten
-│   ├── messenger.py          # Messenger-Integration
-│   ├── static/               # CSS, JS, Bilder
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── img/
-│   └── templates/            # HTML-Templates
-│       ├── dashboard.html
-│       ├── mobile.html
-│       ├── history.html
-│       └── navigation.html
-├── tests/                    # Unit-Tests
-├── docs/                     # Dokumentation
-│   ├── screenshots/
-│   └── MESSENGER_INTEGRATION.md
-├── instance/                 # Persistente Daten (nicht im Repo)
-│   └── alarm_history.json
-├── .env.example              # Beispiel-Konfiguration
-├── requirements.txt          # Python-Abhängigkeiten
-├── Dockerfile                # Container-Image
-├── compose.yaml              # Docker Compose
-└── README.md                 # Diese Datei
+├── alarm_dashboard/              # Hauptanwendung
+│   ├── app.py                   # Flask-App-Factory
+│   ├── config.py                # Konfiguration
+│   ├── routes/                  # HTTP-Routen (views.py, api.py)
+│   ├── alarm_processor.py       # Alarm-Validierung und -Verarbeitung
+│   ├── storage.py               # Alarm- und Einstellungs-Speicherung
+│   ├── message_store.py         # Dashboard-Nachrichten
+│   ├── geocode.py               # Geokodierung (Nominatim)
+│   ├── weather.py / weather_cache.py
+│   ├── dwd_warnings.py / warnings_cache.py / bundesland.py
+│   ├── calendar_service.py      # iCal-Kalender
+│   ├── messenger.py             # alarm-messenger Integration
+│   ├── ntfy_client.py           # ntfy.sh Polling
+│   ├── static/                  # CSS, JS, Vendor (Leaflet)
+│   └── templates/               # HTML-Templates
+│       ├── dashboard.html, mobile.html, history.html
+│       ├── navigation.html, settings.html
+├── scripts/
+│   └── capture_screenshots.py   # Dokumentations-Screenshots
+├── tests/                       # Unit-Tests
+├── docs/                        # Dokumentation
+├── instance/                    # Persistente Daten (nicht im Repo)
+│   ├── alarm_history.json
+│   ├── settings.json
+│   └── custom_logo.*            # Hochgeladenes Wappen
+├── .env.example
+├── compose.yaml                 # Service: alarm-dashboard
+└── README.md
 ```
 
 ### Lokale Entwicklung
@@ -1171,12 +1190,13 @@ curl -X POST http://localhost:8000/api/alarm \
   -H "Content-Type: application/json" \
   -d '{
     "incident_number": "TEST-001",
-    "keyword": "F3Y",
-    "keyword_sub": "Brand",
+    "keyword": "B3 - Wohnungsbrand",
+    "keyword_secondary": "Menschenleben in Gefahr",
+    "diagnosis": "Test-Alarm für Entwicklung",
     "location": "Teststraße 1, 12345 Teststadt",
     "latitude": 51.2345,
     "longitude": 9.8765,
-    "description": "Test-Alarm für Entwicklung"
+    "groups": ["LF20-MST"]
   }'
 ```
 

@@ -1,421 +1,253 @@
 # 📸 Screenshot-Dokumentation
 
 Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems.
-Alle Screenshots wurden in **Full HD (1920×1080)** aufgenommen.
+
+**Auflösungen:**
+- Desktop: **1920×1080** (Full HD)
+- Mobile: **390×844** (iPhone 14)
+
+**Farbmodi:**
+- **Light** – Helles Theme (Alarmansichten, Verwaltungsseiten bei hellem System-Theme)
+- **Dark** – Dunkles Theme (Ruhezustand Dashboard/Mobile, Verwaltungsseiten bei dunklem System-Theme)
+
+> Dashboard und Mobile wechseln den Modus automatisch: **Alarm = Light**, **Idle/Unwetter = Dark**.
+> Historie, Navigation und Einstellungen folgen dem System-Theme (`prefers-color-scheme`).
 
 ---
 
 ## Inhaltsverzeichnis
 
+- [Übersicht](#übersicht)
 - [Dashboard-Ansichten](#dashboard-ansichten)
 - [Mobile-Ansichten](#mobile-ansichten)
 - [Historie-Ansicht](#historie-ansicht)
 - [Navigations-Ansicht](#navigations-ansicht)
 - [Einstellungs-Ansicht](#einstellungs-ansicht)
-- [Admin-Endpunkte](#admin-endpunkte)
 - [Screenshots erstellen](#screenshots-erstellen)
+
+---
+
+## Übersicht
+
+| Datei | Modus | Auflösung | Beschreibung |
+|-------|-------|-----------|--------------|
+| `dashboard-alarm-light.png` | Light | 1920×1080 | Dashboard – Alarmansicht |
+| `dashboard-messenger-light.png` | Light | 1920×1080 | Dashboard – Teilnehmerrückmeldungen |
+| `dashboard-idle-dark.png` | Dark | 1920×1080 | Dashboard – Ruhezustand |
+| `mobile-alarm-light.png` | Light | 390×844 | Mobile – Alarmansicht |
+| `mobile-idle-dark.png` | Dark | 390×844 | Mobile – Ruhezustand |
+| `mobile-unwetter-dark.png` | Dark | 390×844 | Mobile – Unwetterwarnung |
+| `history-light.png` | Light | 1920×1080 | Einsatzhistorie |
+| `history-dark.png` | Dark | 1920×1080 | Einsatzhistorie |
+| `navigation-light.png` | Light | 1920×1080 | Navigationsseite |
+| `navigation-dark.png` | Dark | 1920×1080 | Navigationsseite |
+| `settings-light.png` | Light | 1920×1080 | Einstellungen |
+| `settings-dark.png` | Dark | 1920×1080 | Einstellungen |
 
 ---
 
 ## Dashboard-Ansichten
 
-### Dashboard – Alarmansicht (Aktiver Einsatz)
+### Dashboard – Alarmansicht (Light)
 
-**Datei**: `docs/screenshots/dashboard-alarm.png`  
-**Auflösung**: 1920×1080 (Full HD)
-
-**Beschreibung**: Vollbild-Ansicht eines aktiven Alarms mit allen relevanten Informationen.
+**Datei**: `docs/screenshots/dashboard-alarm-light.png`
 
 **Angezeigte Elemente**:
-- ✅ Alarm-Header mit Stichwort, Unterstichwort und Zeitstempel
-- ✅ Diagnose und Bemerkungen (hervorgehoben)
-- ✅ Vollständige Adressinformationen (Ort, Ortsteil, Straße, Zusatz)
-- ✅ Alarmierte Fahrzeuge (AAO)
-- ✅ Interaktive Karte mit Einsatzort-Marker (wenn Koordinaten vorhanden)
-- ✅ Wetterdaten am Einsatzort (Temperatur, Niederschlag, Wind)
-- ✅ Navigations-Button (öffnet Navigationsseite)
-- ✅ Bottom-Navigation (Home, Navigation, Historie, Einstellungen)
+- Alarm-Header mit Stichwort, Unterstichwort und Zeitstempel
+- Diagnose und Bemerkungen
+- Vollständige Adressinformationen und alarmierte Fahrzeuge
+- Interaktive Karte mit Einsatzort-Marker
+- Wetterdaten am Einsatzort
+- Bottom-Navigation
 
-**Verwendung**: Hauptanzeige für Alarmdarstellung auf großen Displays
-
-![Dashboard Alarmansicht](screenshots/dashboard-alarm.png)
+![Dashboard Alarmansicht (Light)](screenshots/dashboard-alarm-light.png)
 
 ---
 
-### Dashboard – Teilnehmerrückmeldungen (mit alarm-messenger)
+### Dashboard – Teilnehmerrückmeldungen (Light)
 
-**Datei**: `docs/screenshots/dashboard-messenger-feedback.png`  
-**Auflösung**: 1920×1080 (Full HD)
-
-**Beschreibung**: Alarmansicht mit zusätzlicher Anzeige von Teilnehmerrückmeldungen vom alarm-messenger (wenn konfiguriert).
+**Datei**: `docs/screenshots/dashboard-messenger-light.png`
 
 **Angezeigte Elemente**:
-- ✅ Alle Elemente der Standard-Alarmansicht
-- ✅ **Zusätzliches Rückmeldungs-Panel**:
-  - Namen der Teilnehmer
-  - Zusagen (✓ grün)
-  - Absagen (✗ rot)
-  - Ausstehende Rückmeldungen (⏳ grau)
-  - Qualifikationen (z.B. AGT = Atemschutzgeräteträger, Ma = Maschinist)
-  - Führungsrollen (z.B. Zugführer, Gruppenführer)
-  - Zusammenfassung (X Zusagen • Y Absagen • Z Ausstehend)
+- Alle Elemente der Standard-Alarmansicht
+- Teilnehmerrückmeldungs-Panel mit Qualifikationen und Führungsrollen
 
-**Voraussetzung**: alarm-messenger muss konfiguriert sein (`ALARM_DASHBOARD_MESSENGER_SERVER_URL`)
-
-**Verwendung**: Einsatzleitung kann sehen, wer verfügbar ist und welche Qualifikationen vorhanden sind
-
-![Dashboard mit Teilnehmerrückmeldungen](screenshots/dashboard-messenger-feedback.png)
+![Dashboard mit Teilnehmerrückmeldungen (Light)](screenshots/dashboard-messenger-light.png)
 
 ---
 
-### Dashboard – Idle-Ansicht (Ruhezustand)
+### Dashboard – Ruhezustand (Dark)
 
-**Datei**: `docs/screenshots/dashboard-idle.png`  
-**Auflösung**: 1920×1080 (Full HD)
-
-**Beschreibung**: Standardansicht wenn kein aktiver Alarm vorliegt oder der letzte Alarm die maximale Anzeigedauer überschritten hat.
+**Datei**: `docs/screenshots/dashboard-idle-dark.png`
 
 **Angezeigte Elemente**:
-- ✅ Große digitale Uhr (Stunden:Minuten:Sekunden)
-- ✅ Aktuelles Datum (Wochentag, TT.MM.YYYY)
-- ✅ Vereinswappen/Logo (individuell anpassbar über Einstellungen)
-- ✅ Feuerwehr-Name
-- ✅ Lokales Wetter am Standort (wenn Koordinaten konfiguriert):
-  - Temperatur, Wetter-Icon, Niederschlagswahrscheinlichkeit
-- ✅ **Letzter Einsatz** (kompakte Anzeige mit Zeitstempel und Stichwort)
-- ✅ **Nächste Termine** aus iCal-Kalendern (wenn konfiguriert)
-- ✅ **Dashboard-Nachrichten** (von ntfy.sh oder API, wenn aktiv)
-- ✅ Versions-Anzeige im Footer
+- Digitale Uhr und Datum
+- Aktuelles Wetter am Standort
+- Letzter Einsatz
+- Nächste Termine (Kalender)
+- DWD-Unwetterwarnungen (Testmodus)
+- Dashboard-Nachrichten
 
-**Verwendung**: Permanente Anzeige in der Wache, wenn kein Einsatz aktiv ist
-
-![Dashboard Standardansicht](screenshots/dashboard-idle.png)
+![Dashboard Ruhezustand (Dark)](screenshots/dashboard-idle-dark.png)
 
 ---
 
 ## Mobile-Ansichten
 
-### Mobile – Idle-Ansicht
+### Mobile – Ruhezustand (Dark)
 
-**Datei**: `docs/screenshots/mobile-idle.png`  
-**Auflösung**: 390×844 (iPhone 14)
-
-**Beschreibung**: Mobiloptimierte Ansicht für Smartphones und Tablets im Ruhezustand.
+**Datei**: `docs/screenshots/mobile-idle-dark.png`
 
 **Angezeigte Elemente**:
-- ✅ Responsive Header mit Feuerwehr-Name und Wappen
-- ✅ Touch-freundliche Bedienelemente
-- ✅ Digitale Uhr und Datum
-- ✅ Aktuelles Wetter
-- ✅ Letzter Einsatz (kompakt)
-- ✅ Nächste Termine (Kalender)
-- ✅ Nachrichten / Meldungen
-- ✅ Navigation zur Historie und Einstellungen
+- Responsive Header mit Feuerwehr-Name und Wappen
+- Digitale Uhr und Datum
+- Aktuelles Wetter und letzter Einsatz
+- DWD-Unwetterwarnungen
+- Nachrichten / Meldungen
+- Feste Bottom-Navigation mit Safe-Area
 
-**Besonderheiten**:
-- Optimiert für Touch-Bedienung (Hochformat)
-- Automatische Schriftgrößenanpassung
-- Kalender- und Nachrichten-Widgets identisch zum Desktop
-
-**Verwendung**: Zugriff von Smartphones und Tablets, ideal für unterwegs
-
-![Mobile Ansicht Idle](screenshots/mobile-idle.png)
+![Mobile Ruhezustand (Dark)](screenshots/mobile-idle-dark.png)
 
 ---
 
-### Mobile – Alarmansicht
+### Mobile – Unwetterwarnung (Dark)
 
-**Datei**: `docs/screenshots/mobile-alarm.png`  
-**Auflösung**: 390×844 (iPhone 14)
-
-**Beschreibung**: Mobiloptimierte Alarmdarstellung.
+**Datei**: `docs/screenshots/mobile-unwetter-dark.png`
 
 **Angezeigte Elemente**:
-- ✅ Kompakter Alarm-Header (Stichwort, Unterstichwort, Zeitstempel)
-- ✅ Diagnose und Bemerkungen
-- ✅ Vollständige Adressinformationen
-- ✅ Alarmierte Fahrzeuge (kompakt)
-- ✅ **"Navigation starten" Button** (öffnet Apple Karten/Google Maps)
-- ✅ Interaktive Karte (wenn Koordinaten vorhanden)
-- ✅ Wetterdaten am Einsatzort
+- Unwetter-Überschrift mit Bundesland
+- Warnstufe, Headline und Beschreibung
+- Gültigkeitszeitraum und DWD-Warnkarte
+- Testmodus-Badge bei simulierter Warnung
 
-**Verwendung**: Schneller Zugriff auf Alarminfos und Navigation von unterwegs
+**Voraussetzung**: `ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true` oder Einstellungen → „Unwetterwarnung simulieren (Test)"
 
-![Mobile Alarmansicht](screenshots/mobile-alarm.png)
+![Mobile Unwetterwarnung (Dark)](screenshots/mobile-unwetter-dark.png)
+
+---
+
+### Mobile – Alarmansicht (Light)
+
+**Datei**: `docs/screenshots/mobile-alarm-light.png`
+
+**Angezeigte Elemente**:
+- Kompakter Alarm-Header mit Stichwort und Diagnose
+- Vollständige Adressinformationen und alarmierte Fahrzeuge
+- „Navigation starten"-Button
+- Interaktive Karte und Wetterdaten am Einsatzort
+
+![Mobile Alarmansicht (Light)](screenshots/mobile-alarm-light.png)
 
 ---
 
 ## Historie-Ansicht
 
-### Einsatzhistorie
+### Einsatzhistorie (Light / Dark)
 
-**Datei**: `docs/screenshots/history-alarm.png`  
-**Auflösung**: 1920×1080 (Full HD)
-
-**Beschreibung**: Tabellarische Übersicht aller vergangenen Einsätze mit Filterfunktion.
+**Dateien**:
+- `docs/screenshots/history-light.png`
+- `docs/screenshots/history-dark.png`
 
 **Angezeigte Elemente**:
-- ✅ Such-/Filterfeld (Suche nach Stichwort, Ort, Diagnose)
-- ✅ Sortierbare Tabellenspalten:
-  - Datum/Uhrzeit
-  - Stichwort
-  - Ort
-  - Diagnose
-  - Alarmierte Fahrzeuge
-- ✅ Pagination (bei vielen Einträgen)
-- ✅ Bottom-Navigation
+- Tabellarische Übersicht vergangener Einsätze
+- Datum, Stichwort, Ort, Diagnose, alarmierte Fahrzeuge
+- Bottom-Navigation
 
-**Funktionen**:
-- Sortierung nach Spalten (Klick auf Spaltenheader)
-- Echtzeit-Filterung über Suchfeld
-- Responsive Layout für mobile Geräte
-
-**Verwendung**: Nachschlagen vergangener Einsätze, Dokumentation
-
-![Einsatzhistorie](screenshots/history-alarm.png)
+| Light | Dark |
+|-------|------|
+| ![Historie Light](screenshots/history-light.png) | ![Historie Dark](screenshots/history-dark.png) |
 
 ---
 
 ## Navigations-Ansicht
 
-### Navigation – Routenplanung
+### Navigation – Routenplanung (Light / Dark)
 
-**Datei**: `docs/screenshots/navigation-page.png`  
-**Auflösung**: 1920×1080 (Full HD)
-
-**Beschreibung**: Dedizierte Navigationsseite mit Routenplanung zum Einsatzort.
+**Dateien**:
+- `docs/screenshots/navigation-light.png`
+- `docs/screenshots/navigation-dark.png`
 
 **Angezeigte Elemente**:
-- ✅ Großformatige interaktive Karte (Leaflet/OpenStreetMap)
-- ✅ Automatische Übernahme des Einsatzorts aus dem aktiven Alarm
-- ✅ Routenplanung (wenn OpenRouteService konfiguriert via `ALARM_DASHBOARD_ORS_API_KEY`):
-  - Start- und Zielpunkt markiert
-  - Route eingezeichnet
-  - Entfernungsangabe (km) und geschätzte Fahrzeit
-  - Schritt-für-Schritt-Navigation
-- ✅ Links zur externen Navigation (Apple Karten/Google Maps)
-- ✅ Bottom-Navigation (Zurück-Button)
+- Interaktive Karte mit Einsatzort-Marker
+- Automatische Übernahme des aktiven Alarms
+- Links zur externen Navigation
 
-**Verwendung**: Detaillierte Routenplanung auf Desktop, z.B. für Einsatzleitung
-
-![Navigation](screenshots/navigation-page.png)
+| Light | Dark |
+|-------|------|
+| ![Navigation Light](screenshots/navigation-light.png) | ![Navigation Dark](screenshots/navigation-dark.png) |
 
 ---
 
 ## Einstellungs-Ansicht
 
-### Einstellungen
+### Einstellungen (Light / Dark)
 
-**Datei**: `docs/screenshots/settings-page.png`  
-**Auflösung**: 1920×1080 (Full HD)
+**Dateien**:
+- `docs/screenshots/settings-light.png`
+- `docs/screenshots/settings-dark.png`
 
-**Beschreibung**: Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen.
+**Angezeigte Elemente**:
+- Feuerwehr-Name und Standortkoordinaten
+- Gruppen-Filter, Kalender-URLs, ntfy.sh-Integration
+- Unwetter-Simulation (Testmodus)
+- Logo-Verwaltung
 
-**Konfigurierbare Bereiche**:
-
-**Allgemeine Einstellungen**:
-- ✅ Einstellungs-Passwort (Authentifizierung)
-- ✅ Feuerwehr-Name
-- ✅ Standard-Koordinaten (Breitengrad/Längengrad) für Idle-Wetter
-- ✅ Standard-Standortname
-
-**Alarmfilterung**:
-- ✅ Gruppen-Filter (TME-Codes, kommagetrennt)
-
-**Kalender-Integration**:
-- ✅ Kalender-URLs (iCal, eine URL pro Zeile)
-
-**Nachrichten-Integration (ntfy.sh)**:
-- ✅ ntfy Topic-URL
-- ✅ ntfy Abfrage-Intervall (Sekunden)
-- ✅ Standard-Anzeigedauer für Nachrichten (Minuten)
-
-**Logo-Verwaltung**:
-- ✅ Logo-Vorschau (aktuell verwendetes Logo)
-- ✅ Neues Logo hochladen (PNG, JPEG, WebP, SVG, max. 2 MB)
-- ✅ Standard-Logo wiederherstellen
-
-**Hinweis**: Einstellungen werden sofort übernommen und persistent gespeichert. Das Passwort wird in `ALARM_DASHBOARD_SETTINGS_PASSWORD` konfiguriert.
-
-![Einstellungen](screenshots/settings-page.png)
-
----
-
-## Admin-Endpunkte
-
-### Health-Check
-
-**Endpoint**: `GET /health`
-
-**Beschreibung**: Minimale JSON-Antwort für Container-Health-Checks.
-
-```json
-{"status": "ok"}
-```
-
-**Verwendung**: Docker Health-Checks, Monitoring-Systeme, Load-Balancer
-
----
-
-### Prometheus-Metriken
-
-**Endpoint**: `GET /api/metrics`  
-**Authentifizierung**: `X-Metrics-Token: <ALARM_DASHBOARD_METRICS_TOKEN>` Header  
-**Aktivierung**: Umgebungsvariable `ALARM_DASHBOARD_METRICS_TOKEN` setzen
-
-**Verfügbare Metriken**:
-```
-alarm_dashboard_alarms_received_total   # Empfangene Alarme (Counter)
-alarm_dashboard_alarms_stored_total     # Gespeicherte Alarme (Counter)
-alarm_dashboard_geocode_errors_total    # Geokodierungs-Fehler (Counter)
-alarm_dashboard_weather_errors_total    # Wetter-Fehler (Counter)
-alarm_dashboard_sse_active_connections  # Aktive SSE-Verbindungen (Gauge)
-alarm_dashboard_history_size            # Anzahl Historieneinträge (Gauge)
-```
-
-**Verwendung**: Prometheus/Grafana-Integration, Betriebsmonitoring
+| Light | Dark |
+|-------|------|
+| ![Einstellungen Light](screenshots/settings-light.png) | ![Einstellungen Dark](screenshots/settings-dark.png) |
 
 ---
 
 ## Screenshots erstellen
 
-### Vorbereitung
+### Automatisch (empfohlen)
 
-1. **App starten** (lokale Entwicklungsumgebung):
+```bash
+# Aus dem Projektverzeichnis, mit aktivierter venv:
+pip install playwright
+playwright install chromium
+python scripts/capture_screenshots.py
+```
+
+Das Skript startet einen Testserver, befüllt Beispieldaten und erstellt alle Screenshots in `docs/screenshots/`.
+
+### Manuell
+
+1. **App starten** mit Testdaten und Mock-Warnungen:
 ```bash
 ALARM_DASHBOARD_API_KEY=test-key \
 ALARM_DASHBOARD_SETTINGS_PASSWORD=test-pass \
 ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Musterstadt \
+ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true \
 python -m flask --app alarm_dashboard.app:create_app run --port 8000
 ```
 
-2. **Testdaten einfügen**:
-```bash
-# Testalarm senden
-curl -X POST http://localhost:8000/api/alarm \
-  -H "X-API-Key: test-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "incident_number": "2026-TEST-001",
-    "keyword": "B3 - Wohnungsbrand",
-    "keyword_secondary": "Menschenleben in Gefahr",
-    "diagnosis": "Wohnungsbrand",
-    "remark": "2 Personen gerettet",
-    "location": "Musterstraße 42, 12345 Musterstadt",
-    "latitude": 51.2345,
-    "longitude": 9.8765,
-    "groups": ["LF20-MST", "TLF4000-MST"],
-    "dispatch_group_codes": ["MST26"]
-  }'
-
-# Testnachricht hinzufügen
-curl -X POST http://localhost:8000/api/messages \
-  -H "X-API-Key: test-key" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Dienstbesprechung morgen 19:00 Uhr!", "ttl_minutes": 1440}'
-```
+2. **Testalarm senden** (siehe README oder `scripts/capture_screenshots.py` für Beispiel-Payloads)
 
 3. **Auflösung einstellen**:
-   - Desktop: **1920×1080 (Full HD)**
-   - Mobile: **390×844 (iPhone 14)** oder ähnlich
+   - Desktop: 1920×1080
+   - Mobile: 390×844
 
-### Screenshots automatisch erstellen (Playwright)
+4. **Farbmodus**:
+   - Light: Alarmansichten oder helles System-Theme
+   - Dark: Ruhezustand oder dunkles System-Theme (DevTools → Rendering → `prefers-color-scheme: dark`)
 
-```bash
-pip install playwright
-playwright install chromium
+### Benennung
 
-python3 << 'EOF'
-import asyncio
-from playwright.async_api import async_playwright
+Format: `<ansicht>-<light|dark>.png`
 
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(args=["--no-sandbox"])
-        
-        # Desktop Full HD
-        ctx = await browser.new_context(viewport={"width": 1920, "height": 1080})
-        page = await ctx.new_page()
-        
-        await page.goto("http://localhost:8000/")
-        await page.wait_for_timeout(3000)
-        await page.screenshot(path="docs/screenshots/dashboard-idle.png")
-        
-        await ctx.close()
-        await browser.close()
+Beispiele: `dashboard-alarm-light.png`, `history-dark.png`, `mobile-unwetter-dark.png`
 
-asyncio.run(main())
-EOF
-```
+### Checkliste bei UI-Änderungen
 
-### Nachbearbeitung
-
-- **Sensible Daten**: Echte Adressen und Namen durch Beispieldaten ersetzen
-- **Optimieren**: `optipng screenshot.png` oder ImageMagick
-- **Dateigröße**: Ziel < 500 KB pro Screenshot
-
-### Speichern und Einbinden
-
-**Speicherort**: `docs/screenshots/`
-
-**In Dokumentation einbinden**:
-```markdown
-![Alt-Text](screenshots/dateiname.png)
-```
-
----
-
-## Checkliste für neue Screenshots
-
-Bei UI-Änderungen:
-
-- [ ] Screenshots mit Testdaten erstellt (1920×1080 Desktop, 390×844 Mobile)
+- [ ] `python scripts/capture_screenshots.py` ausgeführt
 - [ ] Beispieldaten verwendet (keine echten Einsatzdaten)
-- [ ] Bilder optimiert (Dateigröße < 500 KB)
-- [ ] In `docs/screenshots/` gespeichert
-- [ ] In Dokumentation referenziert:
-  - [ ] README.md
-  - [ ] SCREENSHOTS.md (dieser Guide)
-
----
-
-## Aktueller Screenshot-Status
-
-| Datei | Status | Auflösung | Beschreibung |
-|-------|--------|-----------|--------------|
-| `dashboard-alarm.png` | ✅ Aktuell | 1920×1080 | Dashboard – Alarmansicht |
-| `dashboard-idle.png` | ✅ Aktuell | 1920×1080 | Dashboard – Ruhezustand |
-| `dashboard-messenger-feedback.png` | ✅ Aktuell | 1920×1080 | Alarmansicht mit Teilnehmerrückmeldungen |
-| `history-alarm.png` | ✅ Aktuell | 1920×1080 | Einsatzhistorie |
-| `navigation-page.png` | ✅ Aktuell | 1920×1080 | Navigationsseite |
-| `settings-page.png` | ✅ Aktuell | 1920×1080 | Einstellungsseite |
-| `mobile-idle.png` | ✅ Aktuell | 390×844 | Mobile – Ruhezustand |
-| `mobile-alarm.png` | ✅ Aktuell | 390×844 | Mobile – Alarmansicht |
-
----
-
-## Best Practices
-
-### DOs ✅
-
-- **Anonymisierte Beispieldaten** verwenden
-- **Full HD (1920×1080)** für Desktop-Screenshots
-- **Vollständige Ansicht** zeigen (kein Zuschneiden)
-- **Optimierte Dateigröße** (< 500 KB)
-
-### DON'Ts ❌
-
-- **Keine echten Einsatzdaten** (Datenschutz!)
-- **Keine persönlichen Informationen** (echte Namen, Adressen)
-- **Keine API-Keys oder Passwörter** sichtbar
-- **Keine übermäßig großen Dateien** (> 1 MB)
+- [ ] Light- und Dark-Varianten aktualisiert (wo zutreffend)
+- [ ] Referenzen in README.md und diesem Guide angepasst
 
 ---
 
 <div align="center">
-
-**Beitragen?**  
-Erstellen Sie verbesserte Screenshots und öffnen Sie einen [Pull Request](../CONTRIBUTING.md)!
 
 [⬆ Zurück nach oben](#-screenshot-dokumentation)
 

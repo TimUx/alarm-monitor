@@ -195,6 +195,14 @@ Bearbeiten Sie die CSS-Variablen in `alarm_dashboard/static/css/dashboard.css`:
 }
 ```
 
+### Wie funktionieren Light- und Dark-Modus?
+
+Das Dashboard und die Mobile-Ansicht wechseln automatisch:
+- **Light** – bei aktivem Alarm (helle Oberfläche)
+- **Dark** – im Ruhezustand/Idle (dunkle Oberfläche, `body.mode-idle`)
+
+Historie, Navigation und Einstellungen folgen dem **System-Theme** (`prefers-color-scheme`). Screenshots aller Modi: [SCREENSHOTS.md](SCREENSHOTS.md).
+
 ---
 
 ## Betrieb
@@ -239,9 +247,11 @@ cp ~/alarm-monitor/instance/alarm_history.json ~/backup/
 
 ### Wie viele Clients kann das System gleichzeitig bedienen?
 
-Ein Raspberry Pi 4 kann problemlos **10-20 Clients** gleichzeitig bedienen. Bei mehr Clients:
-- Verwenden Sie einen stärkeren Server
-- Oder skalieren Sie horizontal (mehrere alarm-monitor Instanzen hinter Load Balancer)
+Ein Raspberry Pi 4 kann problemlos **10–20 Clients** gleichzeitig bedienen. Bei mehr Clients:
+- Verwenden Sie einen stärkeren Server (mehr CPU/RAM)
+- Erhöhen Sie Gunicorn-Threads (`ALARM_DASHBOARD_GUNICORN_THREADS`)
+
+**Hinweis:** Horizontale Skalierung (mehrere Instanzen) wird nicht empfohlen — Alarmzustand, SSE und Caches liegen im Prozess-Speicher. Immer **1 Gunicorn-Worker** verwenden.
 
 ### Wie kann ich das Dashboard automatisch aktualisieren lassen?
 
@@ -309,7 +319,7 @@ Ja, wenn die Leitstelle E-Mails mit strukturierten Daten sendet. Falls das Forma
 
 ## Fehlerbehebung
 
-### Dashboard zeigt "Verbindung fehlgeschlagen"
+### Dashboard zeigt „Verbindung unterbrochen – Seite wird neu geladen…"
 
 **Ursachen**:
 1. alarm-monitor Service läuft nicht
@@ -519,45 +529,28 @@ Workaround: Eigene Anpassung in `storage.py` möglich.
 
 ### Wie kann ich das System horizontal skalieren?
 
+**Nicht empfohlen.** Der Alarm Monitor hält aktiven Alarm, SSE-Abonnements und Caches im Arbeitsspeicher eines Prozesses. Mehrere Instanzen ohne Sticky Sessions führen zu inkonsistenten Anzeigen.
+
 Für größere Installationen:
-
-```yaml
-# compose.yaml
-services:
-  alarm-monitor-1:
-    build: .
-    volumes:
-      - shared-history:/app/instance
-  
-  alarm-monitor-2:
-    build: .
-    volumes:
-      - shared-history:/app/instance
-  
-  nginx:
-    image: nginx
-    ports:
-      - "8000:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-
-volumes:
-  shared-history:
-```
+- Stärkere Hardware (x86-Server statt Raspberry Pi)
+- Mehr Gunicorn-Threads (`ALARM_DASHBOARD_GUNICORN_THREADS`, Standard: 8)
+- Mehr gleichzeitige Dashboard-Clients (SSE + Polling) auf **einer** Instanz
 
 ### Wie integriere ich Prometheus-Monitoring?
 
-Aktuell nicht nativ unterstützt. Geplant für zukünftige Versionen.
+Nativ unterstützt über `GET /api/metrics` (aktivieren mit `ALARM_DASHBOARD_METRICS_TOKEN`).
 
-Workaround: Externes Monitoring via:
-- Health-Check Endpunkt (`/health`)
-- Log-Parsing
-- Response-Time-Monitoring
+```bash
+curl -H "X-Metrics-Token: <token>" http://server-ip:8000/api/metrics
+```
 
-### Kann ich WebSockets statt Polling verwenden?
+Verfügbare Metriken: empfangene/gespeicherte Alarme, Geocode-/Wetter-Fehler, aktive SSE-Verbindungen, Historiengröße. Details: [README – Prometheus-Metriken](../README.md).
 
-Aktuell: **Nein** (HTTP Polling only).  
-**Geplant**: WebSocket-Support für Echtzeit-Updates.
+Zusätzlich: Health-Check (`/health`) für Uptime-Monitoring.
+
+### Nutzt das Dashboard WebSockets oder Polling?
+
+**Server-Sent Events (SSE)** über `GET /api/stream` für sofortige Alarm-Updates im Dashboard. Bei Verbindungsabbruch greift **Polling** (alle 15 Sekunden) als Fallback. Teilnehmerrückmeldungen werden separat alle 10 Sekunden abgefragt.
 
 ### Wie kann ich zu älteren Versionen zurückkehren?
 

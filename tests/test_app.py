@@ -666,6 +666,8 @@ def test_mobile_page_returns_200(client) -> None:
     """GET /mobile should return 200 with mobile HTML."""
     response = client.get("/mobile")
     assert response.status_code == 200
+    assert b"vendor/leaflet/leaflet.js" in response.data
+    assert b"unpkg.com/leaflet" not in response.data
 
 
 def test_navigation_page_returns_200(client) -> None:

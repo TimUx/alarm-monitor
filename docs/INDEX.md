@@ -20,7 +20,8 @@ alarm-monitor/
     ├── MESSENGER_INTEGRATION.md     → Push-Benachrichtigungen Setup
     ├── RASPBERRY_PI_SETUP.md        → Raspberry Pi 3 Installationsanleitung
     ├── SCREENSHOTS.md               → Screenshot-Dokumentation
-    └── screenshots/                 → Screenshot-Dateien
+    ├── screenshots/                 → Screenshot-Dateien (Light & Dark)
+    └── ../scripts/rpi-setup.sh      → Automatisiertes RPi-Setup (optional)
 ```
 
 ---
@@ -62,8 +63,7 @@ Häufige Fragen und Antworten
 Code-Beiträge, Dokumentation, Bug-Reports
 
 ### ...Screenshots sehen oder erstellen
-→ **[Screenshots](SCREENSHOTS.md)**  
-Dokumentation aller Ansichten
+→ **[Screenshots](SCREENSHOTS.md)** – alle Ansichten in Light- und Dark-Modus (`python scripts/capture_screenshots.py`)
 
 ---
 
@@ -196,23 +196,19 @@ Dokumentation aller Ansichten
 
 ## 📝 Dokumentations-Status
 
-| Dokument | Status | Letzte Aktualisierung | Vollständigkeit |
-|----------|--------|----------------------|-----------------|
-| README.md | ✅ Vollständig | April 2026 | 100% |
-| Quick Start | ✅ Vollständig | April 2026 | 100% |
-| Architecture | ✅ Vollständig | April 2026 | 100% |
-| FAQ | ✅ Vollständig | April 2026 | 100% |
-| Betriebshandbuch | ✅ Vollständig | April 2026 | 100% |
-| Messenger-Integration | ✅ Vollständig | April 2026 | 100% |
-| Raspberry Pi 3 Setup | ✅ Vollständig | April 2026 | 100% |
-| Screenshots | ✅ Vollständig | April 2026 | 100% |
-| Contributing | ✅ Vollständig | April 2026 | 100% |
+| Dokument | Status | Letzte Prüfung |
+|----------|--------|----------------|
+| README.md | ✅ Aktuell | Juni 2026 |
+| Quick Start | ✅ Aktuell | Juni 2026 |
+| Architecture | ✅ Aktuell | Juni 2026 |
+| FAQ | ✅ Aktuell | Juni 2026 |
+| Betriebshandbuch | ✅ Aktuell | Juni 2026 |
+| Messenger-Integration | ✅ Aktuell | Juni 2026 |
+| Raspberry Pi Setup | ✅ Aktuell | Juni 2026 |
+| Screenshots | ✅ Aktuell (Light & Dark) | Juni 2026 |
+| Contributing | ✅ Aktuell | Juni 2026 |
 
-**Legende**:
-- ✅ Vollständig und aktuell
-- ⚠️ Teilweise (Screenshots fehlen)
-- 🔄 In Arbeit
-- ❌ Veraltet/fehlt
+**Legende**: ✅ geprüft und konsistent · ⚠️ umfangreich, bei Releases stichprobenartig prüfen
 
 ---
 
