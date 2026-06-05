@@ -150,6 +150,21 @@ Das Logo wird gespeichert und bleibt auch nach einem Neustart erhalten. Mit **"S
 
 **Unterstützte Kalender**: Alle iCal-kompatiblen Dienste (Google Calendar, Apple iCloud, Nextcloud, Outlook, etc.)
 
+Bei konfiguriertem Kalender wechselt die rechte Idle-Box automatisch alle **30 Sekunden** zwischen Terminen und DWD-Unwetterwarnungen.
+
+### Wie funktionieren die DWD-Unwetterwarnungen?
+
+Im Ruhezustand zeigt das Dashboard amtliche Unwetterwarnungen (Stufe 3/4) des Deutschen Wetterdienstes:
+
+1. Setzen Sie **Standardkoordinaten** in den Einstellungen (Breiten-/Längengrad)
+2. Der Server ruft die DWD-WarnWetter-API ab und filtert auf Ihren Standort
+3. Links bleibt der letzte Einsatz, rechts erscheinen Warnungen oder Kalendertermine
+4. Bei aktiver Warnung: Details und offizielle DWD-Bundesland-Warnkarte
+
+**Testmodus** (ohne echte Warnung):
+- In den Einstellungen: **„Unwetterwarnung simulieren (Test)“** aktivieren
+- Oder per `.env`: `ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true`
+
 ### Wie richte ich ntfy.sh-Nachrichten ein?
 
 1. Erstellen Sie ein ntfy-Topic auf [ntfy.sh](https://ntfy.sh) (oder eigenem Server)
@@ -231,9 +246,11 @@ Ein Raspberry Pi 4 kann problemlos **10-20 Clients** gleichzeitig bedienen. Bei 
 ### Wie kann ich das Dashboard automatisch aktualisieren lassen?
 
 Das Dashboard aktualisiert sich **automatisch**:
-- Alarm-Status: Alle 5 Sekunden
+- Alarm-Status: Alle 15 Sekunden (Polling) bzw. sofort via Server-Sent Events
 - Teilnehmerrückmeldungen: Alle 10 Sekunden (wenn aktiv)
 - Wetter: Bei jedem neuen Alarm
+- Unwetterwarnungen: Alle 15 Sekunden im Idle-Modus (serverseitig gecacht, TTL 10 Min.)
+- Termine/Unwetter-Wechsel: Alle 30 Sekunden (wenn Kalender konfiguriert)
 
 Keine manuelle Aktualisierung nötig!
 
@@ -382,6 +399,35 @@ curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&curr
 # Latitude: -90 bis 90
 # Longitude: -180 bis 180
 ```
+
+### Unwetterwarnungen werden nicht angezeigt
+
+**Ursachen**:
+1. Keine Standardkoordinaten in den Einstellungen gesetzt
+2. DWD-API nicht erreichbar (Firewall/Internet)
+3. Aktuell keine Unwetterwarnung (Stufe 3/4) für den Standort
+
+**Lösung**:
+```bash
+# Koordinaten in den Einstellungen prüfen
+curl -s http://localhost:8000/api/alarm | python3 -m json.tool | grep -A5 warnings
+
+# DWD-API testen
+curl -s "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json" | head
+
+# Testmodus aktivieren (Einstellungen oder .env)
+# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
+```
+
+### Termine und Unwetter wechseln nicht
+
+**Ursachen**:
+1. Keine Kalender-URLs konfiguriert (dann nur Unwetter rechts, kein Wechsel)
+2. Browser-Tab im Hintergrund (Timer kann verzögert werden)
+
+**Lösung**:
+- Kalender-URLs in den Einstellungen hinterlegen
+- 30 Sekunden warten und beobachten, ob die rechte Box wechselt
 
 ### Container startet nicht
 

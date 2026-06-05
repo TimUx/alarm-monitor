@@ -32,7 +32,7 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 - **Separation of Concerns**: Jede Komponente hat eine klar definierte Verantwortlichkeit
 - **Fail-Safe**: Ausfall einer Komponente beeinträchtigt nicht die Kernfunktion
 - **API-First**: Alle Komponenten kommunizieren über REST-APIs
-- **Single-Worker**: Der alarm-monitor nutzt In-Process-State (AlarmStore, SSE-Subscriber-Liste, WeatherCache) und muss mit einem einzigen Gunicorn-Worker betrieben werden
+- **Single-Worker**: Der alarm-monitor nutzt In-Process-State (AlarmStore, SSE-Subscriber-Liste, WeatherCache, WarningsCache) und muss mit einem einzigen Gunicorn-Worker betrieben werden
 - **Observable**: Ausführliches Logging für Monitoring und Debugging
 
 ---
@@ -48,6 +48,11 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 │  │ IMAP-Server     │    │ Nominatim    │    │ Open-Meteo   │     │
 │  │ (Leitstelle)    │    │ (OSM)        │    │ (Wetter)     │     │
 │  └────────┬────────┘    └──────┬───────┘    └──────┬───────┘     │
+│           │                    │                    │              │
+│  ┌────────▼────────┐    ┌────────▼───────┐                          │
+│  │ DWD WarnWetter  │    │ DWD Warnkarten │                          │
+│  │ (Unwetter)      │    │ (Bundesland)   │                          │
+│  └─────────────────┘    └────────────────┘                          │
 │           │                    │                    │              │
 └───────────┼────────────────────┼────────────────────┼──────────────┘
             │                    │                    │
@@ -77,6 +82,7 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
 │  │  │   ├─▶ Group Filter               │ │   │ - Participant  │  │
 │  │  │   ├─▶ Geocoding (if needed)      │ │   │   Responses    │  │
 │  │  │   ├─▶ Weather Fetch               │ │   │                 │  │
+│  │  │   ├─▶ DWD Warnings Fetch (Idle)   │ │   │                 │  │
 │  │  │   ├─▶ Storage (JSON)              │ │   └─────────────────┘  │
 │  │  │   └─▶ Messenger Notification     │ │            │            │
 │  │  │                                   │ │            │            │
@@ -195,7 +201,14 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
         ├─▶ JavaScript lädt /api/alarm
         ├─▶ Server prüft: Alarm aktiv?
         ├─▶ Alarm-Ansicht ODER Idle-Ansicht
+        ├─▶ Idle: letzter Einsatz links, Termine/Unwetter rechts
         └─▶ Rendering im Browser
+
+19. Idle-Seitenpanel (nur Ruhezustand)
+        ├─▶ Koordinaten aus Settings → DWD-Warnungen abrufen (Level ≥ 3)
+        ├─▶ Bundesland aus Koordinaten → DWD-Warnkarten-URL
+        ├─▶ Kalender konfiguriert? → 30s-Wechsel Termine ↔ Unwetter
+        └─▶ Mock-Modus: simulierte Testwarnung aus Settings/ENV
 
 17. Teilnehmerrückmeldungen (optional)
         ├─▶ JavaScript startet Polling
@@ -288,7 +301,7 @@ MESSENGER_API_KEY = "..."  # Optional
 
 #### `app.py` – Flask-Anwendung
 - Application Factory (`create_app()`)
-- Initialisierung von AlarmStore, SettingsStore, WeatherCache
+- Initialisierung von AlarmStore, SettingsStore, WeatherCache, WarningsCache
 - SSE-Subscriber-Verwaltung
 - Rate-Limiter-Initialisierung
 - CSRF-Token-Generierung für Einstellungs-Seite
@@ -377,6 +390,38 @@ def fetch_weather(
     """
     Ruft Wetterdaten von Open-Meteo ab
     Rückgabe: { temperature, precipitation, ... }
+    """
+```
+
+#### `dwd_warnings.py` – DWD-Unwetterwarnungen
+```python
+def fetch_severe_warnings(
+    latitude: float,
+    longitude: float,
+    warnings_url: str
+) -> dict:
+    """
+    Ruft amtliche Unwetterwarnungen (Stufe 3/4) vom DWD ab.
+    Filtert per Point-in-Polygon auf die konfigurierten Koordinaten.
+    Rückgabe: { active, items, bundesland, map_url, mock }
+    """
+```
+
+#### `bundesland.py` – Bundesland-Erkennung
+```python
+def resolve_bundesland(latitude: float, longitude: float) -> Optional[dict]:
+    """
+    Ermittelt das Bundesland für die DWD-Warnkarten-URL.
+    Rückgabe: { code, name } oder None
+    """
+```
+
+#### `warnings_cache.py` – DWD-Warnungs-Cache
+```python
+class WarningsCache:
+    """
+    In-Memory-Cache für DWD-Warnungen (TTL: 10 Minuten).
+    Analog zu WeatherCache.
     """
 ```
 
@@ -474,6 +519,7 @@ def create_ntfy_poller(
   "default_longitude": 9.3167,
   "activation_groups": ["WIL26", "WIL41"],
   "calendar_urls": ["https://..."],
+  "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/...",
   "ntfy_poll_interval": 60,
   "message_default_ttl_minutes": 60
@@ -734,7 +780,7 @@ services:
 ### Horizontale Skalierung
 
 **alarm-monitor**:
-- Der alarm-monitor nutzt **In-Process-State** (AlarmStore, SSE-Subscriber-Liste, WeatherCache)
+- Der alarm-monitor nutzt **In-Process-State** (AlarmStore, SSE-Subscriber-Liste, WeatherCache, WarningsCache)
 - Mehrere Instanzen oder mehrere Gunicorn-Worker würden je unabhängigen Zustand haben
 - Dies würde zu verlorenen SSE-Benachrichtigungen und inkonsistenten Alarm-Anzeigen führen
 - **Empfehlung**: Einen einzigen Worker mit mehreren Threads (`--workers 1 --threads 8`) verwenden
@@ -756,6 +802,7 @@ services:
 **Caching**:
 - Geocoding-Ergebnisse cachen
 - Weather-Daten cachen (TTL: 10 Minuten)
+- DWD-Warnungen cachen (TTL: 10 Minuten)
 - Static Assets cachen (Browser-Cache)
 
 **Database** (zukünftig):

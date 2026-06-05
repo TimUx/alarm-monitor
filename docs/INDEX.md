@@ -139,10 +139,11 @@ Dokumentation aller Ansichten
 - [Architecture](ARCHITECTURE.md#schnittstellen) – API-Dokumentation
 - [README.md](../README.md#integration) – Überblick
 
-### Kalender & Nachrichten
+### Kalender, Unwetter & Nachrichten
 
-- [README.md](../README.md#konfiguration) – Kalender-URLs und ntfy.sh konfigurieren
+- [README.md](../README.md#konfiguration) – Kalender-URLs, DWD-Warnungen und ntfy.sh konfigurieren
 - [Betriebshandbuch](../Betriebshandbuch.md#konfiguration) – Umgebungsvariablen
+- [FAQ](FAQ.md#wie-funktionieren-die-dwd-unwetterwarnungen) – DWD-Unwetterwarnungen und Testmodus
 
 ### Fehlerbehebung
 
@@ -181,6 +182,7 @@ Dokumentation aller Ansichten
 
 - **Nominatim API**: [nominatim.org/release-docs/latest/api/Search/](https://nominatim.org/release-docs/latest/api/Search/)
 - **Open-Meteo API**: [open-meteo.com/en/docs](https://open-meteo.com/en/docs)
+- **DWD WarnWetter**: [dwd.de – Objekteinbindung](https://www.dwd.de/DE/wetter/warnungen_aktuell/objekt_einbindung/objekteinbindung_node.html)
 - **OpenRouteService**: [openrouteservice.org/](https://openrouteservice.org/)
 - **Leaflet.js**: [leafletjs.com/](https://leafletjs.com/)
 
