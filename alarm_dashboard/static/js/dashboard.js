@@ -1300,6 +1300,8 @@ function updateIdleMainPanel(lastAlarm, warnings) {
     if (warnings != null) {
         appendIdleNoWarningStatus(idleLastAlarmEl);
     }
+
+    requestIdleCalendarRender();
 }
 
 function resolveCoordinates(primary, fallbackLat, fallbackLon) {

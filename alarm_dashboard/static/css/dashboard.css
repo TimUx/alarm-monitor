@@ -524,7 +524,8 @@ body {
 .idle-content {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
 }
 
 .idle-last-alarm,
@@ -559,16 +560,18 @@ body {
 
 .idle-last-alarm.idle-warnings-active {
     border-color: rgba(255, 152, 0, 0.45);
-    grid-column: 1 / -1;
     gap: 0.65rem;
     padding: 1.15rem 1.25rem;
+    min-height: 0;
 }
 
 .idle-warnings-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;
+    flex: 1;
+    min-height: 400px;
 }
 
 .idle-warnings-details {
@@ -647,7 +650,8 @@ body {
     overflow: hidden;
     border: 1px solid var(--divider);
     background: #fff;
-    max-height: min(24vh, 200px);
+    min-height: 400px;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -656,8 +660,8 @@ body {
 .idle-warnings-map img {
     display: block;
     width: 100%;
-    height: auto;
-    max-height: min(24vh, 200px);
+    height: 100%;
+    min-height: 400px;
     object-fit: contain;
 }
 
@@ -1052,11 +1056,12 @@ body.mode-alarm .app-main {
     .idle-warnings-layout {
         grid-template-columns: 1fr;
         gap: 0.75rem;
+        min-height: 0;
     }
 
     .idle-warnings-map,
     .idle-warnings-map img {
-        max-height: min(20vh, 160px);
+        min-height: 220px;
     }
 
     .idle-last-alarm h3,
