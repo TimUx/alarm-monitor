@@ -541,6 +541,7 @@ const headerWeatherEl = document.getElementById('header-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const idleCalendarEl = document.getElementById('idle-calendar');
+const idleWarningsSideEl = document.getElementById('idle-warnings-side');
 const idleMessagesEl = document.getElementById('idle-messages');
 const idleMessagesListEl = document.getElementById('idle-messages-list');
 const keywordHeadingEl = document.getElementById('keyword');
@@ -559,9 +560,14 @@ let leafletMarkerLabel = null;
 let alarmExpiryTimer = null;
 let idleCalendarEventsCache = [];
 let idleCalendarRenderScheduled = false;
+let idleCalendarConfigured = false;
+let idleWarningsCache = null;
+let idleSidePanelShowWarnings = false;
+let idleSidePanelTimer = null;
 
 const IDLE_CALENDAR_MAX_ROWS = 6;
 const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
+const IDLE_SIDE_ROTATION_MS = 30000;
 
 function scheduleAlarmExpiry(payload) {
     clearAlarmExpiryTimer();
@@ -757,6 +763,14 @@ function setMode(mode) {
         document.body.classList.toggle('mode-alarm', isAlarm);
         document.body.classList.toggle('mode-idle', !isAlarm);
     }
+
+    if (mode === 'idle') {
+        idleSidePanelShowWarnings = false;
+        updateIdleSidePanelVisibility();
+        startIdleSidePanelRotation();
+    } else {
+        stopIdleSidePanelRotation();
+    }
 }
 
 function createHeaderWeatherChip(icon, value) {
@@ -885,9 +899,18 @@ function updateIdleHeaderWeather(weather) {
     idleHeaderWeatherEl.classList.remove('hidden');
 }
 
-function updateIdleCalendar(events) {
-    idleCalendarEventsCache = Array.isArray(events) ? events : [];
+function updateIdleCalendar(calendarData) {
+    if (calendarData && typeof calendarData === 'object' && !Array.isArray(calendarData)) {
+        idleCalendarConfigured = Boolean(calendarData.configured);
+        idleCalendarEventsCache = Array.isArray(calendarData.events) ? calendarData.events : [];
+    } else {
+        idleCalendarEventsCache = Array.isArray(calendarData) ? calendarData : [];
+    }
     requestIdleCalendarRender();
+    updateIdleSidePanelVisibility();
+    if (document.body && document.body.classList.contains('mode-idle')) {
+        startIdleSidePanelRotation();
+    }
 }
 
 function requestIdleCalendarRender() {
@@ -907,11 +930,13 @@ function handleIdleCalendarWindowResize() {
 }
 
 function calculateIdleCalendarColumns() {
-    if (!idleCalendarEl) {
+    const panel = document.getElementById('idle-side-panel');
+    const measureEl = panel || idleCalendarEl;
+    if (!measureEl) {
         return 1;
     }
 
-    const availableWidth = Math.max(1, idleCalendarEl.getBoundingClientRect().width);
+    const availableWidth = Math.max(1, measureEl.getBoundingClientRect().width);
     return Math.max(1, Math.floor(availableWidth / IDLE_CALENDAR_MIN_COLUMN_WIDTH));
 }
 
@@ -921,16 +946,18 @@ function renderIdleCalendar() {
     }
 
     const events = idleCalendarEventsCache;
-    if (!events || events.length === 0) {
-        idleCalendarEl.classList.add('hidden');
-        return;
-    }
-
-    idleCalendarEl.classList.remove('hidden');
     idleCalendarEl.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Nächste Termine';
     idleCalendarEl.appendChild(title);
+
+    if (!events || events.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Keine Termine verfügbar';
+        idleCalendarEl.appendChild(empty);
+        updateIdleSidePanelVisibility();
+        return;
+    }
 
     const columns = calculateIdleCalendarColumns();
     const maxVisibleEvents = columns * IDLE_CALENDAR_MAX_ROWS;
@@ -965,6 +992,7 @@ function renderIdleCalendar() {
     });
 
     idleCalendarEl.appendChild(list);
+    updateIdleSidePanelVisibility();
 }
 
 async function fetchCalendarEvents() {
@@ -974,7 +1002,10 @@ async function fetchCalendarEvents() {
             return null;
         }
         const data = await response.json();
-        return data.events ?? null;
+        return {
+            events: data.events ?? [],
+            configured: Boolean(data.configured),
+        };
     } catch (error) {
         return null;
     }
@@ -1200,17 +1231,6 @@ function appendIdleLastAlarmContent(container, info) {
     }
 }
 
-function appendIdleNoWarningStatus(container) {
-    const separator = document.createElement('hr');
-    separator.className = 'idle-warnings-separator';
-    container.appendChild(separator);
-
-    const status = document.createElement('p');
-    status.className = 'idle-warnings-status idle-warnings-status--none';
-    status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
-    container.appendChild(status);
-}
-
 function appendIdleActiveWarningsContent(container, warnings) {
     const regionName = warnings?.bundesland?.name;
     const layout = document.createElement('div');
@@ -1281,26 +1301,88 @@ function appendIdleActiveWarningsContent(container, warnings) {
     container.appendChild(layout);
 }
 
-function updateIdleMainPanel(lastAlarm, warnings) {
-    if (!idleLastAlarmEl) {
+function stopIdleSidePanelRotation() {
+    if (idleSidePanelTimer !== null) {
+        clearInterval(idleSidePanelTimer);
+        idleSidePanelTimer = null;
+    }
+}
+
+function startIdleSidePanelRotation() {
+    stopIdleSidePanelRotation();
+    if (!idleCalendarConfigured) {
+        return;
+    }
+    idleSidePanelTimer = setInterval(() => {
+        idleSidePanelShowWarnings = !idleSidePanelShowWarnings;
+        updateIdleSidePanelVisibility();
+    }, IDLE_SIDE_ROTATION_MS);
+}
+
+function updateIdleSidePanelVisibility() {
+    const showWarnings = !idleCalendarConfigured || idleSidePanelShowWarnings;
+
+    if (idleCalendarEl) {
+        const hideCalendar = showWarnings || !idleCalendarConfigured;
+        idleCalendarEl.classList.toggle('hidden', hideCalendar);
+    }
+
+    if (idleWarningsSideEl) {
+        idleWarningsSideEl.classList.toggle('hidden', !showWarnings);
+    }
+
+    if (!showWarnings && idleCalendarConfigured) {
+        requestIdleCalendarRender();
+    }
+}
+
+function updateIdleWarningsSide(warnings) {
+    if (!idleWarningsSideEl) {
         return;
     }
 
     const activeWarnings = hasActiveSevereWarnings(warnings);
-    idleLastAlarmEl.classList.toggle('idle-warnings-active', activeWarnings);
-    idleLastAlarmEl.innerHTML = '';
+    const regionName = warnings?.bundesland?.name;
+
+    idleWarningsSideEl.classList.toggle('idle-warnings-side--active', activeWarnings);
+    idleWarningsSideEl.innerHTML = '';
+
+    const heading = document.createElement('h3');
+    heading.textContent = regionName ? `Unwetter ${regionName}` : 'Unwetterwarnung';
+    idleWarningsSideEl.appendChild(heading);
 
     if (activeWarnings) {
-        appendIdleActiveWarningsContent(idleLastAlarmEl, warnings);
+        appendIdleActiveWarningsContent(idleWarningsSideEl, warnings);
         return;
     }
 
-    appendIdleLastAlarmContent(idleLastAlarmEl, lastAlarm);
-
     if (warnings != null) {
-        appendIdleNoWarningStatus(idleLastAlarmEl);
+        const status = document.createElement('p');
+        status.className = 'idle-warnings-status idle-warnings-status--none';
+        status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
+        idleWarningsSideEl.appendChild(status);
+        return;
     }
 
+    const empty = document.createElement('p');
+    empty.textContent = 'Keine Warnungsdaten verfügbar.';
+    idleWarningsSideEl.appendChild(empty);
+}
+
+function updateIdleLastAlarm(info) {
+    if (!idleLastAlarmEl) {
+        return;
+    }
+
+    idleLastAlarmEl.innerHTML = '';
+    appendIdleLastAlarmContent(idleLastAlarmEl, info);
+}
+
+function updateIdleMainPanel(lastAlarm, warnings) {
+    idleWarningsCache = warnings;
+    updateIdleLastAlarm(lastAlarm);
+    updateIdleWarningsSide(warnings);
+    updateIdleSidePanelVisibility();
     requestIdleCalendarRender();
 }
 

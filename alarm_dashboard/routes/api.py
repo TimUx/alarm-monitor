@@ -665,7 +665,7 @@ def api_calendar():
     calendar_urls = effective_settings.get("calendar_urls", [])
 
     if not calendar_urls:
-        resp = jsonify({"events": []})
+        resp = jsonify({"events": [], "configured": False})
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
@@ -675,7 +675,7 @@ def api_calendar():
         LOGGER.error("Failed to fetch calendar events", exc_info=True)
         events = []
 
-    resp = jsonify({"events": events})
+    resp = jsonify({"events": events, "configured": True})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

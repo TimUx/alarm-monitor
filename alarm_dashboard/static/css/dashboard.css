@@ -528,8 +528,20 @@ body {
     align-items: stretch;
 }
 
+.idle-side-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.idle-side-panel > :not(.hidden) {
+    flex: 1;
+}
+
 .idle-last-alarm,
-.idle-calendar {
+.idle-calendar,
+.idle-warnings-side {
     background: var(--surface-muted);
     border-radius: 18px;
     padding: 1.5rem;
@@ -540,7 +552,8 @@ body {
 }
 
 .idle-last-alarm h3,
-.idle-calendar h3 {
+.idle-calendar h3,
+.idle-warnings-side h3 {
     margin: 0;
     font-size: clamp(2rem, 1.6rem + 0.8vw, 2.6rem);
     text-transform: uppercase;
@@ -558,7 +571,7 @@ body {
     color: var(--accent);
 }
 
-.idle-last-alarm.idle-warnings-active {
+.idle-warnings-side--active {
     border-color: rgba(255, 152, 0, 0.45);
     gap: 0.65rem;
     padding: 1.15rem 1.25rem;
@@ -615,12 +628,12 @@ body {
     margin: 0;
 }
 
-.idle-last-alarm.idle-warnings-active .idle-warnings-headline {
+.idle-warnings-side .idle-warnings-headline {
     font-size: clamp(1.15rem, 0.95rem + 0.45vw, 1.55rem);
     line-height: 1.25;
 }
 
-.idle-last-alarm.idle-warnings-active .idle-warnings-description {
+.idle-warnings-side .idle-warnings-description {
     font-size: clamp(1rem, 0.88rem + 0.35vw, 1.2rem);
     line-height: 1.35;
 }

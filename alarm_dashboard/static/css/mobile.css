@@ -424,14 +424,8 @@ body {
     font-size: clamp(1.16rem, 1.08rem + 0.5vw, 1.36rem);
 }
 
-.mobile-last-alarm.mobile-warnings-active {
+.mobile-warnings-side--active {
     border-color: rgba(255, 152, 0, 0.45);
-}
-
-.mobile-warnings-separator {
-    border: none;
-    border-top: 1px solid var(--divider);
-    margin: 0.2rem 0 0.35rem;
 }
 
 .mobile-warnings-status {
@@ -518,7 +512,14 @@ body {
     }
 }
 
+.mobile-side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .mobile-calendar,
+.mobile-warnings-side,
 .mobile-messages {
     background: var(--surface-muted);
     border-radius: 18px;
@@ -530,6 +531,7 @@ body {
 }
 
 .mobile-calendar h3,
+.mobile-warnings-side h3,
 .mobile-messages h3 {
     margin: 0;
     font-size: clamp(1.34rem, 1.24rem + 0.5vw, 1.54rem);
