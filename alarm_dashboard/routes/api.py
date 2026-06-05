@@ -112,6 +112,10 @@ def _get_weather_cache():
     return current_app.config["WEATHER_CACHE"]
 
 
+def _get_warnings_cache():
+    return current_app.config["WARNINGS_CACHE"]
+
+
 def _get_message_store():
     return current_app.config.get("MESSAGE_STORE")
 
@@ -126,6 +130,7 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
     config = _get_config()
     effective_settings = _get_effective_settings()
     weather = None
+    warnings = None
     lat = effective_settings["default_latitude"]
     lon = effective_settings["default_longitude"]
     if lat is not None and lon is not None:
@@ -136,6 +141,32 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
             lon,
             executor=_executor,
         )
+        if effective_settings.get("dwd_warnings_mock"):
+            from ..dwd_warnings import build_mock_severe_warnings
+
+            warnings = build_mock_severe_warnings(lat, lon)
+        else:
+            warnings = _get_warnings_cache().get_warnings_for_coordinates(
+                config.dwd_warnings_url,
+                lat,
+                lon,
+                executor=_executor,
+            )
+            if warnings is None:
+                from ..bundesland import dwd_map_url, resolve_dwd_region
+
+                region = resolve_dwd_region(lat, lon)
+                warnings = {
+                    "active": False,
+                    "bundesland": {
+                        "code": region.code,
+                        "name": region.name,
+                    }
+                    if region
+                    else None,
+                    "map_url": dwd_map_url(region.code) if region else None,
+                    "items": [],
+                }
     last_alarm_entry: Optional[Dict[str, Any]] = None
     if last_alarm:
         last_alarm_entry = _serialize_history_entry(last_alarm)
@@ -144,6 +175,7 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
         "mode": "idle",
         "alarm": None,
         "weather": weather,
+        "warnings": warnings,
         "location": effective_settings["default_location_name"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_alarm": last_alarm_entry,
@@ -406,6 +438,7 @@ def api_get_settings():
         "ntfy_topic_url": effective_settings.get("ntfy_topic_url") or "",
         "ntfy_poll_interval": effective_settings.get("ntfy_poll_interval", 60),
         "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
+        "dwd_warnings_mock": effective_settings.get("dwd_warnings_mock", False),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -505,6 +538,9 @@ def api_update_settings():
             updates["message_default_ttl_minutes"] = ttl
         except (TypeError, ValueError):
             return jsonify({"error": "message_default_ttl_minutes must be an integer"}), 400
+
+    if "dwd_warnings_mock" in data:
+        updates["dwd_warnings_mock"] = bool(data["dwd_warnings_mock"])
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)
@@ -629,7 +665,7 @@ def api_calendar():
     calendar_urls = effective_settings.get("calendar_urls", [])
 
     if not calendar_urls:
-        resp = jsonify({"events": []})
+        resp = jsonify({"events": [], "configured": False})
         resp.headers["Cache-Control"] = "no-store"
         return resp
 
@@ -639,7 +675,7 @@ def api_calendar():
         LOGGER.error("Failed to fetch calendar events", exc_info=True)
         events = []
 
-    resp = jsonify({"events": events})
+    resp = jsonify({"events": events, "configured": True})
     resp.headers["Cache-Control"] = "no-store"
     return resp
 

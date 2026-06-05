@@ -28,6 +28,10 @@ def mock_network_calls():
     with (
         patch("alarm_dashboard.geocode.geocode_location", return_value=None),
         patch("alarm_dashboard.weather.fetch_weather", return_value=None),
+        patch(
+            "alarm_dashboard.warnings_cache.WarningsCache.get_warnings_for_coordinates",
+            return_value=None,
+        ),
     ):
         yield
 
@@ -180,6 +184,25 @@ def test_get_alarm_returns_idle_when_no_alarm(client) -> None:
     data = response.get_json()
     assert data["mode"] == "idle"
     assert data["alarm"] is None
+
+
+def test_get_alarm_returns_mock_warnings_when_enabled(client, flask_app) -> None:
+    """GET /api/alarm should return simulated severe warnings when mock mode is on."""
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({
+        "default_latitude": 50.55,
+        "default_longitude": 9.0,
+        "dwd_warnings_mock": True,
+    })
+
+    response = client.get("/api/alarm")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["mode"] == "idle"
+    assert data["warnings"]["active"] is True
+    assert data["warnings"]["mock"] is True
+    assert len(data["warnings"]["items"]) == 1
 
 
 def test_get_alarm_returns_alarm_data_when_active(client, flask_app) -> None:
@@ -887,6 +910,10 @@ def test_post_message_with_wrong_api_key_returns_401(client) -> None:
         "/api/messages",
         json={"text": "Wrong key"},
         headers={"X-API-Key": "wrong-key"},
+    )
+    assert response.status_code == 401
+
+
 # Logo upload / GET /api/logo / DELETE /api/settings/logo
 # ---------------------------------------------------------------------------
 
@@ -954,6 +981,10 @@ def test_post_message_empty_text_returns_400(client) -> None:
         "/api/messages",
         json={"text": "   "},
         headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 400
+
+
 def test_upload_logo_invalid_csrf_returns_403(client) -> None:
     """POST /api/settings/logo with invalid CSRF token should return 403."""
     response = client.post(

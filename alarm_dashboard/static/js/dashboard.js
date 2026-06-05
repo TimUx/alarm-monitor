@@ -541,6 +541,7 @@ const headerWeatherEl = document.getElementById('header-weather');
 const alarmTimeEl = document.getElementById('alarm-time');
 const idleLastAlarmEl = document.getElementById('idle-last-alarm');
 const idleCalendarEl = document.getElementById('idle-calendar');
+const idleWarningsSideEl = document.getElementById('idle-warnings-side');
 const idleMessagesEl = document.getElementById('idle-messages');
 const idleMessagesListEl = document.getElementById('idle-messages-list');
 const keywordHeadingEl = document.getElementById('keyword');
@@ -559,9 +560,15 @@ let leafletMarkerLabel = null;
 let alarmExpiryTimer = null;
 let idleCalendarEventsCache = [];
 let idleCalendarRenderScheduled = false;
+let idleCalendarConfigured = false;
+let idleWarningsCache = null;
+let idleSidePanelShowWarnings = false;
+let idleSidePanelTimer = null;
+let currentDashboardMode = null;
 
 const IDLE_CALENDAR_MAX_ROWS = 6;
 const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
+const IDLE_SIDE_ROTATION_MS = 30000;
 
 function scheduleAlarmExpiry(payload) {
     clearAlarmExpiryTimer();
@@ -735,6 +742,9 @@ function setNavigationAvailability(isAvailable) {
 }
 
 function setMode(mode) {
+    const enteringIdle = mode === 'idle' && currentDashboardMode !== 'idle';
+    currentDashboardMode = mode;
+
     if (mode === 'alarm') {
         alarmView.classList.remove('hidden');
         idleView.classList.add('hidden');
@@ -756,6 +766,16 @@ function setMode(mode) {
         const isAlarm = mode === 'alarm';
         document.body.classList.toggle('mode-alarm', isAlarm);
         document.body.classList.toggle('mode-idle', !isAlarm);
+    }
+
+    if (mode === 'idle') {
+        if (enteringIdle) {
+            idleSidePanelShowWarnings = false;
+            startIdleSidePanelRotation();
+        }
+        updateIdleSidePanelVisibility();
+    } else {
+        stopIdleSidePanelRotation();
     }
 }
 
@@ -885,9 +905,18 @@ function updateIdleHeaderWeather(weather) {
     idleHeaderWeatherEl.classList.remove('hidden');
 }
 
-function updateIdleCalendar(events) {
-    idleCalendarEventsCache = Array.isArray(events) ? events : [];
+function updateIdleCalendar(calendarData) {
+    if (calendarData && typeof calendarData === 'object' && !Array.isArray(calendarData)) {
+        idleCalendarConfigured = Boolean(calendarData.configured);
+        idleCalendarEventsCache = Array.isArray(calendarData.events) ? calendarData.events : [];
+    } else {
+        idleCalendarEventsCache = Array.isArray(calendarData) ? calendarData : [];
+    }
     requestIdleCalendarRender();
+    updateIdleSidePanelVisibility();
+    if (document.body && document.body.classList.contains('mode-idle')) {
+        startIdleSidePanelRotation();
+    }
 }
 
 function requestIdleCalendarRender() {
@@ -907,11 +936,13 @@ function handleIdleCalendarWindowResize() {
 }
 
 function calculateIdleCalendarColumns() {
-    if (!idleCalendarEl) {
+    const panel = document.getElementById('idle-side-panel');
+    const measureEl = panel || idleCalendarEl;
+    if (!measureEl) {
         return 1;
     }
 
-    const availableWidth = Math.max(1, idleCalendarEl.getBoundingClientRect().width);
+    const availableWidth = Math.max(1, measureEl.getBoundingClientRect().width);
     return Math.max(1, Math.floor(availableWidth / IDLE_CALENDAR_MIN_COLUMN_WIDTH));
 }
 
@@ -921,16 +952,18 @@ function renderIdleCalendar() {
     }
 
     const events = idleCalendarEventsCache;
-    if (!events || events.length === 0) {
-        idleCalendarEl.classList.add('hidden');
-        return;
-    }
-
-    idleCalendarEl.classList.remove('hidden');
     idleCalendarEl.innerHTML = '';
     const title = document.createElement('h3');
     title.textContent = 'Nächste Termine';
     idleCalendarEl.appendChild(title);
+
+    if (!events || events.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'Keine Termine verfügbar';
+        idleCalendarEl.appendChild(empty);
+        updateIdleSidePanelVisibility();
+        return;
+    }
 
     const columns = calculateIdleCalendarColumns();
     const maxVisibleEvents = columns * IDLE_CALENDAR_MAX_ROWS;
@@ -965,6 +998,7 @@ function renderIdleCalendar() {
     });
 
     idleCalendarEl.appendChild(list);
+    updateIdleSidePanelVisibility();
 }
 
 async function fetchCalendarEvents() {
@@ -974,7 +1008,10 @@ async function fetchCalendarEvents() {
             return null;
         }
         const data = await response.json();
-        return data.events ?? null;
+        return {
+            events: data.events ?? [],
+            configured: Boolean(data.configured),
+        };
     } catch (error) {
         return null;
     }
@@ -1135,17 +1172,41 @@ function updateLocationDetails(details) {
     });
 }
 
-function updateIdleLastAlarm(info) {
-    if (!idleLastAlarmEl) {
-        return;
+function formatWarningTimestamp(value) {
+    if (!value) {
+        return null;
     }
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleString('de-DE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+    return value;
+}
 
-    idleLastAlarmEl.innerHTML = '<h3>Letzter Einsatz</h3>';
+function hasActiveSevereWarnings(warnings) {
+    return Boolean(
+        warnings
+        && warnings.active
+        && Array.isArray(warnings.items)
+        && warnings.items.length > 0,
+    );
+}
+
+function appendIdleLastAlarmContent(container, info) {
+    const heading = document.createElement('h3');
+    heading.textContent = 'Letzter Einsatz';
+    container.appendChild(heading);
 
     if (!info) {
         const empty = document.createElement('p');
         empty.textContent = 'Keine Einsätze vorhanden';
-        idleLastAlarmEl.appendChild(empty);
+        container.appendChild(empty);
         return;
     }
 
@@ -1161,19 +1222,172 @@ function updateIdleLastAlarm(info) {
     const strongEl = document.createElement('strong');
     strongEl.textContent = keyword;
     keywordEl.appendChild(strongEl);
-    idleLastAlarmEl.appendChild(keywordEl);
+    container.appendChild(keywordEl);
 
     if (location) {
         const locationEl = document.createElement('p');
         locationEl.textContent = location;
-        idleLastAlarmEl.appendChild(locationEl);
+        container.appendChild(locationEl);
     }
 
     if (timestamp) {
         const timeEl = document.createElement('p');
         timeEl.textContent = timestamp;
-        idleLastAlarmEl.appendChild(timeEl);
+        container.appendChild(timeEl);
     }
+}
+
+function appendIdleActiveWarningsContent(container, warnings) {
+    const regionName = warnings?.bundesland?.name;
+    const layout = document.createElement('div');
+    layout.className = 'idle-warnings-layout';
+
+    const details = document.createElement('div');
+    details.className = 'idle-warnings-details';
+
+    if (warnings?.mock) {
+        const badge = document.createElement('p');
+        badge.className = 'idle-warnings-mock-badge';
+        badge.textContent = 'Simulierte Testwarnung';
+        details.appendChild(badge);
+    }
+
+    warnings.items.forEach((item) => {
+        const itemEl = document.createElement('article');
+        itemEl.className = 'idle-warnings-item';
+        if (item.level) {
+            itemEl.classList.add(`idle-warnings-item--level-${item.level}`);
+        }
+
+        if (item.headline) {
+            const headlineEl = document.createElement('p');
+            headlineEl.className = 'idle-warnings-headline';
+            const strongEl = document.createElement('strong');
+            strongEl.textContent = item.headline;
+            headlineEl.appendChild(strongEl);
+            itemEl.appendChild(headlineEl);
+        }
+
+        if (item.description) {
+            const descriptionEl = document.createElement('p');
+            descriptionEl.className = 'idle-warnings-description';
+            descriptionEl.textContent = item.description;
+            itemEl.appendChild(descriptionEl);
+        }
+
+        const start = formatWarningTimestamp(item.start);
+        const end = formatWarningTimestamp(item.end);
+        if (start || end) {
+            const validityEl = document.createElement('p');
+            validityEl.className = 'idle-warnings-validity';
+            validityEl.textContent = start && end
+                ? `Gültig von ${start} bis ${end}`
+                : (start ? `Gültig ab ${start}` : `Gültig bis ${end}`);
+            itemEl.appendChild(validityEl);
+        }
+
+        details.appendChild(itemEl);
+    });
+
+    layout.appendChild(details);
+
+    if (warnings.map_url) {
+        const mapWrap = document.createElement('div');
+        mapWrap.className = 'idle-warnings-map';
+        const mapImg = document.createElement('img');
+        mapImg.src = warnings.map_url;
+        mapImg.alt = regionName
+            ? `DWD Warnkarte ${regionName}`
+            : 'DWD Warnkarte';
+        mapImg.loading = 'lazy';
+        mapWrap.appendChild(mapImg);
+        layout.appendChild(mapWrap);
+    }
+
+    container.appendChild(layout);
+}
+
+function stopIdleSidePanelRotation() {
+    if (idleSidePanelTimer !== null) {
+        clearInterval(idleSidePanelTimer);
+        idleSidePanelTimer = null;
+    }
+}
+
+function startIdleSidePanelRotation() {
+    if (idleSidePanelTimer !== null || !idleCalendarConfigured) {
+        return;
+    }
+    idleSidePanelTimer = setInterval(() => {
+        idleSidePanelShowWarnings = !idleSidePanelShowWarnings;
+        updateIdleSidePanelVisibility();
+    }, IDLE_SIDE_ROTATION_MS);
+}
+
+function updateIdleSidePanelVisibility() {
+    const showWarnings = !idleCalendarConfigured || idleSidePanelShowWarnings;
+
+    if (idleCalendarEl) {
+        const hideCalendar = showWarnings || !idleCalendarConfigured;
+        idleCalendarEl.classList.toggle('hidden', hideCalendar);
+    }
+
+    if (idleWarningsSideEl) {
+        idleWarningsSideEl.classList.toggle('hidden', !showWarnings);
+    }
+
+    if (!showWarnings && idleCalendarConfigured) {
+        requestIdleCalendarRender();
+    }
+}
+
+function updateIdleWarningsSide(warnings) {
+    if (!idleWarningsSideEl) {
+        return;
+    }
+
+    const activeWarnings = hasActiveSevereWarnings(warnings);
+    const regionName = warnings?.bundesland?.name;
+
+    idleWarningsSideEl.classList.toggle('idle-warnings-side--active', activeWarnings);
+    idleWarningsSideEl.innerHTML = '';
+
+    const heading = document.createElement('h3');
+    heading.textContent = regionName ? `Unwetter ${regionName}` : 'Unwetterwarnung';
+    idleWarningsSideEl.appendChild(heading);
+
+    if (activeWarnings) {
+        appendIdleActiveWarningsContent(idleWarningsSideEl, warnings);
+        return;
+    }
+
+    if (warnings != null) {
+        const status = document.createElement('p');
+        status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
+        idleWarningsSideEl.appendChild(status);
+        return;
+    }
+
+    const empty = document.createElement('p');
+    empty.textContent = 'Keine Warnungsdaten verfügbar.';
+    idleWarningsSideEl.appendChild(empty);
+}
+
+function updateIdleLastAlarm(info) {
+    if (!idleLastAlarmEl) {
+        return;
+    }
+
+    idleLastAlarmEl.innerHTML = '';
+    appendIdleLastAlarmContent(idleLastAlarmEl, info);
+}
+
+function updateIdleMainPanel(lastAlarm, warnings) {
+    idleWarningsCache = warnings;
+    updateIdleLastAlarm(lastAlarm);
+    updateIdleWarningsSide(warnings);
+    updateIdleSidePanelVisibility();
+    requestIdleCalendarRender();
 }
 
 function resolveCoordinates(primary, fallbackLat, fallbackLon) {
@@ -1430,7 +1644,7 @@ function updateDashboard(data) {
             timestampEl.classList.remove('hidden');
         }
         updateIdleHeaderWeather(data.weather);
-        updateIdleLastAlarm(data.last_alarm);
+        updateIdleMainPanel(data.last_alarm, data.warnings);
         fetchCalendarEvents().then(updateIdleCalendar);
         fetchMessages().then(updateIdleMessages);
         if (keywordSecondaryEl) {

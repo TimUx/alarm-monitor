@@ -60,6 +60,8 @@ Der alarm-monitor benötigt ausgehende Verbindungen zu:
 |--------|-----|------|-------|
 | Nominatim | nominatim.openstreetmap.org | 443 | Geokodierung |
 | Open-Meteo | api.open-meteo.com | 443 | Wetterdaten |
+| DWD WarnWetter | s3.eu-central-1.amazonaws.com (WarnWetter-CDN) | 443 | Unwetterwarnungen |
+| DWD Warnkarten | www.dwd.de | 443 | Bundesland-Warnkarten (Bilder) |
 | OpenStreetMap | tile.openstreetmap.org | 443 | Kartenkacheln |
 | iCal-Server | Konfigurierbar (optional) | 443 | Kalendertermine |
 | ntfy.sh | ntfy.sh oder eigene Instanz (optional) | 443 | Dashboard-Nachrichten |
@@ -152,6 +154,12 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 # Kalender-Integration (optional, kann auch in der Web-UI gesetzt werden)
 # ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
 
+# DWD-Unwetterwarnungen (optional, Standard-URL des DWD)
+# ALARM_DASHBOARD_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
+
+# Simulierte Unwetterwarnung für Tests (alternativ in der Web-UI)
+# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
+
 # Nachrichten via ntfy.sh (optional, kann auch in der Web-UI gesetzt werden)
 # ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
 # ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
@@ -181,6 +189,8 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 | `DEFAULT_LONGITUDE` | Standard-Längengrad für Idle-Wetter | (leer) |
 | `DEFAULT_LOCATION_NAME` | Standortname für Idle-Ansicht | (leer) |
 | `CALENDAR_URLS` | Komma-/zeilengetrennte iCal-URLs | (leer) |
+| `DWD_WARNINGS_URL` | URL der DWD-WarnWetter-API | (DWD-Standard) |
+| `DWD_WARNINGS_MOCK` | Simulierte Unwetterwarnung für Tests | false |
 | `NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
 | `NTFY_POLL_INTERVAL` | ntfy Abfrage-Intervall in Sekunden | 60 |
 | `MESSAGES_FILE` | Pfad zur Nachrichten-Datei | instance/messages.json |
@@ -219,6 +229,8 @@ docker compose up -d
 
 2. **Dashboard**: Öffnen Sie `http://<server-ip>:8000/`
    - Die Standardansicht (Idle) sollte erscheinen
+   - Links: letzter Einsatz; rechts: Unwetterwarnungen und/oder Termine
+   - Optional: In den Einstellungen Koordinaten setzen und Testmodus für Unwetter aktivieren
 
 3. **Logs prüfen**:
    ```bash
@@ -652,6 +664,13 @@ free -h
 - Prüfen Sie die Koordinaten in der Konfiguration
 - Stellen Sie sicher, dass api.open-meteo.com erreichbar ist
 
+#### Unwetterwarnungen fehlen
+
+- Prüfen Sie die Standardkoordinaten in den Einstellungen
+- Stellen Sie sicher, dass die DWD-API und www.dwd.de erreichbar sind
+- Aktuell kann auch einfach keine Unwetterwarnung (Stufe 3/4) vorliegen
+- Für UI-Tests: **Unwetterwarnung simulieren** in den Einstellungen aktivieren
+
 ### Diagnose-Befehle
 
 ```bash
@@ -688,7 +707,7 @@ nc -zv localhost 8000
   erreichbar sein. Richten Sie **keine** Portweiterleitungen ein.
 
 - **Firewall**: Erlauben Sie nur die notwendigen ausgehenden Verbindungen
-  (Nominatim, Open-Meteo, OpenStreetMap). Der alarm-mail Service benötigt
+  (Nominatim, Open-Meteo, DWD WarnWetter, OpenStreetMap). Der alarm-mail Service benötigt
   zusätzlich Zugriff auf den IMAP-Server.
 
 ### API-Sicherheit

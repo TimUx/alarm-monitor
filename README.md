@@ -65,10 +65,13 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 🌤️ **Aktuelle Wetterdaten** – Temperatur, Niederschlag, Wind über Open-Meteo API
 - 🌤️ **Standort-Wetter** – Wetterdaten für Einsatzort in Alarmansicht
 - 🌤️ **Idle-Wetter** – Lokales Wetter in der Standardansicht
+- ⛈️ **DWD-Unwetterwarnungen** – Amtliche Unwetterwarnungen (Stufe 3/4) des Deutschen Wetterdienstes im Ruhezustand
+- 🗺️ **DWD-Warnkarte** – Offizielle Bundesland-Warnkarte neben den Warnungsdetails
+- 🧪 **Testmodus** – Simulierte Unwetterwarnung über die Einstellungen oder per Umgebungsvariable
 
 ### Dashboard-Ansichten
 - 📺 **Alarm-Ansicht** – Vollbildanzeige mit allen Einsatzinformationen
-- 📺 **Idle-Ansicht** – Uhrzeit, Wetter, nächste Termine und letzter Einsatz
+- 📺 **Idle-Ansicht** – Uhrzeit, Wetter, letzter Einsatz; rechts Termine und/oder Unwetterwarnungen
 - 📺 **Mobile-Ansicht** – Optimiert für Smartphones und Tablets mit Navigation
 - 📺 **Historien-Ansicht** – Tabellarische Übersicht aller vergangenen Einsätze
 - 📺 **Navigations-Ansicht** – Routenplanung zum Einsatzort
@@ -77,6 +80,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 📅 **iCal-Kalender** – Anbindung beliebiger iCal-URLs (Google Calendar, Nextcloud, etc.)
 - 📅 **Terminanzeige** – Nächste Termine werden in der Idle-Ansicht angezeigt
 - 📅 **Multi-Kalender** – Mehrere Kalender-URLs konfigurierbar
+- 🔁 **Automatischer Wechsel** – Bei konfiguriertem Kalender wechselt die rechte Idle-Box alle 30 Sekunden zwischen Terminen und Unwetterwarnungen
 
 ### Dashboard-Nachrichten (optional)
 - 📣 **ntfy.sh Integration** – Nachrichten über ntfy.sh Topics senden und anzeigen
@@ -101,6 +105,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - ⚙️ **Standortkonfiguration** – Einstellung von Standardkoordinaten und Standortnamen
 - ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche
 - ⚙️ **Kalender-URLs** – iCal-URLs für die Terminanzeige
+- ⚙️ **Unwetter-Simulation** – Testmodus für simulierte DWD-Unwetterwarnungen
 - ⚙️ **ntfy.sh-Einstellungen** – Topic-URL, Abfrage-Intervall und TTL für Nachrichten
 - ⚙️ **Logo-Verwaltung** – Logo hochladen oder Standard-Logo wiederherstellen
 - ⚙️ **Persistente Speicherung** – Einstellungen bleiben über Neustarts hinweg erhalten
@@ -126,7 +131,7 @@ Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldung
 ![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-feedback.png)
 
 ### Dashboard – Standardansicht (Idle)
-Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, aktuelles Wetter, nächste Kalendertermine, Nachrichten und den letzten Einsatz.
+Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum und aktuelles Wetter. Links wird der letzte Einsatz angezeigt, rechts Termine und/oder DWD-Unwetterwarnungen (bei konfiguriertem Kalender im 30-Sekunden-Wechsel).
 
 ![Dashboard Standardansicht](docs/screenshots/dashboard-idle.png)
 
@@ -423,6 +428,7 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 - **Standard Standortname**: Bezeichnung des Standorts (z.B. "Feuerwache Willingshausen")
 - **Gruppen-Filter (TME-Codes)**: Kommagetrennte Liste von TME-Codes zur Alarmfilterung
 - **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand (eine URL pro Zeile)
+- **Unwetterwarnung simulieren (Test)**: Aktiviert eine simulierte DWD-Unwetterwarnung für UI-Tests
 - **ntfy.sh Topic-URL**: URL des ntfy-Topics für eingehende Dashboard-Nachrichten
 - **ntfy Abfrage-Intervall**: Wie oft das ntfy-Topic abgefragt wird (in Sekunden)
 - **Nachrichten-TTL**: Standard-Anzeigedauer für ntfy-Nachrichten (in Minuten)
@@ -501,6 +507,12 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 # Open-Meteo für Wetter (Standard: Open-Meteo API)
 # ALARM_DASHBOARD_WEATHER_URL=https://api.open-meteo.com/v1/forecast
 # ALARM_DASHBOARD_WEATHER_PARAMS=current_weather=true&hourly=precipitation,precipitation_probability
+
+# DWD-Unwetterwarnungen (Standard: offizielle WarnWetter-API)
+# ALARM_DASHBOARD_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
+
+# Simulierte Unwetterwarnung für Tests (alternativ in der Web-UI unter Einstellungen)
+# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
 
 # OpenRouteService für Navigation (optional)
 # ALARM_DASHBOARD_ORS_API_KEY=your-ors-api-key-here
@@ -612,7 +624,9 @@ Das Hauptdashboard zeigt entweder den aktuellen Alarm oder die Idle-Ansicht an.
 - Große Uhr mit Datum
 - Lokales Wetter am Standort
 - Vereinswappen
-- Kompakte Anzeige des letzten Einsatzes
+- Links: letzter Einsatz
+- Rechts: DWD-Unwetterwarnungen und/oder nächste Kalendertermine
+- Bei konfiguriertem Kalender: automatischer Wechsel zwischen Terminen und Unwetter alle 30 Sekunden
 
 #### Mobile-Ansicht (`/mobile`)
 Optimiert für Smartphones und Tablets:
@@ -641,6 +655,7 @@ Webbasierte Konfigurationsoberfläche:
 - **Standortkonfiguration**: Eingabe von Breitengrad, Längengrad und Standortname
 - **Gruppenfilter**: Konfiguration der TME-Codes (kommagetrennt)
 - **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand
+- **Unwetter-Simulation**: Testmodus für simulierte DWD-Warnungen
 - **ntfy.sh-Integration**: Topic-URL, Abfrage-Intervall und Nachrichten-TTL
 - **Logo-Upload**: Individuelles Feuerwehr-Logo hochladen (PNG/JPEG/WebP/SVG)
 - **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
@@ -695,6 +710,23 @@ GET /api/alarm
   "mode": "idle",
   "alarm": null,
   "weather": { ... },
+  "warnings": {
+    "active": true,
+    "mock": false,
+    "bundesland": { "code": "hes", "name": "Hessen" },
+    "map_url": "https://www.dwd.de/DWD/warnungen/warnapp_gemeinden/json/warnungen_gemeinde_map_hes.png",
+    "items": [
+      {
+        "headline": "Amtliche UNWETTERWARNUNG vor STURMBÖEN",
+        "event": "STURMBÖEN",
+        "level": 3,
+        "level_label": "Unwetterwarnung",
+        "description": "...",
+        "start": "2024-01-01T12:00:00+00:00",
+        "end": "2024-01-01T18:00:00+00:00"
+      }
+    ]
+  },
   "location": "Feuerwache Musterstadt",
   "timestamp": "2024-01-01T12:30:00+00:00",
   "last_alarm": { ... }
@@ -740,6 +772,7 @@ GET /api/calendar
 
 # Antwort:
 {
+  "configured": true,
   "events": [
     {
       "summary": "Dienstbesprechung",
@@ -750,7 +783,7 @@ GET /api/calendar
   ]
 }
 
-# 200 mit leerer Liste wenn keine Kalender-URLs konfiguriert
+# 200 mit leerer Liste und configured: false wenn keine Kalender-URLs konfiguriert
 ```
 
 #### Dashboard-Nachrichten
@@ -1069,6 +1102,7 @@ Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION
 - **Externe Dienste**:
   - [Nominatim API](https://nominatim.org/release-docs/latest/api/Search/) – Geokodierung
   - [Open-Meteo API](https://open-meteo.com/en/docs) – Wetterdaten
+  - [Deutscher Wetterdienst (WarnWetter)](https://www.dwd.de/DE/wetter/warnungen_aktuell/objekt_einbindung/objekteinbindung_node.html) – Unwetterwarnungen und Warnkarten
   - [OpenRouteService](https://openrouteservice.org/) – Routenplanung
   - [Leaflet](https://leafletjs.com/) – Kartendarstellung
 
@@ -1085,7 +1119,11 @@ alarm-monitor/
 │   ├── config.py             # Konfiguration
 │   ├── storage.py            # Alarm-Speicherung
 │   ├── geocode.py            # Geokodierung
-│   ├── weather.py            # Wetterabfrage
+│   ├── weather.py            # Wetterabfrage (Open-Meteo)
+│   ├── weather_cache.py      # Wetter-Cache
+│   ├── dwd_warnings.py       # DWD-Unwetterwarnungen
+│   ├── warnings_cache.py     # DWD-Warnungs-Cache
+│   ├── bundesland.py         # Bundesland-Erkennung für Warnkarten
 │   ├── messenger.py          # Messenger-Integration
 │   ├── static/               # CSS, JS, Bilder
 │   │   ├── css/

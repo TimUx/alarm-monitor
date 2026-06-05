@@ -24,6 +24,7 @@ from .messenger import create_messenger
 from .message_store import MessageStore
 from .ntfy_client import create_ntfy_poller
 from .storage import AlarmStore, SettingsStore
+from .warnings_cache import WarningsCache
 from .weather_cache import WeatherCache
 
 LOGGER = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "ntfy_topic_url": stored.get("ntfy_topic_url", config.ntfy_topic_url),
         "ntfy_poll_interval": stored.get("ntfy_poll_interval", config.ntfy_poll_interval),
         "message_default_ttl_minutes": stored.get("message_default_ttl_minutes", 60),
+        "dwd_warnings_mock": stored.get("dwd_warnings_mock", config.dwd_warnings_mock),
     }
 
 
@@ -158,6 +160,9 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     # Per-app weather cache instance
     weather_cache = WeatherCache()
     app.config["WEATHER_CACHE"] = weather_cache
+
+    warnings_cache = WarningsCache()
+    app.config["WARNINGS_CACHE"] = warnings_cache
 
     # SSE subscriber registry – one threading.Event per connected client
     _subscribers: List[threading.Event] = []
