@@ -561,7 +561,8 @@ body {
     color: var(--accent);
 }
 
-.idle-last-alarm p {
+.idle-last-alarm p,
+.idle-warnings-side > p {
     margin: 0;
     font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
     color: var(--text-primary);
@@ -600,15 +601,6 @@ body {
     margin: 0.75rem 0 1rem;
 }
 
-.idle-warnings-status {
-    margin: 0;
-    font-weight: 600;
-}
-
-.idle-warnings-status--none {
-    color: var(--text-secondary);
-}
-
 .idle-warnings-mock-badge {
     margin: 0;
     display: inline-block;
@@ -629,12 +621,14 @@ body {
 }
 
 .idle-warnings-side .idle-warnings-headline {
-    font-size: clamp(1.15rem, 0.95rem + 0.45vw, 1.55rem);
-    line-height: 1.25;
+    margin: 0;
+    font-size: clamp(1.85rem, 1.45rem + 0.85vw, 2.45rem);
+    line-height: 1.2;
 }
 
 .idle-warnings-side .idle-warnings-description {
-    font-size: clamp(1rem, 0.88rem + 0.35vw, 1.2rem);
+    font-size: clamp(1.5rem, 1.2rem + 0.6vw, 2rem);
+    color: var(--text-primary);
     line-height: 1.35;
 }
 
@@ -653,7 +647,7 @@ body {
 
 .idle-warnings-validity {
     margin: 0;
-    font-size: clamp(0.95rem, 0.85rem + 0.3vw, 1.1rem);
+    font-size: clamp(1.2rem, 1rem + 0.45vw, 1.55rem);
     color: var(--text-secondary);
 }
 

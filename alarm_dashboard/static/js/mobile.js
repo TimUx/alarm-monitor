@@ -263,9 +263,13 @@ let mobileCalendarConfigured = false;
 let mobileCalendarEventsCache = [];
 let mobileSidePanelShowWarnings = false;
 let mobileSidePanelTimer = null;
+let currentMobileMode = null;
 const MOBILE_SIDE_ROTATION_MS = 30000;
 
 function setMobileMode(mode) {
+    const enteringIdle = mode === 'idle' && currentMobileMode !== 'idle';
+    currentMobileMode = mode;
+
     if (mode === 'alarm') {
         mobileAlarmView.classList.remove('hidden');
         mobileWeatherCard.classList.remove('hidden');
@@ -281,9 +285,11 @@ function setMobileMode(mode) {
         mobileWeatherCard.classList.add('hidden');
         mobileMapSection.classList.add('hidden');
         mobileIdleView.classList.remove('hidden');
-        mobileSidePanelShowWarnings = false;
+        if (enteringIdle) {
+            mobileSidePanelShowWarnings = false;
+            startMobileSidePanelRotation();
+        }
         updateMobileSidePanelVisibility();
-        startMobileSidePanelRotation();
     }
 
     if (mode === 'alarm') {
@@ -797,8 +803,7 @@ function stopMobileSidePanelRotation() {
 }
 
 function startMobileSidePanelRotation() {
-    stopMobileSidePanelRotation();
-    if (!mobileCalendarConfigured) {
+    if (mobileSidePanelTimer !== null || !mobileCalendarConfigured) {
         return;
     }
     mobileSidePanelTimer = setInterval(() => {
@@ -842,7 +847,6 @@ function updateMobileWarningsSide(warnings) {
 
     if (warnings != null) {
         const status = document.createElement('p');
-        status.className = 'mobile-warnings-status mobile-warnings-status--none';
         status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
         mobileWarningsSideEl.appendChild(status);
         return;

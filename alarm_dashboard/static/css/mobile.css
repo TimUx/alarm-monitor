@@ -419,22 +419,15 @@ body {
     font-size: clamp(1.08rem, 1rem + 0.42vw, 1.26rem);
 }
 
-.mobile-last-alarm p {
+.mobile-last-alarm p,
+.mobile-warnings-side > p {
     margin: 0;
     font-size: clamp(1.16rem, 1.08rem + 0.5vw, 1.36rem);
+    color: var(--text-primary);
 }
 
 .mobile-warnings-side--active {
     border-color: rgba(255, 152, 0, 0.45);
-}
-
-.mobile-warnings-status {
-    margin: 0;
-    font-weight: 600;
-}
-
-.mobile-warnings-status--none {
-    color: var(--text-secondary);
 }
 
 .mobile-warnings-mock-badge {
@@ -455,6 +448,15 @@ body {
     margin: 0;
 }
 
+.mobile-warnings-side .mobile-warnings-item strong {
+    font-size: clamp(1.28rem, 1.18rem + 0.55vw, 1.5rem);
+}
+
+.mobile-warnings-side .mobile-warnings-item p:not(.mobile-warnings-validity) {
+    font-size: clamp(1.16rem, 1.08rem + 0.5vw, 1.36rem);
+    color: var(--text-primary);
+}
+
 .mobile-warnings-item--level-4 strong {
     color: #f44336;
 }
@@ -464,7 +466,7 @@ body {
 }
 
 .mobile-warnings-validity {
-    font-size: clamp(0.95rem, 0.9rem + 0.35vw, 1.08rem);
+    font-size: clamp(1rem, 0.95rem + 0.35vw, 1.15rem);
     color: var(--text-secondary);
 }
 

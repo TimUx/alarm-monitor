@@ -564,6 +564,7 @@ let idleCalendarConfigured = false;
 let idleWarningsCache = null;
 let idleSidePanelShowWarnings = false;
 let idleSidePanelTimer = null;
+let currentDashboardMode = null;
 
 const IDLE_CALENDAR_MAX_ROWS = 6;
 const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
@@ -741,6 +742,9 @@ function setNavigationAvailability(isAvailable) {
 }
 
 function setMode(mode) {
+    const enteringIdle = mode === 'idle' && currentDashboardMode !== 'idle';
+    currentDashboardMode = mode;
+
     if (mode === 'alarm') {
         alarmView.classList.remove('hidden');
         idleView.classList.add('hidden');
@@ -765,9 +769,11 @@ function setMode(mode) {
     }
 
     if (mode === 'idle') {
-        idleSidePanelShowWarnings = false;
+        if (enteringIdle) {
+            idleSidePanelShowWarnings = false;
+            startIdleSidePanelRotation();
+        }
         updateIdleSidePanelVisibility();
-        startIdleSidePanelRotation();
     } else {
         stopIdleSidePanelRotation();
     }
@@ -1309,8 +1315,7 @@ function stopIdleSidePanelRotation() {
 }
 
 function startIdleSidePanelRotation() {
-    stopIdleSidePanelRotation();
-    if (!idleCalendarConfigured) {
+    if (idleSidePanelTimer !== null || !idleCalendarConfigured) {
         return;
     }
     idleSidePanelTimer = setInterval(() => {
@@ -1358,7 +1363,6 @@ function updateIdleWarningsSide(warnings) {
 
     if (warnings != null) {
         const status = document.createElement('p');
-        status.className = 'idle-warnings-status idle-warnings-status--none';
         status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
         idleWarningsSideEl.appendChild(status);
         return;
