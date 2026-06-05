@@ -1213,12 +1213,17 @@ function appendIdleNoWarningStatus(container) {
 
 function appendIdleActiveWarningsContent(container, warnings) {
     const regionName = warnings?.bundesland?.name;
+    const layout = document.createElement('div');
+    layout.className = 'idle-warnings-layout';
+
+    const details = document.createElement('div');
+    details.className = 'idle-warnings-details';
 
     if (warnings?.mock) {
         const badge = document.createElement('p');
         badge.className = 'idle-warnings-mock-badge';
         badge.textContent = 'Simulierte Testwarnung';
-        container.appendChild(badge);
+        details.appendChild(badge);
     }
 
     warnings.items.forEach((item) => {
@@ -1255,8 +1260,10 @@ function appendIdleActiveWarningsContent(container, warnings) {
             itemEl.appendChild(validityEl);
         }
 
-        container.appendChild(itemEl);
+        details.appendChild(itemEl);
     });
+
+    layout.appendChild(details);
 
     if (warnings.map_url) {
         const mapWrap = document.createElement('div');
@@ -1268,8 +1275,10 @@ function appendIdleActiveWarningsContent(container, warnings) {
             : 'DWD Warnkarte';
         mapImg.loading = 'lazy';
         mapWrap.appendChild(mapImg);
-        container.appendChild(mapWrap);
+        layout.appendChild(mapWrap);
     }
+
+    container.appendChild(layout);
 }
 
 function updateIdleMainPanel(lastAlarm, warnings) {

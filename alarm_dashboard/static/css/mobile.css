@@ -474,17 +474,48 @@ body {
     color: var(--text-secondary);
 }
 
+.mobile-warnings-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 0.75rem;
+    align-items: start;
+}
+
+.mobile-warnings-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
 .mobile-warnings-map {
-    border-radius: 12px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--divider);
     background: #fff;
+    max-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .mobile-warnings-map img {
     display: block;
     width: 100%;
     height: auto;
+    max-height: 140px;
+    object-fit: contain;
+}
+
+@media (max-width: 420px) {
+    .mobile-warnings-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .mobile-warnings-map,
+    .mobile-warnings-map img {
+        max-height: 120px;
+    }
 }
 
 .mobile-calendar,
