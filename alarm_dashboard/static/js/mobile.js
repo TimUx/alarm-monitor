@@ -225,7 +225,7 @@ function collectPrecipitationDetails(weather) {
     return details;
 }
 
-if (mobileMapEl) {
+if (mobileMapEl && typeof L !== 'undefined') {
     mobileMap = L.map('mobile-map', {
         zoomControl: false,
     }).setView([51.1657, 10.4515], 6);
@@ -261,6 +261,7 @@ const mobileNavigationButton = document.getElementById('mobile-navigation-button
 
 let mobileCalendarConfigured = false;
 let mobileCalendarEventsCache = [];
+let mobileShowLastAlarm = true;
 let mobileSidePanelShowWarnings = false;
 let mobileSidePanelTimer = null;
 let currentMobileMode = null;
@@ -269,6 +270,8 @@ const MOBILE_SIDE_ROTATION_MS = 30000;
 function setMobileMode(mode) {
     const enteringIdle = mode === 'idle' && currentMobileMode !== 'idle';
     currentMobileMode = mode;
+    document.body.classList.toggle('mode-alarm', mode === 'alarm');
+    document.body.classList.toggle('mode-idle', mode === 'idle');
 
     if (mode === 'alarm') {
         mobileAlarmView.classList.remove('hidden');
@@ -287,7 +290,11 @@ function setMobileMode(mode) {
         mobileIdleView.classList.remove('hidden');
         if (enteringIdle) {
             mobileSidePanelShowWarnings = false;
-            startMobileSidePanelRotation();
+            if (mobileShowLastAlarm) {
+                startMobileSidePanelRotation();
+            } else {
+                stopMobileSidePanelRotation();
+            }
         }
         updateMobileSidePanelVisibility();
     }
@@ -471,7 +478,7 @@ function updateMobileDashboard(data) {
         setMobileMode('idle');
         mobileTimestamp.textContent = 'Keine aktuellen Einsätze';
         updateMobileIdleWeather(data.weather);
-        updateMobileMainPanel(data.last_alarm, data.warnings);
+        updateMobileMainPanel(data.last_alarm, data.warnings, data.show_last_alarm);
         if (mobileKeywordSecondary) {
             mobileKeywordSecondary.textContent = '';
             mobileKeywordSecondary.classList.add('hidden');
@@ -588,7 +595,9 @@ function updateMobileCalendar(calendarData) {
 
     mobileCalendarEl.appendChild(list);
     updateMobileSidePanelVisibility();
-    startMobileSidePanelRotation();
+    if (mobileShowLastAlarm) {
+        startMobileSidePanelRotation();
+    }
 }
 
 function updateMobileMessages(messages) {
@@ -803,7 +812,7 @@ function stopMobileSidePanelRotation() {
 }
 
 function startMobileSidePanelRotation() {
-    if (mobileSidePanelTimer !== null || !mobileCalendarConfigured) {
+    if (mobileSidePanelTimer !== null || !mobileCalendarConfigured || !mobileShowLastAlarm) {
         return;
     }
     mobileSidePanelTimer = setInterval(() => {
@@ -813,6 +822,16 @@ function startMobileSidePanelRotation() {
 }
 
 function updateMobileSidePanelVisibility() {
+    if (!mobileShowLastAlarm) {
+        if (mobileCalendarEl) {
+            mobileCalendarEl.classList.toggle('hidden', !mobileCalendarConfigured);
+        }
+        if (mobileWarningsSideEl) {
+            mobileWarningsSideEl.classList.add('hidden');
+        }
+        return;
+    }
+
     const showWarnings = !mobileCalendarConfigured || mobileSidePanelShowWarnings;
 
     if (mobileCalendarEl) {
@@ -825,36 +844,40 @@ function updateMobileSidePanelVisibility() {
     }
 }
 
-function updateMobileWarningsSide(warnings) {
-    if (!mobileWarningsSideEl) {
+function renderMobileWarningsPanel(container, warnings) {
+    if (!container) {
         return;
     }
 
     const activeWarnings = hasActiveMobileSevereWarnings(warnings);
     const regionName = warnings?.bundesland?.name;
 
-    mobileWarningsSideEl.classList.toggle('mobile-warnings-side--active', activeWarnings);
-    mobileWarningsSideEl.innerHTML = '';
+    container.classList.toggle('mobile-warnings-side--active', activeWarnings);
+    container.innerHTML = '';
 
     const heading = document.createElement('h3');
     heading.textContent = regionName ? `Unwetter ${regionName}` : 'Unwetterwarnung';
-    mobileWarningsSideEl.appendChild(heading);
+    container.appendChild(heading);
 
     if (activeWarnings) {
-        appendMobileActiveWarningsContent(mobileWarningsSideEl, warnings);
+        appendMobileActiveWarningsContent(container, warnings);
         return;
     }
 
     if (warnings != null) {
         const status = document.createElement('p');
         status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
-        mobileWarningsSideEl.appendChild(status);
+        container.appendChild(status);
         return;
     }
 
     const empty = document.createElement('p');
     empty.textContent = 'Keine Warnungsdaten verfügbar.';
-    mobileWarningsSideEl.appendChild(empty);
+    container.appendChild(empty);
+}
+
+function updateMobileWarningsSide(warnings) {
+    renderMobileWarningsPanel(mobileWarningsSideEl, warnings);
 }
 
 function updateMobileLastAlarm(info) {
@@ -866,9 +889,27 @@ function updateMobileLastAlarm(info) {
     appendMobileLastAlarmContent(mobileLastAlarm, info);
 }
 
-function updateMobileMainPanel(lastAlarm, warnings) {
-    updateMobileLastAlarm(lastAlarm);
-    updateMobileWarningsSide(warnings);
+function updateMobileMainPanel(lastAlarm, warnings, showLastAlarm) {
+    if (showLastAlarm !== undefined) {
+        mobileShowLastAlarm = showLastAlarm !== false;
+    }
+
+    if (mobileShowLastAlarm) {
+        if (mobileLastAlarm) {
+            mobileLastAlarm.classList.remove('mobile-warnings-side--active');
+        }
+        updateMobileLastAlarm(lastAlarm);
+        updateMobileWarningsSide(warnings);
+    } else {
+        stopMobileSidePanelRotation();
+        renderMobileWarningsPanel(mobileLastAlarm, warnings);
+        if (mobileWarningsSideEl) {
+            mobileWarningsSideEl.classList.remove('mobile-warnings-side--active');
+            mobileWarningsSideEl.innerHTML = '';
+            mobileWarningsSideEl.classList.add('hidden');
+        }
+    }
+
     updateMobileSidePanelVisibility();
 }
 

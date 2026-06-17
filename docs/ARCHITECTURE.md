@@ -409,7 +409,7 @@ def fetch_severe_warnings(
 
 #### `bundesland.py` – Bundesland-Erkennung
 ```python
-def resolve_bundesland(latitude: float, longitude: float) -> Optional[dict]:
+def resolve_dwd_region(latitude: float, longitude: float) -> Optional[dict]:
     """
     Ermittelt das Bundesland für die DWD-Warnkarten-URL.
     Rückgabe: { code, name } oder None
@@ -427,27 +427,15 @@ class WarningsCache:
 
 #### `messenger.py` – Messenger-Integration
 ```python
-class MessengerClient:
-    def __init__(self, base_url: str, api_key: str):
-        self.base_url = base_url
-        self.api_key = api_key
-        self.emergency_cache = {}
-    
-    def cache_emergency_id(
-        self,
-        incident_number: str,
-        emergency_id: str
-    ) -> None:
-        """Cached emergency_id für Rückmeldungsabfrage"""
-    
-    def fetch_participants(
-        self,
-        incident_number: str
-    ) -> list:
-        """Ruft Teilnehmerliste vom Messenger ab"""
+class AlarmMessenger:
+    def get_participants(self, incident_number: str) -> Optional[list]:
+        """
+        Sucht Emergency-UUID via GET /api/emergencies?emergencyNumber=...
+        und ruft Teilnehmer via GET /api/emergencies/{uuid}/participants ab.
+        """
 ```
 
-#### `calendar_client.py` – Kalender-Integration
+#### `calendar_service.py` – Kalender-Integration
 ```python
 def fetch_calendar_events(
     calendar_urls: list[str],
@@ -664,7 +652,7 @@ Siehe [alarm-messenger Repository](https://github.com/TimUx/alarm-messenger) fü
 
   # Stichwort
   "keyword": str,              # ESTICHWORT_1
-  "keyword_sub": str,          # ESTICHWORT_2
+  "keyword_secondary": str,   # ESTICHWORT_2
 
   # Beschreibung
   "description": str,          # DIAGNOSE
@@ -720,10 +708,19 @@ Siehe [alarm-messenger Repository](https://github.com/TimUx/alarm-messenger) fü
 
 ### Authentifizierung
 
-**API-Keys**:
-- Alle API-Endpunkte sind durch API-Keys geschützt
-- Keys werden im `X-API-Key` Header übermittelt
-- Mindestlänge: 32 Zeichen (empfohlen: `openssl rand -hex 32`)
+**Geschützte Endpunkte** (Auswahl):
+
+| Endpunkt | Authentifizierung |
+|----------|-------------------|
+| `POST /api/alarm` | `X-API-Key` |
+| `POST /api/messages` | `X-API-Key` |
+| `POST /api/settings` | `X-Settings-Password` + `X-CSRF-Token` |
+| `POST/DELETE /api/settings/logo` | `X-Settings-Password` + `X-CSRF-Token` |
+| `GET /api/metrics` | `X-Metrics-Token` |
+
+**Öffentlich lesbar** (kein API-Key): `GET /api/alarm`, `GET /api/stream`, `GET /api/history`, `GET /api/calendar`, `GET /api/messages`, `GET /api/settings`, `GET /api/logo`, `GET /health` und alle HTML-Seiten.
+
+API-Keys werden im `X-API-Key` Header übermittelt. Empfohlen: `openssl rand -hex 32`
 
 **Best Practices**:
 - Keys niemals in Git committen
@@ -890,7 +887,7 @@ curl -f http://localhost:8000/health || exit 1
 - [x] Echtzeit-Updates via Server-Sent Events (implementiert)
 - [ ] Progressive Web App (PWA) für Offline-Nutzung
 - [x] Prometheus-Metriken Export (implementiert via `/api/metrics`)
-- [ ] Automatische Tests (CI/CD)
+- [x] Automatische Tests (CI/CD via GitHub Actions, 80 % Coverage-Gate)
 - [ ] API-Versionierung
 
 ---

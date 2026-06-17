@@ -1,38 +1,31 @@
 ---
-name: Bug report
-about: Create a report to help us improve
+name: Fehler melden
+about: Einen Bug oder Fehler beschreiben
 title: ''
-labels: ''
+labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Beschreibung des Fehlers**
+Kurze, präzise Beschreibung des Problems.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Schritte zur Reproduktion**
+1. Seite/Aktion: '...'
+2. Eingabe/Klick: '...'
+3. Ergebnis: '...'
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Erwartetes Verhalten**
+Was sollte stattdessen passieren?
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem.
+Falls hilfreich, Screenshots anhängen.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Umgebung**
+- Betriebsart: [Docker / Native / Raspberry Pi Kiosk]
+- OS: [z. B. Ubuntu 24.04, Raspberry Pi OS]
+- Browser: [z. B. Chromium 120]
+- App-Version: [z. B. git commit oder Docker-Tag]
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+**Zusätzlicher Kontext**
+Logs, Konfiguration (ohne Passwörter/API-Keys), weitere Hinweise.

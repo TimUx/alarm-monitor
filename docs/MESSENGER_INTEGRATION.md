@@ -207,10 +207,10 @@ Die Integration funktioniert bidirektional:
 
 ### Teilnehmerrückmeldungen (alarm-messenger → alarm-monitor)
 
-1. Der alarm-monitor registriert beim Empfang eines Alarms die `emergency_id`
-2. Das Dashboard kann Teilnehmerlisten vom alarm-messenger abrufen
-3. Teilnehmerrückmeldungen werden im Dashboard angezeigt (wer hat zugesagt)
-4. Die Abfrage erfolgt über den API-Endpunkt `/api/emergencies/{emergency_id}/participants`
+1. Das Dashboard fragt beim aktiven Alarm alle 10 Sekunden `GET /api/alarm/participants/<incident_number>` ab
+2. Der alarm-monitor sucht die Emergency-UUID beim alarm-messenger via `GET /api/emergencies?emergencyNumber=<incident_number>`
+3. Anschließend werden Teilnehmer via `GET /api/emergencies/{uuid}/participants` geladen
+4. Teilnehmerrückmeldungen werden im Dashboard angezeigt (Qualifikationen, Führungsrollen)
 
 ## API-Endpunkte
 
@@ -374,7 +374,7 @@ setInterval(() => {
 **Nachteil**:
 - Verzögerung bis zu 10 Sekunden
 
-**Geplant**: WebSocket-Support für Echtzeit-Updates ohne Polling.
+**Hinweis**: Das Dashboard nutzt für Alarm-Updates bereits **Server-Sent Events** (`/api/stream`). Teilnehmerrückmeldungen werden weiterhin per HTTP-Polling (10 s) abgefragt.
 
 ### Qualifikationen
 
@@ -472,7 +472,7 @@ INFO:alarm_dashboard.messenger:Retrieved 5 participants for incident 2024-001
 Bei Fehlern wird eine entsprechende Fehlermeldung geloggt:
 
 ```
-WARNING:alarm_dashboard.messenger:No emergency_id cached for incident 2024-001
+WARNING:alarm_dashboard.messenger:No emergency found for incident 2024-001 in messenger
 ERROR:alarm_dashboard.messenger:Failed to fetch participants from messenger: <error details>
 ```
 

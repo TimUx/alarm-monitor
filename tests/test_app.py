@@ -339,6 +339,33 @@ def test_get_settings_returns_defaults(client) -> None:
     assert "default_longitude" in data
     assert "default_location_name" in data
     assert "activation_groups" in data
+    assert data.get("show_last_alarm") is True
+
+
+def test_post_settings_show_last_alarm(client) -> None:
+    """POST /api/settings should persist show_last_alarm."""
+    response = client.post(
+        "/api/settings",
+        json={"show_last_alarm": False},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
+    )
+    assert response.status_code == 200
+
+    get_response = client.get("/api/settings")
+    assert get_response.get_json()["show_last_alarm"] is False
+
+
+def test_get_alarm_idle_includes_show_last_alarm(client, flask_app) -> None:
+    """GET /api/alarm in idle mode should include show_last_alarm from settings."""
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    settings_store.update({"show_last_alarm": False})
+
+    response = client.get("/api/alarm")
+    assert response.status_code == 200
+    assert response.get_json()["show_last_alarm"] is False
 
 
 # ---------------------------------------------------------------------------
@@ -666,6 +693,8 @@ def test_mobile_page_returns_200(client) -> None:
     """GET /mobile should return 200 with mobile HTML."""
     response = client.get("/mobile")
     assert response.status_code == 200
+    assert b"vendor/leaflet/leaflet.js" in response.data
+    assert b"unpkg.com/leaflet" not in response.data
 
 
 def test_navigation_page_returns_200(client) -> None:

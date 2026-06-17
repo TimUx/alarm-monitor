@@ -97,6 +97,7 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "ntfy_poll_interval": stored.get("ntfy_poll_interval", config.ntfy_poll_interval),
         "message_default_ttl_minutes": stored.get("message_default_ttl_minutes", 60),
         "dwd_warnings_mock": stored.get("dwd_warnings_mock", config.dwd_warnings_mock),
+        "show_last_alarm": stored.get("show_last_alarm", True),
     }
 
 

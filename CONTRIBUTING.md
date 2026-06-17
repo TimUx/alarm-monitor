@@ -18,11 +18,9 @@ Vielen Dank für Ihr Interesse, zum Alarm Monitor Projekt beizutragen! Dieses Do
 
 ---
 
-## Code of Conduct
+## Verhaltenskodex
 
-Dieses Projekt folgt dem [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/). Durch Ihre Teilnahme wird erwartet, dass Sie diesen Code einhalten.
-
-**Grundprinzipien**:
+**Grundprinzipien** für Beiträge:
 - Respektvoller und konstruktiver Umgang
 - Offenheit für unterschiedliche Meinungen und Erfahrungen
 - Fokus auf das Beste für die Community
@@ -97,11 +95,7 @@ source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 pip install -r requirements-dev.txt  # Wenn vorhanden
 
-# 6. Pre-commit Hooks installieren (optional)
-pip install pre-commit
-pre-commit install
-
-# 7. .env-Datei erstellen
+# 6. .env-Datei erstellen
 cp .env.example .env
 # API-Key generieren und eintragen
 ```
@@ -124,8 +118,7 @@ docker compose up --build
 
 ### Branch-Strategie
 
-- **`main`** – Stabile Produktion
-- **`develop`** – Aktive Entwicklung (wenn vorhanden)
+- **`main`** – Stabile Produktion (einziger Dauerbranch)
 - **Feature-Branches** – `feature/<name>` für neue Features
 - **Bugfix-Branches** – `bugfix/<issue-number>` für Bug-Fixes
 - **Hotfix-Branches** – `hotfix/<name>` für dringende Fixes
@@ -220,7 +213,8 @@ def fetch_weather(latitude: float, longitude: float) -> dict:
 **Dateistruktur**:
 ```
 alarm_dashboard/
-├── app.py              # Flask-Anwendung und Routen
+├── app.py              # Flask-App-Factory
+├── routes/             # HTTP-Routen (views.py, api.py)
 ├── config.py           # Konfigurationsmanagement
 ├── storage.py          # Datenpersistenz
 ├── geocode.py          # Geokodierungs-Logik
@@ -390,10 +384,14 @@ def example():
 ### Screenshot-Dokumentation
 
 Wenn Sie UI-Änderungen vornehmen:
-1. Machen Sie Screenshots der neuen Ansicht
-2. Speichern Sie sie in `docs/screenshots/`
-3. Benennung: `<view>-<state>.png` (z.B. `dashboard-alarm.png`)
-4. Aktualisieren Sie Referenzen in der Dokumentation
+1. Screenshots automatisch erstellen: `python scripts/capture_screenshots.py`
+2. Oder manuell speichern in `docs/screenshots/`
+3. Benennung: `<ansicht>-<light|dark>.png` (z.B. `dashboard-alarm-light.png`, `history-dark.png`)
+4. Referenzen in `README.md` und `docs/SCREENSHOTS.md` aktualisieren
+
+**Farbmodi:**
+- Dashboard/Mobile Alarm = Light, Idle/Unwetter = Dark
+- Historie, Navigation, Einstellungen = Light und Dark (System-Theme)
 
 ---
 

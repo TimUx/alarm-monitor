@@ -196,22 +196,24 @@ mkdir -p ~/feuerwehr/alarm-monitor/instance
 nano ~/feuerwehr/alarm-monitor/.env
 ```
 
-Inhalt (Werte anpassen):
+Inhalt (Werte anpassen — siehe auch `.env.example` im Repository):
 
 ```env
-# Allgemein
-TZ=Europe/Berlin
-SECRET_KEY=dein-geheimer-schluessel-hier
+# Pflichtfelder
+ALARM_DASHBOARD_API_KEY=<openssl rand -hex 32>
+ALARM_DASHBOARD_SETTINGS_PASSWORD=<openssl rand -hex 16>
 
-# Datenbank
-DATABASE_URL=sqlite:///instance/alarms.db
+# Anzeige (optional)
+ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
+ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
+ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
 
-# Authentifizierung (optional)
-ADMIN_PASSWORD=sicheres-passwort
+# OpenRouteService für Routenplanung (optional)
+# ALARM_DASHBOARD_ORS_API_KEY=dein-openrouteservice-key
 
-# API-Einstellungen
-GEOCODING_PROVIDER=nominatim
-ORS_API_KEY=dein-openrouteservice-key
+# Prometheus-Metriken (optional)
+# ALARM_DASHBOARD_METRICS_TOKEN=<openssl rand -hex 32>
 ```
 
 #### alarm-mail `.env`
@@ -220,22 +222,17 @@ ORS_API_KEY=dein-openrouteservice-key
 nano ~/feuerwehr/alarm-mail/.env
 ```
 
-Inhalt (Werte anpassen):
+Inhalt (Werte anpassen — siehe alarm-mail Dokumentation):
 
 ```env
-TZ=Europe/Berlin
+# IMAP-Postfach (Beispielnamen, je nach alarm-mail Version)
+ALARM_MAIL_IMAP_HOST=mail.example.com
+ALARM_MAIL_IMAP_USER=alarm@feuerwehr.example.com
+ALARM_MAIL_IMAP_PASSWORD=imap-passwort
 
-# IMAP-Postfach
-IMAP_HOST=mail.example.com
-IMAP_PORT=993
-IMAP_USER=alarm@feuerwehr.example.com
-IMAP_PASSWORD=imap-passwort
-IMAP_SSL=true
-IMAP_FOLDER=INBOX
-
-# alarm-monitor Endpunkt
-ALARM_MONITOR_URL=http://alarm-monitor:8000/api/alarm
-ALARM_MONITOR_TOKEN=dein-api-token
+# alarm-monitor Endpunkt (Docker-Service-Name als Hostname)
+ALARM_MAIL_MONITOR_URL=http://alarm-dashboard:8000
+ALARM_MAIL_MONITOR_API_KEY=<derselbe-key-wie-ALARM_DASHBOARD_API_KEY>
 ```
 
 ### 5.3 docker-compose.yml erstellen
@@ -247,9 +244,9 @@ nano ~/feuerwehr/docker-compose.yml
 ```yaml
 services:
 
-  alarm-monitor:
+  alarm-dashboard:
     image: ghcr.io/timux/alarm-monitor:latest
-    container_name: alarm-monitor
+    container_name: alarm-dashboard
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -275,7 +272,7 @@ services:
     networks:
       - alarm-net
     depends_on:
-      alarm-monitor:
+      alarm-dashboard:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "pgrep", "-f", "alarm-mail"]
@@ -704,7 +701,7 @@ sudo alsactl store
 
 ### 10.3 Alarm-Sound-Service erstellen
 
-Das Dashboard meldet neue Alarme über eine Webhook-URL oder es wird zyklisch der `/api/alarms`-Endpunkt gepollt.
+Für einen externen Alarmton kann der Endpunkt `GET /api/alarm` zyklisch gepollt werden (prüfen ob `mode` von `idle` auf `alarm` wechselt).
 
 ```bash
 nano ~/feuerwehr/alarm-sound.sh
@@ -727,29 +724,29 @@ log() {
 
 log "Alarm-Sound-Service gestartet"
 
-# Initialen Zustand setzen
-LAST_ID=$(curl -sf "$DASHBOARD_URL/api/alarms/latest" 2>/dev/null | \
-          python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',0))" 2>/dev/null || echo "0")
+# Initialen Zustand setzen (incident_number des letzten Alarms)
+LAST_ID=$(curl -sf "$DASHBOARD_URL/api/alarm" 2>/dev/null | \
+          python3 -c "import sys,json; d=json.load(sys.stdin); a=d.get('alarm') or {}; print(a.get('incident_number',''))" 2>/dev/null || echo "")
 echo "$LAST_ID" > "$STATE_FILE"
-log "Initialer letzter Alarm-ID: $LAST_ID"
+log "Initialer letzter Alarm: $LAST_ID"
 
 while true; do
     sleep "$CHECK_INTERVAL"
 
-    # Neuesten Alarm abrufen
-    LATEST=$(curl -sf --max-time 5 "$DASHBOARD_URL/api/alarms/latest" 2>/dev/null)
+    # Aktuellen Alarmstatus abrufen
+    LATEST=$(curl -sf --max-time 5 "$DASHBOARD_URL/api/alarm" 2>/dev/null)
     if [ -z "$LATEST" ]; then
         continue
     fi
 
     CURRENT_ID=$(echo "$LATEST" | \
-        python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',0))" 2>/dev/null || echo "0")
+        python3 -c "import sys,json; d=json.load(sys.stdin); a=d.get('alarm') or {}; print(a.get('incident_number',''))" 2>/dev/null || echo "")
 
-    SAVED_ID=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
+    SAVED_ID=$(cat "$STATE_FILE" 2>/dev/null || echo "")
 
-    # Neuer Alarm erkannt
-    if [ "$CURRENT_ID" != "$SAVED_ID" ] && [ "$CURRENT_ID" -gt "$SAVED_ID" ] 2>/dev/null; then
-        log "Neuer Alarm erkannt (ID: $CURRENT_ID) – spiele Sound ab"
+    # Neuer Alarm erkannt (neue incident_number bei mode=alarm)
+    if [ -n "$CURRENT_ID" ] && [ "$CURRENT_ID" != "$SAVED_ID" ]; then
+        log "Neuer Alarm erkannt ($CURRENT_ID) – spiele Sound ab"
         echo "$CURRENT_ID" > "$STATE_FILE"
 
         # Sound 3x abspielen
@@ -855,13 +852,18 @@ journalctl -u kiosk.service -u kiosk-watchdog.service \
 ### 11.4 Testalarm senden
 
 ```bash
-# Testalarm über die API auslösen
+# Testalarm über die API auslösen (API-Key aus .env verwenden)
 curl -X POST http://localhost:8000/api/alarm \
+    -H "X-API-Key: <ALARM_DASHBOARD_API_KEY>" \
     -H "Content-Type: application/json" \
     -d '{
-        "keyword": "TEST",
-        "location": "Feuerwehrhaus",
-        "details": "Dies ist ein Testalarm"
+        "incident_number": "2026-TEST-001",
+        "keyword": "B3 - Wohnungsbrand",
+        "diagnosis": "Dies ist ein Testalarm",
+        "location": "Feuerwehrhaus, Musterstadt",
+        "latitude": 51.2345,
+        "longitude": 9.8765,
+        "groups": ["LF20-MST"]
     }'
 ```
 
@@ -954,7 +956,7 @@ In der `docker-compose.yml` können Ressourcenlimits gesetzt werden, um den RPi 
 
 ```yaml
 services:
-  alarm-monitor:
+  alarm-dashboard:
     # ... (bestehende Konfiguration)
     deploy:
       resources:

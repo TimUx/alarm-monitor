@@ -77,8 +77,9 @@ nano .env
 
 **Minimal-Konfiguration** (`.env`):
 ```bash
-# PFLICHTFELD: API-Key für Alarmempfang
+# PFLICHTFELDER
 ALARM_DASHBOARD_API_KEY=<hier-den-generierten-key-einfügen>
+ALARM_DASHBOARD_SETTINGS_PASSWORD=<eigenes-passwort-für-einstellungen>
 
 # Feuerwehr-Name (optional)
 ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
@@ -100,8 +101,9 @@ docker compose up -d
 # Logs anzeigen
 docker compose logs -f
 
-# Warten Sie, bis Sie folgende Meldung sehen:
-# "Alarm Dashboard started on port 8000"
+# Warten Sie, bis der Container healthy ist:
+docker compose ps
+# STATUS sollte "healthy" anzeigen; Logs zeigen "Listening at: http://0.0.0.0:8000"
 ```
 
 ### 1.5 Dashboard testen
@@ -488,7 +490,7 @@ chmod +x ~/backup-alarm-monitor.sh
 
 ## Fehlerbehebung
 
-### Problem: Dashboard zeigt "Verbindung fehlgeschlagen"
+### Problem: Dashboard zeigt „Verbindung unterbrochen – Seite wird neu geladen…"
 
 **Lösung**:
 ```bash

@@ -24,6 +24,10 @@
                 document.getElementById('default_latitude').value = data.default_latitude || '';
                 document.getElementById('default_longitude').value = data.default_longitude || '';
                 document.getElementById('default_location_name').value = data.default_location_name || '';
+                const showLastAlarmEl = document.getElementById('show_last_alarm');
+                if (showLastAlarmEl) {
+                    showLastAlarmEl.checked = data.show_last_alarm !== false;
+                }
                 const mockWarningsEl = document.getElementById('dwd_warnings_mock');
                 if (mockWarningsEl) {
                     mockWarningsEl.checked = Boolean(data.dwd_warnings_mock);
@@ -60,6 +64,7 @@
             ntfy_poll_interval: formData.get('ntfy_poll_interval') || '',
             message_default_ttl_minutes: formData.get('message_default_ttl_minutes') || '',
             dwd_warnings_mock: formData.get('dwd_warnings_mock') === 'on',
+            show_last_alarm: formData.get('show_last_alarm') === 'on',
         };
         const password = formData.get('settings_password') || '';
 

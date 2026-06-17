@@ -178,29 +178,23 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 
 ### Wichtige Konfigurationsparameter
 
-| Parameter | Beschreibung | Standardwert |
-|-----------|--------------|--------------|
-| `API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
-| `SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (Web-UI deaktiviert) |
-| `DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
-| `GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
-| `FIRE_DEPARTMENT_NAME` | Feuerwehr-Name (auch via Web-UI) | Alarm-Monitor |
-| `DEFAULT_LATITUDE` | Standard-Breitengrad für Idle-Wetter | (leer) |
-| `DEFAULT_LONGITUDE` | Standard-Längengrad für Idle-Wetter | (leer) |
-| `DEFAULT_LOCATION_NAME` | Standortname für Idle-Ansicht | (leer) |
-| `CALENDAR_URLS` | Komma-/zeilengetrennte iCal-URLs | (leer) |
-| `DWD_WARNINGS_URL` | URL der DWD-WarnWetter-API | (DWD-Standard) |
-| `DWD_WARNINGS_MOCK` | Simulierte Unwetterwarnung für Tests | false |
-| `NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
-| `NTFY_POLL_INTERVAL` | ntfy Abfrage-Intervall in Sekunden | 60 |
-| `MESSAGES_FILE` | Pfad zur Nachrichten-Datei | instance/messages.json |
-| `MESSAGE_MAX_TTL_HOURS` | Maximale Nachrichten-TTL in Stunden | 72 |
-| `MESSENGER_SERVER_URL` | URL des Alarm-Messenger-Servers | (deaktiviert) |
-| `MESSENGER_API_KEY` | API-Key für Messenger-Authentifizierung | (deaktiviert) |
-| `ORS_API_KEY` | OpenRouteService-API-Key für Navigation | (deaktiviert) |
-| `METRICS_TOKEN` | Bearer-Token für `/api/metrics` Endpunkt | (deaktiviert) |
-| `HISTORY_FILE` | Pfad zur Historie-Datei | instance/alarm_history.json |
-| `SETTINGS_FILE` | Pfad zur Einstellungs-Datei | instance/settings.json |
+Alle Umgebungsvariablen verwenden das Präfix `ALARM_DASHBOARD_` (siehe `.env.example`). Kurznamen in Klammern:
+
+| Umgebungsvariable | Beschreibung | Standardwert |
+|-------------------|--------------|--------------|
+| `ALARM_DASHBOARD_API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
+| `ALARM_DASHBOARD_SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (erforderlich) |
+| `ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
+| `ALARM_DASHBOARD_GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
+| `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` | Feuerwehr-Name (auch via Web-UI) | — |
+| `ALARM_DASHBOARD_DEFAULT_LATITUDE` / `_LONGITUDE` | Koordinaten für Idle-Wetter | (leer) |
+| `ALARM_DASHBOARD_DWD_WARNINGS_MOCK` | Simulierte Unwetterwarnung für Tests | false |
+| `ALARM_DASHBOARD_NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
+| `ALARM_DASHBOARD_MESSENGER_SERVER_URL` | URL des alarm-messenger Servers | (deaktiviert) |
+| `ALARM_DASHBOARD_ORS_API_KEY` | OpenRouteService-Key für Navigation | (deaktiviert) |
+| `ALARM_DASHBOARD_METRICS_TOKEN` | Token für `/api/metrics` | (deaktiviert) |
+| `ALARM_DASHBOARD_GUNICORN_WORKERS` | Gunicorn-Worker (immer **1**) | 1 |
+| `ALARM_DASHBOARD_GUNICORN_THREADS` | Gunicorn-Threads | 8 |
 
 ---
 
@@ -405,8 +399,13 @@ EOF
 | `/api/alarm/participants/<nr>` | GET | Teilnehmerrückmeldungen (wenn Messenger konfiguriert) |
 | `/api/history` | GET | Historie (JSON, ?limit=&offset=) |
 | `/api/route` | GET | Routing-Proxy (ORS, wenn konfiguriert) |
+| `/api/calendar` | GET | Kalendertermine (JSON) |
+| `/api/messages` | GET, POST | Dashboard-Nachrichten lesen/erstellen |
+| `/api/messages/<id>` | DELETE | Nachricht löschen |
+| `/api/logo` | GET | Aktuelles Wappen (custom oder Standard) |
 | `/api/settings` | GET | Einstellungen lesen (JSON) |
 | `/api/settings` | POST | Einstellungen speichern (Passwort + CSRF erforderlich) |
+| `/api/settings/logo` | POST, DELETE | Logo hochladen / zurücksetzen |
 | `/api/metrics` | GET | Prometheus-Metriken (Token erforderlich) |
 
 ---
@@ -464,7 +463,7 @@ curl http://localhost:8000/health
 # Erwartete Antwort:
 {"status": "ok"}
 
-# Status-Code: 200 = OK, 503 = Service Unavailable
+# Status-Code: 200 = OK (immer, solange der Prozess antwortet)
 ```
 
 ### Docker Health-Check
@@ -744,7 +743,9 @@ Sicherheit.
 |-------------------|--------------|
 | `.env` | Konfiguration mit Zugangsdaten |
 | `instance/alarm_history.json` | Einsatzhistorie |
-| `alarm_dashboard/static/img/crest.png` | Angepasstes Wappen |
+| `instance/settings.json` | Web-Einstellungen |
+| `instance/messages.json` | Dashboard-Nachrichten |
+| `instance/custom_logo.*` | Hochgeladenes Wappen |
 
 ### Backup-Skript
 
@@ -756,6 +757,9 @@ DATE=$(date +%Y%m%d)
 mkdir -p $BACKUP_DIR
 cp .env $BACKUP_DIR/.env.$DATE
 cp instance/alarm_history.json $BACKUP_DIR/alarm_history.$DATE.json
+cp instance/settings.json $BACKUP_DIR/settings.$DATE.json 2>/dev/null || true
+cp instance/messages.json $BACKUP_DIR/messages.$DATE.json 2>/dev/null || true
+cp instance/custom_logo.* $BACKUP_DIR/ 2>/dev/null || true
 ```
 
 ### Wiederherstellung
@@ -798,16 +802,14 @@ sudo reboot
 
 ### Software-Optimierung
 
-**Gunicorn-Worker anpassen**:
+**Gunicorn-Threads anpassen** (Worker immer bei **1** lassen!):
 ```bash
-# Für Raspberry Pi 4 (4 Cores)
-gunicorn --workers 2 --threads 4 \
-  --worker-class gthread \
-  'alarm_dashboard.app:create_app()'
-
-# Regel: workers = (2 × CPU_CORES) + 1
-# Threads: 2-4 pro Worker
+# Mehr gleichzeitige Anfragen über Threads, nicht über Worker
+ALARM_DASHBOARD_GUNICORN_WORKERS=1
+ALARM_DASHBOARD_GUNICORN_THREADS=8   # Standard; bei stärkerer Hardware erhöhbar
 ```
+
+> **Wichtig:** Mehrere Gunicorn-Worker führen zu getrenntem Alarmzustand und SSE-Caches. Immer 1 Worker verwenden (siehe `Dockerfile` und `compose.yaml`).
 
 **Docker-Ressourcen limitieren**:
 ```yaml
@@ -1001,4 +1003,4 @@ Bei Fragen oder Problemen wenden Sie sich an:
 
 ---
 
-*Letzte Aktualisierung: Dezember 2025*
+*Letzte Aktualisierung: Juni 2026*

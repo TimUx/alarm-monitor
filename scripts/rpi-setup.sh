@@ -76,17 +76,17 @@ prompt_value() {
 }
 
 # alarm-monitor
-prompt_value SECRET_KEY        "alarm-monitor SECRET_KEY"             "$(openssl rand -hex 32)"  "true"
-prompt_value ADMIN_PASSWORD    "alarm-monitor ADMIN_PASSWORD"         ""                          "true"
-prompt_value ORS_API_KEY       "OpenRouteService API-Key (optional)"  "leer-lassen"               "false"
+prompt_value API_KEY             "ALARM_DASHBOARD_API_KEY"              "$(openssl rand -hex 32)"  "true"
+prompt_value SETTINGS_PASSWORD   "ALARM_DASHBOARD_SETTINGS_PASSWORD"    "$(openssl rand -hex 16)"  "true"
+prompt_value ORS_API_KEY         "OpenRouteService API-Key (optional)"  "leer-lassen"               "false"
 
 # alarm-mail
-prompt_value IMAP_HOST         "IMAP-Server (z.B. mail.example.com)"  ""  "false"
-prompt_value IMAP_PORT         "IMAP-Port"                            "993" "false"
-prompt_value IMAP_USER         "IMAP-Benutzername"                   ""  "false"
-prompt_value IMAP_PASSWORD     "IMAP-Passwort"                       ""  "true"
-prompt_value IMAP_FOLDER       "IMAP-Ordner"                         "INBOX" "false"
-prompt_value ALARM_MONITOR_TOKEN "API-Token für alarm-monitor"       "$(openssl rand -hex 24)" "true"
+prompt_value IMAP_HOST           "IMAP-Server (z.B. mail.example.com)"  ""  "false"
+prompt_value IMAP_PORT           "IMAP-Port"                            "993" "false"
+prompt_value IMAP_USER           "IMAP-Benutzername"                   ""  "false"
+prompt_value IMAP_PASSWORD       "IMAP-Passwort"                       ""  "true"
+prompt_value IMAP_FOLDER         "IMAP-Ordner"                         "INBOX" "false"
+prompt_value MONITOR_API_KEY     "ALARM_MAIL_MONITOR_API_KEY (wie API_KEY oben)" "$(openssl rand -hex 32)" "true"
 
 echo ""
 info "Konfiguration erfasst. Setup wird gestartet..."
@@ -166,37 +166,25 @@ ok "Verzeichnisse angelegt unter ${FEUERWEHR_DIR}."
 
 step "alarm-monitor .env erstellen"
 cat > "${FEUERWEHR_DIR}/alarm-monitor/.env" <<EOF
-# Allgemein
-TZ=Europe/Berlin
-SECRET_KEY=${SECRET_KEY}
-
-# Datenbank
-DATABASE_URL=sqlite:///instance/alarms.db
-
-# Authentifizierung
-ADMIN_PASSWORD=${ADMIN_PASSWORD}
-
-# API-Einstellungen
-GEOCODING_PROVIDER=nominatim
-ORS_API_KEY=${ORS_API_KEY}
+ALARM_DASHBOARD_API_KEY=${API_KEY}
+ALARM_DASHBOARD_SETTINGS_PASSWORD=${SETTINGS_PASSWORD}
+ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
+ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
+ALARM_DASHBOARD_ORS_API_KEY=${ORS_API_KEY}
 EOF
 ok "${FEUERWEHR_DIR}/alarm-monitor/.env erstellt."
 
 step "alarm-mail .env erstellen"
 cat > "${FEUERWEHR_DIR}/alarm-mail/.env" <<EOF
-TZ=Europe/Berlin
+ALARM_MAIL_IMAP_HOST=${IMAP_HOST}
+ALARM_MAIL_IMAP_PORT=${IMAP_PORT}
+ALARM_MAIL_IMAP_USER=${IMAP_USER}
+ALARM_MAIL_IMAP_PASSWORD=${IMAP_PASSWORD}
+ALARM_MAIL_IMAP_FOLDER=${IMAP_FOLDER}
 
-# IMAP-Postfach
-IMAP_HOST=${IMAP_HOST}
-IMAP_PORT=${IMAP_PORT}
-IMAP_USER=${IMAP_USER}
-IMAP_PASSWORD=${IMAP_PASSWORD}
-IMAP_SSL=true
-IMAP_FOLDER=${IMAP_FOLDER}
-
-# alarm-monitor Endpunkt
-ALARM_MONITOR_URL=http://alarm-monitor:8000/api/alarm
-ALARM_MONITOR_TOKEN=${ALARM_MONITOR_TOKEN}
+ALARM_MAIL_MONITOR_URL=http://alarm-dashboard:8000
+ALARM_MAIL_MONITOR_API_KEY=${MONITOR_API_KEY}
 EOF
 ok "${FEUERWEHR_DIR}/alarm-mail/.env erstellt."
 
@@ -204,9 +192,9 @@ step "docker-compose.yml erstellen"
 cat > "${FEUERWEHR_DIR}/docker-compose.yml" <<'EOF'
 services:
 
-  alarm-monitor:
+  alarm-dashboard:
     image: ghcr.io/timux/alarm-monitor:latest
-    container_name: alarm-monitor
+    container_name: alarm-dashboard
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -237,7 +225,7 @@ services:
     networks:
       - alarm-net
     depends_on:
-      alarm-monitor:
+      alarm-dashboard:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "pgrep", "-f", "alarm-mail"]
@@ -398,26 +386,26 @@ log() {
 
 log "Alarm-Sound-Service gestartet"
 
-LAST_ID=$(curl -sf "$DASHBOARD_URL/api/alarms/latest" 2>/dev/null | \
-          python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',0))" 2>/dev/null || echo "0")
+LAST_ID=$(curl -sf "$DASHBOARD_URL/api/alarm" 2>/dev/null | \
+          python3 -c "import sys,json; d=json.load(sys.stdin); a=d.get('alarm') or {}; print(a.get('incident_number',''))" 2>/dev/null || echo "")
 echo "$LAST_ID" > "$STATE_FILE"
-log "Initialer letzter Alarm-ID: $LAST_ID"
+log "Initialer letzter Alarm: $LAST_ID"
 
 while true; do
     sleep "$CHECK_INTERVAL"
 
-    LATEST=$(curl -sf --max-time 5 "$DASHBOARD_URL/api/alarms/latest" 2>/dev/null)
+    LATEST=$(curl -sf --max-time 5 "$DASHBOARD_URL/api/alarm" 2>/dev/null)
     if [ -z "$LATEST" ]; then
         continue
     fi
 
     CURRENT_ID=$(echo "$LATEST" | \
-        python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',0))" 2>/dev/null || echo "0")
+        python3 -c "import sys,json; d=json.load(sys.stdin); a=d.get('alarm') or {}; print(a.get('incident_number',''))" 2>/dev/null || echo "")
 
-    SAVED_ID=$(cat "$STATE_FILE" 2>/dev/null || echo "0")
+    SAVED_ID=$(cat "$STATE_FILE" 2>/dev/null || echo "")
 
-    if [ "$CURRENT_ID" != "$SAVED_ID" ] && [ "$CURRENT_ID" -gt "$SAVED_ID" ] 2>/dev/null; then
-        log "Neuer Alarm erkannt (ID: $CURRENT_ID) – spiele Sound ab"
+    if [ -n "$CURRENT_ID" ] && [ "$CURRENT_ID" != "$SAVED_ID" ]; then
+        log "Neuer Alarm erkannt ($CURRENT_ID) – spiele Sound ab"
         echo "$CURRENT_ID" > "$STATE_FILE"
 
         for i in 1 2 3; do

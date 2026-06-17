@@ -22,6 +22,18 @@ body.mode-idle {
     --shadow-soft: 0 18px 42px rgba(0, 0, 0, 0.45);
 }
 
+@media (prefers-color-scheme: dark) {
+    body.navigation-page {
+        --background: #05070f;
+        --surface: #111827;
+        --surface-muted: #1f2937;
+        --text-primary: #e5e7eb;
+        --text-secondary: #9ca3af;
+        --divider: rgba(148, 163, 184, 0.35);
+        --shadow-soft: 0 18px 42px rgba(0, 0, 0, 0.45);
+    }
+}
+
 * {
     box-sizing: border-box;
 }
@@ -1039,6 +1051,46 @@ body.mode-alarm .app-main {
 
     .idle-badge {
         display: none;
+    }
+
+    .header-weather {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.4rem 0.65rem;
+        max-width: 100%;
+    }
+
+    .header-weather-main {
+        font-size: clamp(1rem, 3.2vw, 1.35rem);
+        white-space: normal;
+    }
+
+    .header-weather-chips {
+        font-size: clamp(0.85rem, 2.6vw, 1.1rem);
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .header-weather-chip {
+        white-space: normal;
+    }
+
+    .idle-header-weather {
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .idle-header-weather-main {
+        font-size: clamp(1.4rem, 5vw, 2rem);
+    }
+
+    .idle-header-weather-icon {
+        font-size: clamp(1.5rem, 5.2vw, 2.1rem);
+    }
+
+    .idle-header-weather-chips {
+        align-items: flex-start;
+        font-size: clamp(1.1rem, 4vw, 1.6rem);
     }
 
     .idle-time {
