@@ -441,6 +441,7 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 - **Standard Standortname**: Bezeichnung des Standorts (z.B. "Feuerwache Willingshausen")
 - **Gruppen-Filter (TME-Codes)**: Kommagetrennte Liste von TME-Codes zur Alarmfilterung
 - **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand (eine URL pro Zeile)
+- **Letzten Einsatz anzeigen**: Steuert die Idle-Ansicht — bei Deaktivierung werden Unwetterwarnungen dauerhaft links angezeigt, rechts nur noch Termine
 - **Unwetterwarnung simulieren (Test)**: Aktiviert eine simulierte DWD-Unwetterwarnung für UI-Tests
 - **ntfy.sh Topic-URL**: URL des ntfy-Topics für eingehende Dashboard-Nachrichten
 - **ntfy Abfrage-Intervall**: Wie oft das ntfy-Topic abgefragt wird (in Sekunden)

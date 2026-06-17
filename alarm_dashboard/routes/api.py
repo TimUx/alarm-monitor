@@ -179,6 +179,7 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
         "location": effective_settings["default_location_name"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "last_alarm": last_alarm_entry,
+        "show_last_alarm": effective_settings.get("show_last_alarm", True),
     }
 
 
@@ -439,6 +440,7 @@ def api_get_settings():
         "ntfy_poll_interval": effective_settings.get("ntfy_poll_interval", 60),
         "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
         "dwd_warnings_mock": effective_settings.get("dwd_warnings_mock", False),
+        "show_last_alarm": effective_settings.get("show_last_alarm", True),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -541,6 +543,9 @@ def api_update_settings():
 
     if "dwd_warnings_mock" in data:
         updates["dwd_warnings_mock"] = bool(data["dwd_warnings_mock"])
+
+    if "show_last_alarm" in data:
+        updates["show_last_alarm"] = bool(data["show_last_alarm"])
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)
