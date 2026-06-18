@@ -1,5 +1,5 @@
 /**
- * @fileoverview Alarm Dashboard – main dashboard controller.
+ * @fileoverview Alarm Monitor – main dashboard controller.
  *
  * @typedef {Object} AlarmPayload
  * @property {string} mode - 'alarm' | 'idle'
@@ -54,7 +54,7 @@ const WEATHER_CODE_MAP = [
 
 const MAP_DEFAULT_ZOOM = 17;
 
-const ACTIVE_ALARM_STORAGE_KEY = 'alarm-dashboard.active-alarm';
+const ACTIVE_ALARM_STORAGE_KEY = 'alarm-monitor.active-alarm';
 const DEFAULT_DISPLAY_DURATION_MINUTES = 30;
 
 /**

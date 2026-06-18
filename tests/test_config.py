@@ -25,7 +25,7 @@ def _temp_env(**values):
 
 def _clear_alarm_env():
     for name in list(os.environ):
-        if name.startswith(config.ENV_PREFIX):
+        if name.startswith(config.ENV_PREFIX) or name.startswith(config.LEGACY_ENV_PREFIX):
             del os.environ[name]
 
 
@@ -43,7 +43,7 @@ def test_load_config_with_api_key():
     importlib.reload(config)
 
     with _temp_env(
-        ALARM_DASHBOARD_API_KEY="test-api-key-123",
+        ALARM_MONITOR_API_KEY="test-api-key-123",
     ):
         app_config = config.load_config()
 
@@ -56,7 +56,7 @@ def test_load_config_with_history_file(tmp_path):
 
     history_file = "/app/instance/alarm_history.json"
 
-    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE=history_file):
+    with _temp_env(ALARM_MONITOR_HISTORY_FILE=history_file):
         app_config = config.load_config()
 
     assert app_config.history_file == history_file
@@ -77,7 +77,7 @@ def test_load_config_builds_release_url_from_version():
     _clear_alarm_env()
     importlib.reload(config)
 
-    with _temp_env(ALARM_DASHBOARD_APP_VERSION="v1.2.3"):
+    with _temp_env(ALARM_MONITOR_APP_VERSION="v1.2.3"):
         app_config = config.load_config()
 
     assert app_config.app_version == "v1.2.3"
@@ -89,8 +89,8 @@ def test_load_config_respects_explicit_version_url():
     importlib.reload(config)
 
     with _temp_env(
-        ALARM_DASHBOARD_APP_VERSION="v2.0.0",
-        ALARM_DASHBOARD_APP_VERSION_URL="https://example.invalid/releases/v2.0.0",
+        ALARM_MONITOR_APP_VERSION="v2.0.0",
+        ALARM_MONITOR_APP_VERSION_URL="https://example.invalid/releases/v2.0.0",
     ):
         app_config = config.load_config()
 
@@ -102,7 +102,7 @@ def test_load_config_reads_ors_api_key():
     _clear_alarm_env()
     importlib.reload(config)
 
-    with _temp_env(ALARM_DASHBOARD_ORS_API_KEY="secret-key"):
+    with _temp_env(ALARM_MONITOR_ORS_API_KEY="secret-key"):
         app_config = config.load_config()
 
     assert app_config.ors_api_key == "secret-key"
@@ -113,8 +113,8 @@ def test_load_config_reads_messenger_settings():
     importlib.reload(config)
 
     with _temp_env(
-        ALARM_DASHBOARD_MESSENGER_SERVER_URL="https://messenger.example.com",
-        ALARM_DASHBOARD_MESSENGER_API_KEY="test-api-key-123",
+        ALARM_MONITOR_MESSENGER_SERVER_URL="https://messenger.example.com",
+        ALARM_MONITOR_MESSENGER_API_KEY="test-api-key-123",
     ):
         app_config = config.load_config()
 
@@ -127,7 +127,7 @@ def test_load_config_disables_messenger_without_api_key():
     importlib.reload(config)
 
     with _temp_env(
-        ALARM_DASHBOARD_MESSENGER_SERVER_URL="https://messenger.example.com",
+        ALARM_MONITOR_MESSENGER_SERVER_URL="https://messenger.example.com",
     ):
         app_config = config.load_config()
 
@@ -146,6 +146,53 @@ def test_load_config_messenger_defaults_to_none():
     assert app_config.messenger_api_key is None
 
 
+def test_load_config_show_last_alarm_defaults_to_true():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    app_config = config.load_config()
+
+    assert app_config.show_last_alarm is True
+
+
+def test_load_config_show_last_alarm_can_be_disabled():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_MONITOR_SHOW_LAST_ALARM="false"):
+        app_config = config.load_config()
+
+    assert app_config.show_last_alarm is False
+
+
+def test_load_config_reads_legacy_env_prefix():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_DASHBOARD_API_KEY="legacy-api-key"):
+        app_config = config.load_config()
+
+    assert app_config.api_key == "legacy-api-key"
+
+
+def test_load_config_warnings_min_level_defaults_to_three():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    app_config = config.load_config()
+
+    assert app_config.warnings_min_level == 3
+
+
+def test_load_config_warnings_min_level_can_be_set():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(ALARM_MONITOR_WARNINGS_MIN_LEVEL="2"):
+        app_config = config.load_config()
+
+    assert app_config.warnings_min_level == 2
+
 
 # ---------------------------------------------------------------------------
 # Part 2c – Path traversal validation
@@ -158,7 +205,7 @@ def test_load_config_rejects_relative_history_file_path():
     _clear_alarm_env()
     importlib.reload(config)
 
-    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="relative/path/alarm.json"):
+    with _temp_env(ALARM_MONITOR_HISTORY_FILE="relative/path/alarm.json"):
         with pytest.raises(config.MissingConfiguration, match="absolute"):
             config.load_config()
 
@@ -169,7 +216,7 @@ def test_load_config_rejects_path_traversal_in_history_file():
     _clear_alarm_env()
     importlib.reload(config)
 
-    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="/data/../etc/alarm.json"):
+    with _temp_env(ALARM_MONITOR_HISTORY_FILE="/data/../etc/alarm.json"):
         with pytest.raises(config.MissingConfiguration):
             config.load_config()
 
@@ -180,6 +227,6 @@ def test_load_config_rejects_history_file_outside_allowed_base():
     _clear_alarm_env()
     importlib.reload(config)
 
-    with _temp_env(ALARM_DASHBOARD_HISTORY_FILE="/etc/passwd"):
+    with _temp_env(ALARM_MONITOR_HISTORY_FILE="/etc/passwd"):
         with pytest.raises(config.MissingConfiguration, match="escapes allowed directory"):
             config.load_config()

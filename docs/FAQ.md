@@ -111,7 +111,7 @@ Das erzeugt einen 64-Zeichen langen Key. Speichern Sie diesen sicher!
 
 **Nein**! Der API-Key für die Kommunikation zwischen alarm-mail und alarm-monitor muss **identisch** sein:
 - `ALARM_MAIL_MONITOR_API_KEY` (in alarm-mail)
-- `ALARM_DASHBOARD_API_KEY` (in alarm-monitor)
+- `ALARM_MONITOR_API_KEY` (in alarm-monitor)
 
 Für alarm-messenger verwenden Sie einen **separaten** API-Key.
 
@@ -119,7 +119,7 @@ Für alarm-messenger verwenden Sie einen **separaten** API-Key.
 
 Setzen Sie die TME-Codes in der `.env`-Datei:
 ```bash
-ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
+ALARM_MONITOR_GRUPPEN=WIL26,WIL41,WIL52
 ```
 
 **Leer lassen** = Alle Alarme werden angezeigt  
@@ -129,7 +129,7 @@ ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
 
 Standard ist 30 Minuten. Ändern via `.env`:
 ```bash
-ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=45
+ALARM_MONITOR_DISPLAY_DURATION_MINUTES=45
 ```
 
 ### Wie kann ich mein Feuerwehr-Logo einbinden?
@@ -154,16 +154,40 @@ Bei konfiguriertem Kalender wechselt die rechte Idle-Box automatisch alle **30 S
 
 ### Wie funktionieren die DWD-Unwetterwarnungen?
 
-Im Ruhezustand zeigt das Dashboard amtliche Unwetterwarnungen (Stufe 3/4) des Deutschen Wetterdienstes:
+Im Ruhezustand zeigt das Dashboard amtliche Warnungen des Deutschen Wetterdienstes für den konfigurierten Standort:
 
-1. Setzen Sie **Standardkoordinaten** in den Einstellungen (Breiten-/Längengrad)
-2. Der Server ruft die DWD-WarnWetter-API ab und filtert auf Ihren Standort
-3. Links bleibt der letzte Einsatz, rechts erscheinen Warnungen oder Kalendertermine
-4. Bei aktiver Warnung: Details und offizielle DWD-Bundesland-Warnkarte
+1. Setzen Sie **Standardkoordinaten** in den Einstellungen (Abschnitt „Ruhezustand“)
+2. Wählen Sie die **Mindest-Warnstufe** (1–4; Standard: 3 = Unwetterwarnung)
+3. Der Server ruft die DWD-WarnWetter-API ab und filtert auf Ihren Standort
+4. **Standardlayout** (`show_last_alarm=true`): letzter Einsatz links, Warnungen oder Kalender rechts (Wechsel alle 30 s bei Kalender)
+5. **Alternatives Layout** (`show_last_alarm=false`): Unwetterwarnungen dauerhaft links, Kalender rechts
+6. Bei aktiver Warnung: Details und offizielle DWD-Bundesland-Warnkarte
+
+**DWD-Warnstufen:**
+| Stufe | Bezeichnung |
+|-------|-------------|
+| 1 | Wetterwarnung |
+| 2 | Warnung vor markantem Wetter |
+| 3 | Unwetterwarnung (Standard) |
+| 4 | Warnung vor extremem Unwetter |
 
 **Testmodus** (ohne echte Warnung):
-- In den Einstellungen: **„Unwetterwarnung simulieren (Test)“** aktivieren
-- Oder per `.env`: `ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true`
+- Einstellungen → Ruhezustand → **„Unwetterwarnung simulieren (Test)“**
+- Oder per `.env`: `ALARM_MONITOR_DWD_WARNINGS_MOCK=true`
+
+Screenshots der Idle-Layouts: [SCREENSHOTS.md](SCREENSHOTS.md#dashboard-ansichten)
+
+### Wie blende ich den letzten Einsatz im Ruhezustand aus?
+
+1. Öffnen Sie `/settings`
+2. Abschnitt **„Ruhezustand“** → **„Letzten Einsatz im Ruhezustand anzeigen“** deaktivieren
+3. Speichern
+
+Alternativ: `ALARM_MONITOR_SHOW_LAST_ALARM=false` in der `.env`
+
+Unwetterwarnungen erscheinen dann dauerhaft links; rechts nur noch Kalendertermine (kein Wechsel).
+
+![Ruhezustand ohne letzten Einsatz](screenshots/dashboard-idle-no-last-alarm-dark.png)
 
 ### Wie richte ich ntfy.sh-Nachrichten ein?
 
@@ -249,7 +273,7 @@ cp ~/alarm-monitor/instance/alarm_history.json ~/backup/
 
 Ein Raspberry Pi 4 kann problemlos **10–20 Clients** gleichzeitig bedienen. Bei mehr Clients:
 - Verwenden Sie einen stärkeren Server (mehr CPU/RAM)
-- Erhöhen Sie Gunicorn-Threads (`ALARM_DASHBOARD_GUNICORN_THREADS`)
+- Erhöhen Sie Gunicorn-Threads (`ALARM_MONITOR_GUNICORN_THREADS`)
 
 **Hinweis:** Horizontale Skalierung (mehrere Instanzen) wird nicht empfohlen — Alarmzustand, SSE und Caches liegen im Prozess-Speicher. Immer **1 Gunicorn-Worker** verwenden.
 
@@ -346,7 +370,7 @@ curl http://localhost:8000/health
 **Lösung**:
 ```bash
 # API-Keys vergleichen
-grep ALARM_DASHBOARD_API_KEY ~/alarm-monitor/.env
+grep ALARM_MONITOR_API_KEY ~/alarm-monitor/.env
 grep ALARM_MAIL_MONITOR_API_KEY ~/alarm-mail/.env
 
 # Logs prüfen
@@ -391,7 +415,7 @@ curl http://localhost:8000/api/alarm | jq '.alarm.latitude'
 curl "https://nominatim.openstreetmap.org/search?q=Berlin&format=json"
 
 # Eigene Nominatim-Instanz verwenden (empfohlen für Produktion):
-ALARM_DASHBOARD_NOMINATIM_URL=http://eigener-nominatim-server/search
+ALARM_MONITOR_NOMINATIM_URL=http://eigener-nominatim-server/search
 ```
 
 ### Wetterdaten fehlen
@@ -426,7 +450,7 @@ curl -s http://localhost:8000/api/alarm | python3 -m json.tool | grep -A5 warnin
 curl -s "https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json" | head
 
 # Testmodus aktivieren (Einstellungen oder .env)
-# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
+# ALARM_MONITOR_DWD_WARNINGS_MOCK=true
 ```
 
 ### Termine und Unwetter wechseln nicht
@@ -533,12 +557,12 @@ Workaround: Eigene Anpassung in `storage.py` möglich.
 
 Für größere Installationen:
 - Stärkere Hardware (x86-Server statt Raspberry Pi)
-- Mehr Gunicorn-Threads (`ALARM_DASHBOARD_GUNICORN_THREADS`, Standard: 8)
+- Mehr Gunicorn-Threads (`ALARM_MONITOR_GUNICORN_THREADS`, Standard: 8)
 - Mehr gleichzeitige Dashboard-Clients (SSE + Polling) auf **einer** Instanz
 
 ### Wie integriere ich Prometheus-Monitoring?
 
-Nativ unterstützt über `GET /api/metrics` (aktivieren mit `ALARM_DASHBOARD_METRICS_TOKEN`).
+Nativ unterstützt über `GET /api/metrics` (aktivieren mit `ALARM_MONITOR_METRICS_TOKEN`).
 
 ```bash
 curl -H "X-Metrics-Token: <token>" http://server-ip:8000/api/metrics

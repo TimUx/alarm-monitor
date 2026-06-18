@@ -97,14 +97,19 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "ntfy_poll_interval": stored.get("ntfy_poll_interval", config.ntfy_poll_interval),
         "message_default_ttl_minutes": stored.get("message_default_ttl_minutes", 60),
         "dwd_warnings_mock": stored.get("dwd_warnings_mock", config.dwd_warnings_mock),
-        "show_last_alarm": stored.get("show_last_alarm", True),
+        "show_last_alarm": stored.get("show_last_alarm", config.show_last_alarm),
+        "warnings_min_level": stored.get("warnings_min_level", config.warnings_min_level),
     }
 
 
 def create_app(config: Optional[AppConfig] = None) -> Flask:
     """Application factory used by Flask."""
 
-    if os.environ.get("ALARM_DASHBOARD_JSON_LOGGING", "").lower() == "true":
+    json_logging = (
+        os.environ.get("ALARM_MONITOR_JSON_LOGGING")
+        or os.environ.get("ALARM_DASHBOARD_JSON_LOGGING", "")
+    )
+    if json_logging.lower() == "true":
         from pythonjsonlogger import jsonlogger  # type: ignore[import]
         handler = logging.StreamHandler()
         fmt = jsonlogger.JsonFormatter(

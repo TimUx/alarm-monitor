@@ -63,7 +63,7 @@ Häufige Fragen und Antworten
 Code-Beiträge, Dokumentation, Bug-Reports
 
 ### ...Screenshots sehen oder erstellen
-→ **[Screenshots](SCREENSHOTS.md)** – alle Ansichten in Light- und Dark-Modus (`python scripts/capture_screenshots.py`)
+→ **[Screenshots](SCREENSHOTS.md)** – alle Ansichten in Light- und Dark-Modus, inkl. Idle-Layouts und Einstellungsseite (`python scripts/capture_screenshots.py`)
 
 ---
 

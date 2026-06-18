@@ -69,14 +69,18 @@ class WarningsCache:
         lat: float,
         lon: float,
         executor: Any = None,
+        min_level: int | None = None,
     ) -> Optional[Dict[str, Any]]:
-        """Return active severe warnings for coordinates using cached payload."""
-        from .dwd_warnings import warnings_for_location
+        """Return active warnings for coordinates using cached payload."""
+        from .dwd_warnings import SEVERE_WARNING_MIN_LEVEL, warnings_for_location
+
+        if min_level is None:
+            min_level = SEVERE_WARNING_MIN_LEVEL
 
         payload = self.get_payload(warnings_base_url, executor=executor)
         if payload is None:
             return None
-        return warnings_for_location(payload, lat, lon)
+        return warnings_for_location(payload, lat, lon, min_level=min_level)
 
 
 _default_cache = WarningsCache()

@@ -201,13 +201,15 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
         ├─▶ JavaScript lädt /api/alarm
         ├─▶ Server prüft: Alarm aktiv?
         ├─▶ Alarm-Ansicht ODER Idle-Ansicht
-        ├─▶ Idle: letzter Einsatz links, Termine/Unwetter rechts
+        ├─▶ Idle: Layout abhängig von `show_last_alarm`
+        │       • true: letzter Einsatz links, Termine/Unwetter rechts (30s-Wechsel bei Kalender)
+        │       • false: Unwetter dauerhaft links, Kalender rechts
         └─▶ Rendering im Browser
 
 19. Idle-Seitenpanel (nur Ruhezustand)
-        ├─▶ Koordinaten aus Settings → DWD-Warnungen abrufen (Level ≥ 3)
+        ├─▶ Koordinaten aus Settings → DWD-Warnungen abrufen (Level ≥ `warnings_min_level`)
         ├─▶ Bundesland aus Koordinaten → DWD-Warnkarten-URL
-        ├─▶ Kalender konfiguriert? → 30s-Wechsel Termine ↔ Unwetter
+        ├─▶ Kalender konfiguriert + show_last_alarm? → 30s-Wechsel Termine ↔ Unwetter
         └─▶ Mock-Modus: simulierte Testwarnung aus Settings/ENV
 
 17. Teilnehmerrückmeldungen (optional)
@@ -507,6 +509,8 @@ def create_ntfy_poller(
   "default_longitude": 9.3167,
   "activation_groups": ["WIL26", "WIL41"],
   "calendar_urls": ["https://..."],
+  "show_last_alarm": true,
+  "warnings_min_level": 3,
   "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/...",
   "ntfy_poll_interval": 60,
@@ -785,11 +789,11 @@ services:
 ```yaml
 # compose.yaml (Standard-Konfiguration – 1 Worker empfohlen)
 services:
-  alarm-dashboard:
+  alarm-monitor:
     build: .
     environment:
-      - ALARM_DASHBOARD_GUNICORN_WORKERS=1
-      - ALARM_DASHBOARD_GUNICORN_THREADS=8
+      - ALARM_MONITOR_GUNICORN_WORKERS=1
+      - ALARM_MONITOR_GUNICORN_THREADS=8
     volumes:
       - ./instance:/app/instance
 ```

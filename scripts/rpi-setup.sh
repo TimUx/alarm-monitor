@@ -76,8 +76,8 @@ prompt_value() {
 }
 
 # alarm-monitor
-prompt_value API_KEY             "ALARM_DASHBOARD_API_KEY"              "$(openssl rand -hex 32)"  "true"
-prompt_value SETTINGS_PASSWORD   "ALARM_DASHBOARD_SETTINGS_PASSWORD"    "$(openssl rand -hex 16)"  "true"
+prompt_value API_KEY             "ALARM_MONITOR_API_KEY"              "$(openssl rand -hex 32)"  "true"
+prompt_value SETTINGS_PASSWORD   "ALARM_MONITOR_SETTINGS_PASSWORD"    "$(openssl rand -hex 16)"  "true"
 prompt_value ORS_API_KEY         "OpenRouteService API-Key (optional)"  "leer-lassen"               "false"
 
 # alarm-mail
@@ -166,12 +166,12 @@ ok "Verzeichnisse angelegt unter ${FEUERWEHR_DIR}."
 
 step "alarm-monitor .env erstellen"
 cat > "${FEUERWEHR_DIR}/alarm-monitor/.env" <<EOF
-ALARM_DASHBOARD_API_KEY=${API_KEY}
-ALARM_DASHBOARD_SETTINGS_PASSWORD=${SETTINGS_PASSWORD}
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_ORS_API_KEY=${ORS_API_KEY}
+ALARM_MONITOR_API_KEY=${API_KEY}
+ALARM_MONITOR_SETTINGS_PASSWORD=${SETTINGS_PASSWORD}
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+ALARM_MONITOR_ORS_API_KEY=${ORS_API_KEY}
 EOF
 ok "${FEUERWEHR_DIR}/alarm-monitor/.env erstellt."
 
@@ -183,7 +183,7 @@ ALARM_MAIL_IMAP_USER=${IMAP_USER}
 ALARM_MAIL_IMAP_PASSWORD=${IMAP_PASSWORD}
 ALARM_MAIL_IMAP_FOLDER=${IMAP_FOLDER}
 
-ALARM_MAIL_MONITOR_URL=http://alarm-dashboard:8000
+ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
 ALARM_MAIL_MONITOR_API_KEY=${MONITOR_API_KEY}
 EOF
 ok "${FEUERWEHR_DIR}/alarm-mail/.env erstellt."
@@ -192,9 +192,9 @@ step "docker-compose.yml erstellen"
 cat > "${FEUERWEHR_DIR}/docker-compose.yml" <<'EOF'
 services:
 
-  alarm-dashboard:
+  alarm-monitor:
     image: ghcr.io/timux/alarm-monitor:latest
-    container_name: alarm-dashboard
+    container_name: alarm-monitor
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -225,7 +225,7 @@ services:
     networks:
       - alarm-net
     depends_on:
-      alarm-dashboard:
+      alarm-monitor:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "pgrep", "-f", "alarm-mail"]

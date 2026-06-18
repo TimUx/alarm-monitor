@@ -32,6 +32,10 @@
                 if (mockWarningsEl) {
                     mockWarningsEl.checked = Boolean(data.dwd_warnings_mock);
                 }
+                const warningsMinLevelEl = document.getElementById('warnings_min_level');
+                if (warningsMinLevelEl) {
+                    warningsMinLevelEl.value = String(data.warnings_min_level || 3);
+                }
                 document.getElementById('activation_groups').value = data.activation_groups || '';
                 const calendarEl = document.getElementById('calendar_urls');
                 if (calendarEl) { calendarEl.value = data.calendar_urls || ''; }
@@ -65,6 +69,7 @@
             message_default_ttl_minutes: formData.get('message_default_ttl_minutes') || '',
             dwd_warnings_mock: formData.get('dwd_warnings_mock') === 'on',
             show_last_alarm: formData.get('show_last_alarm') === 'on',
+            warnings_min_level: formData.get('warnings_min_level') || '3',
         };
         const password = formData.get('settings_password') || '';
 

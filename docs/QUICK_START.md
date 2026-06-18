@@ -78,16 +78,16 @@ nano .env
 **Minimal-Konfiguration** (`.env`):
 ```bash
 # PFLICHTFELDER
-ALARM_DASHBOARD_API_KEY=<hier-den-generierten-key-einfügen>
-ALARM_DASHBOARD_SETTINGS_PASSWORD=<eigenes-passwort-für-einstellungen>
+ALARM_MONITOR_API_KEY=<hier-den-generierten-key-einfügen>
+ALARM_MONITOR_SETTINGS_PASSWORD=<eigenes-passwort-für-einstellungen>
 
 # Feuerwehr-Name (optional)
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
 
 # Standardkoordinaten für Idle-Ansicht (optional)
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
+ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
 ```
 
 **Wichtig**: Notieren Sie sich den API-Key! Sie benötigen ihn für alarm-mail.
@@ -160,7 +160,7 @@ ALARM_MAIL_MONITOR_API_KEY=<derselbe-api-key-wie-in-schritt-1>
 ```
 
 **Wichtig**: 
-- Der `ALARM_MAIL_MONITOR_API_KEY` muss **identisch** mit dem `ALARM_DASHBOARD_API_KEY` aus Schritt 1 sein!
+- Der `ALARM_MAIL_MONITOR_API_KEY` muss **identisch** mit dem `ALARM_MONITOR_API_KEY` aus Schritt 1 sein!
 - Wenn beide Services auf demselben Host laufen: `http://localhost:8000`
 - Wenn Services auf verschiedenen Hosts: `http://IP-ADRESSE:8000`
 - Im Docker-Netzwerk: `http://alarm-monitor:8000`
@@ -204,7 +204,7 @@ Sobald beide Services laufen, können Sie einen Testalarm senden.
 
 ```bash
 # API-Key aus .env auslesen
-API_KEY=$(grep ALARM_DASHBOARD_API_KEY ~/alarm-monitor/.env | cut -d= -f2)
+API_KEY=$(grep ALARM_MONITOR_API_KEY ~/alarm-monitor/.env | cut -d= -f2)
 
 # Testalarm senden
 curl -X POST http://localhost:8000/api/alarm \
@@ -294,8 +294,8 @@ nano .env
 Fügen Sie hinzu:
 ```bash
 # Messenger-Integration
-ALARM_DASHBOARD_MESSENGER_SERVER_URL=http://localhost:3000
-ALARM_DASHBOARD_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
+ALARM_MONITOR_MESSENGER_SERVER_URL=http://localhost:3000
+ALARM_MONITOR_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
 ```
 
 ```bash
@@ -341,16 +341,25 @@ Ihr System ist jetzt einsatzbereit. Folgende Schritte empfohlen:
 ### 1. Einstellungen konfigurieren
 
 Öffnen Sie `http://localhost:8000/settings` und passen Sie an:
-- **Feuerwehr-Name** und **Logo**
-- **Standardkoordinaten** für Idle-Wetter
-- **Gruppenfilter** (TME-Codes)
+
+**Allgemein**
+- **Feuerwehr-Name** und **Logo** (unten auf der Seite)
+- **Gruppen-Filter (TME-Codes)** — kommagetrennte TME-Codes für die Alarmfilterung
+
+**Ruhezustand**
+- **Standardkoordinaten** und **Standortname** für Idle-Wetter und DWD-Warnungen
+- **Letzten Einsatz im Ruhezustand anzeigen** — Standardlayout oder Unwetter dauerhaft links
+- **Mindest-Warnstufe für Anzeige** — ab welcher DWD-Stufe (1–4) Warnungen erscheinen (Standard: 3)
+- **Kalender-URLs** — iCal-URLs für Termine in der Idle-Ansicht
+
+![Einstellungen (Light)](../docs/screenshots/settings-light.png)
 
 ### 2. Kalender-Integration einrichten (optional)
 
 Zeigt bevorstehende Termine in der Idle-Ansicht:
 
 1. Öffnen Sie die Einstellungen: `http://localhost:8000/settings`
-2. Scrollen Sie zu **"Kalender"**
+2. Scrollen Sie zum Abschnitt **„Ruhezustand“** → **Kalender-URLs (iCal)**
 3. Tragen Sie Ihre iCal-URLs ein (eine pro Zeile)
 4. Speichern Sie die Einstellungen
 
@@ -407,10 +416,10 @@ Für dedizierte Anzeigegeräte (z.B. Raspberry Pi mit Display):
 # Autostart-Skript erstellen
 mkdir -p ~/.config/autostart
 
-cat > ~/.config/autostart/alarm-dashboard.desktop << 'EOF'
+cat > ~/.config/autostart/alarm-monitor.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
-Name=Alarm Dashboard Kiosk
+Name=Alarm Monitor Kiosk
 Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars http://SERVER-IP:8000
 EOF
 ```
@@ -524,7 +533,7 @@ docker compose logs -f
 **Lösung**:
 ```bash
 # 1. API-Key prüfen
-grep ALARM_DASHBOARD_API_KEY ~/alarm-monitor/.env
+grep ALARM_MONITOR_API_KEY ~/alarm-monitor/.env
 grep ALARM_MAIL_MONITOR_API_KEY ~/alarm-mail/.env
 # → Müssen identisch sein!
 
