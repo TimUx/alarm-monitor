@@ -65,13 +65,13 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 🌤️ **Aktuelle Wetterdaten** – Temperatur, Niederschlag, Wind über Open-Meteo API
 - 🌤️ **Standort-Wetter** – Wetterdaten für Einsatzort in Alarmansicht
 - 🌤️ **Idle-Wetter** – Lokales Wetter in der Standardansicht
-- ⛈️ **DWD-Unwetterwarnungen** – Amtliche Unwetterwarnungen (Stufe 3/4) des Deutschen Wetterdienstes im Ruhezustand
+- ⛈️ **DWD-Unwetterwarnungen** – Amtliche Warnungen des Deutschen Wetterdienstes im Ruhezustand (konfigurierbare Mindest-Warnstufe 1–4)
 - 🗺️ **DWD-Warnkarte** – Offizielle Bundesland-Warnkarte neben den Warnungsdetails
 - 🧪 **Testmodus** – Simulierte Unwetterwarnung über die Einstellungen oder per Umgebungsvariable
 
 ### Dashboard-Ansichten
 - 📺 **Alarm-Ansicht** – Vollbildanzeige mit allen Einsatzinformationen
-- 📺 **Idle-Ansicht** – Uhrzeit, Wetter, letzter Einsatz; rechts Termine und/oder Unwetterwarnungen
+- 📺 **Idle-Ansicht** – Uhrzeit, Wetter, letzter Einsatz; rechts Termine und/oder Unwetterwarnungen (Layout konfigurierbar)
 - 📺 **Mobile-Ansicht** – Optimiert für Smartphones und Tablets mit Navigation
 - 📺 **Historien-Ansicht** – Tabellarische Übersicht aller vergangenen Einsätze
 - 📺 **Navigations-Ansicht** – Routenplanung zum Einsatzort
@@ -80,7 +80,8 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 📅 **iCal-Kalender** – Anbindung beliebiger iCal-URLs (Google Calendar, Nextcloud, etc.)
 - 📅 **Terminanzeige** – Nächste Termine werden in der Idle-Ansicht angezeigt
 - 📅 **Multi-Kalender** – Mehrere Kalender-URLs konfigurierbar
-- 🔁 **Automatischer Wechsel** – Bei konfiguriertem Kalender wechselt die rechte Idle-Box alle 30 Sekunden zwischen Terminen und Unwetterwarnungen
+- 🔁 **Automatischer Wechsel** – Bei konfiguriertem Kalender wechselt die rechte Idle-Box alle 30 Sekunden zwischen Terminen und Unwetterwarnungen (wenn „Letzten Einsatz anzeigen“ aktiv ist)
+- 📋 **Alternatives Idle-Layout** – Ohne letzten Einsatz: Unwetterwarnungen dauerhaft links, Kalender rechts
 
 ### Dashboard-Nachrichten (optional)
 - 📣 **ntfy.sh Integration** – Nachrichten über ntfy.sh Topics senden und anzeigen
@@ -103,9 +104,8 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - ⚙️ **Einstellungs-Oberfläche** – Webbasierte Konfiguration ohne Neustart
 - ⚙️ **Feuerwehr-Name** – Dynamische Anpassung des angezeigten Namens
 - ⚙️ **Standortkonfiguration** – Einstellung von Standardkoordinaten und Standortnamen
-- ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche
-- ⚙️ **Kalender-URLs** – iCal-URLs für die Terminanzeige
-- ⚙️ **Unwetter-Simulation** – Testmodus für simulierte DWD-Unwetterwarnungen
+- ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche (allgemeine Einstellungen)
+- ⚙️ **Ruhezustand** – Letzten Einsatz ein-/ausblenden, Mindest-Warnstufe, Standort, Kalender, Unwetter-Testmodus
 - ⚙️ **ntfy.sh-Einstellungen** – Topic-URL, Abfrage-Intervall und TTL für Nachrichten
 - ⚙️ **Logo-Verwaltung** – Logo hochladen oder Standard-Logo wiederherstellen
 - ⚙️ **Persistente Speicherung** – Einstellungen bleiben über Neustarts hinweg erhalten
@@ -133,9 +133,20 @@ Bei aktivierter alarm-messenger Integration zeigt das Dashboard die Rückmeldung
 ![Dashboard mit Teilnehmerrückmeldungen](docs/screenshots/dashboard-messenger-light.png)
 
 ### Dashboard – Ruhezustand (Dark)
-Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, Wetter, letzten Einsatz, Termine und DWD-Unwetterwarnungen.
 
-![Dashboard Ruhezustand](docs/screenshots/dashboard-idle-dark.png)
+Im Ruhezustand zeigt das Dashboard Uhrzeit, Datum, Wetter, den letzten Einsatz (optional) sowie Termine und DWD-Unwetterwarnungen. Bei aktivem Kalender wechselt die rechte Seite automatisch zwischen Terminen und Warnungen.
+
+**Standardlayout** – letzter Einsatz links, Unwetterwarnung rechts:
+
+![Dashboard Ruhezustand mit Unwetterwarnung](docs/screenshots/dashboard-idle-dark.png)
+
+**Mit Kalender** – letzter Einsatz links, Termine rechts:
+
+![Dashboard Ruhezustand mit Kalender](docs/screenshots/dashboard-idle-calendar-dark.png)
+
+**Ohne letzten Einsatz** – Unwetterwarnungen dauerhaft links, Kalender rechts (Einstellung „Letzten Einsatz im Ruhezustand anzeigen“ deaktiviert):
+
+![Dashboard Ruhezustand ohne letzten Einsatz](docs/screenshots/dashboard-idle-no-last-alarm-dark.png)
 
 ### Einsatzhistorie (Light / Dark)
 Übersichtliche Darstellung aller vergangenen Einsätze mit Filterfunktion und Sortierung.
@@ -157,9 +168,14 @@ Optimiert für Smartphones mit Touch-Bedienung, direkter Navigation und kompakte
 ![Mobile Alarmansicht](docs/screenshots/mobile-alarm-light.png)
 
 ### Mobile – Ruhezustand (Dark)
+
 Mobile Ansicht im Ruhezustand mit Uhrzeit, Wetter, letztem Einsatz und DWD-Unwetterwarnungen.
 
 ![Mobile Ruhezustand](docs/screenshots/mobile-idle-dark.png)
+
+**Ohne letzten Einsatz** – Unwetterwarnungen links, Termine rechts:
+
+![Mobile Ruhezustand ohne letzten Einsatz](docs/screenshots/mobile-idle-no-last-alarm-dark.png)
 
 ### Mobile – Unwetterwarnung (Dark)
 Aktive DWD-Unwetterwarnung mit Warnkarte, optimiert für Smartphones im Hochformat.
@@ -167,7 +183,8 @@ Aktive DWD-Unwetterwarnung mit Warnkarte, optimiert für Smartphones im Hochform
 ![Mobile Unwetterwarnung](docs/screenshots/mobile-unwetter-dark.png)
 
 ### Einstellungen (Light / Dark)
-Webbasierte Konfigurationsoberfläche für alle wichtigen Einstellungen inkl. Kalender-URLs, ntfy.sh-Integration und Logo-Upload.
+
+Webbasierte Konfigurationsoberfläche mit Abschnitten für **allgemeine Einstellungen** (Feuerwehr-Name, Gruppen-Filter), **Ruhezustand** (Koordinaten, letzter Einsatz, Mindest-Warnstufe, Kalender, Unwetter-Test) und **ntfy.sh** sowie Logo-Upload.
 
 | Light | Dark |
 |-------|------|
@@ -408,10 +425,10 @@ Für dedizierte Anzeigegeräte im Vollbildmodus:
 # Autostart-Skript erstellen
 mkdir -p ~/.config/autostart
 
-cat > ~/.config/autostart/alarm-dashboard.desktop << 'EOF'
+cat > ~/.config/autostart/alarm-monitor.desktop << 'EOF'
 [Desktop Entry]
 Type=Application
-Name=Alarm Dashboard Kiosk
+Name=Alarm Monitor Kiosk
 Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble http://SERVER-IP:8000
 EOF
 
@@ -437,16 +454,23 @@ Die Konfiguration erfolgt über zwei Wege:
 Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert werden (erreichbar über den Einstellungen-Button im Menü unter `/settings`):
 
 - **Feuerwehr-Name**: Name der Feuerwehr, der in allen Ansichten angezeigt wird
-- **Standard Breitengrad/Längengrad**: Koordinaten für Wetter-Anzeige im Ruhezustand
-- **Standard Standortname**: Bezeichnung des Standorts (z.B. "Feuerwache Willingshausen")
 - **Gruppen-Filter (TME-Codes)**: Kommagetrennte Liste von TME-Codes zur Alarmfilterung
-- **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand (eine URL pro Zeile)
-- **Letzten Einsatz anzeigen**: Steuert die Idle-Ansicht — bei Deaktivierung werden Unwetterwarnungen dauerhaft links angezeigt, rechts nur noch Termine
+
+**Ruhezustand:**
+- **Standard Breitengrad/Längengrad**: Koordinaten für Wetter-Anzeige im Ruhezustand
+- **Standard Standortname**: Bezeichnung des Standorts (z.B. „Feuerwache Willingshausen“)
+- **Letzten Einsatz anzeigen**: Steuert das Idle-Layout — bei Deaktivierung werden Unwetterwarnungen dauerhaft links angezeigt, rechts nur noch Termine
+- **Mindest-Warnstufe für Anzeige**: DWD-Warnstufe 1–4, ab der Warnungen im Ruhezustand erscheinen (Standard: 3 = Unwetterwarnung)
 - **Unwetterwarnung simulieren (Test)**: Aktiviert eine simulierte DWD-Unwetterwarnung für UI-Tests
+- **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand (eine URL pro Zeile)
+
+**Nachrichten (ntfy.sh):**
 - **ntfy.sh Topic-URL**: URL des ntfy-Topics für eingehende Dashboard-Nachrichten
 - **ntfy Abfrage-Intervall**: Wie oft das ntfy-Topic abgefragt wird (in Sekunden)
 - **Nachrichten-TTL**: Standard-Anzeigedauer für ntfy-Nachrichten (in Minuten)
-- **Logo**: Individuelles Feuerwehr-Logo hochladen oder Standard-Logo wiederherstellen
+
+**Logo:**
+- Individuelles Feuerwehr-Logo hochladen oder Standard-Logo wiederherstellen
 
 **Hinweis**: Web-basierte Einstellungen haben Vorrang vor Umgebungsvariablen und werden persistent gespeichert.
 
@@ -455,11 +479,11 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 ```bash
 # API-Key für Alarmempfang (ERFORDERLICH)
 # Generieren mit: openssl rand -hex 32
-ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+ALARM_MONITOR_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
 # Passwort für die Einstellungs-Seite (/settings)
 # Generieren mit: openssl rand -hex 16
-ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
+ALARM_MONITOR_SETTINGS_PASSWORD=change-me-to-random-settings-password
 ```
 
 **Wichtig**: Der API-Key muss im `alarm-mail` Service als `ALARM_MAIL_MONITOR_API_KEY` konfiguriert werden. Das `SETTINGS_PASSWORD` wird benötigt, um Einstellungen über die Web-Oberfläche zu speichern.
@@ -468,15 +492,15 @@ ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
 
 ```bash
 # Feuerwehr-Name für Anzeige (kann in Web-UI geändert werden)
-# ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+# ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
 
 # Anzeigedauer eines Alarms in Minuten (danach Wechsel zu Idle-Ansicht)
-ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
+ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 # Standardkoordinaten für Idle-Ansicht (können in Web-UI geändert werden)
-# ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-# ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-# ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
+# ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+# ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+# ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
 ```
 
 ### Gruppenfilterung (kann in Web-UI konfiguriert werden)
@@ -485,7 +509,7 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 # Kommagetrennte Liste von TME-Codes für Alarmfilterung (kann in Web-UI geändert werden)
 # Leer = alle Alarme werden angezeigt
 # Mit Werten = nur Alarme mit diesen TME-Codes werden angezeigt
-# ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41,WIL52
+# ALARM_MONITOR_GRUPPEN=WIL26,WIL41,WIL52
 ```
 
 ### Kalender-Integration (optional, kann in Web-UI konfiguriert werden)
@@ -493,51 +517,57 @@ ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
 ```bash
 # iCal-URLs für die Terminanzeige (Zeilenumbruch- oder kommagetrennt)
 # Unterstützt Google Calendar, Nextcloud, Apple iCloud, etc.
-# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+# ALARM_MONITOR_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
 ```
 
 ### Nachrichten & ntfy.sh (optional, kann in Web-UI konfiguriert werden)
 
 ```bash
 # ntfy.sh Topic-URL für eingehende Nachrichten (kann in Web-UI geändert werden)
-# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+# ALARM_MONITOR_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
 
 # Abfrage-Intervall in Sekunden (Standard: 60, Minimum: 10)
-# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
+# ALARM_MONITOR_NTFY_POLL_INTERVAL=60
 
 # Pfad zur Nachrichten-Datei (Standard: instance/messages.json)
-# ALARM_DASHBOARD_MESSAGES_FILE=/app/instance/messages.json
+# ALARM_MONITOR_MESSAGES_FILE=/app/instance/messages.json
 
 # Maximale TTL für Nachrichten in Stunden (Standard: 72)
-# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
+# ALARM_MONITOR_MESSAGE_MAX_TTL_HOURS=72
 ```
 
 ### Externe Dienste (optional)
 
 ```bash
 # Nominatim für Geokodierung (Standard: OSM)
-# ALARM_DASHBOARD_NOMINATIM_URL=https://nominatim.openstreetmap.org/search
+# ALARM_MONITOR_NOMINATIM_URL=https://nominatim.openstreetmap.org/search
 
 # Open-Meteo für Wetter (Standard: Open-Meteo API)
-# ALARM_DASHBOARD_WEATHER_URL=https://api.open-meteo.com/v1/forecast
-# ALARM_DASHBOARD_WEATHER_PARAMS=current_weather=true&hourly=precipitation,precipitation_probability
+# ALARM_MONITOR_WEATHER_URL=https://api.open-meteo.com/v1/forecast
+# ALARM_MONITOR_WEATHER_PARAMS=current_weather=true&hourly=precipitation,precipitation_probability
 
 # DWD-Unwetterwarnungen (Standard: offizielle WarnWetter-API)
-# ALARM_DASHBOARD_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
+# ALARM_MONITOR_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
 
-# Simulierte Unwetterwarnung für Tests (alternativ in der Web-UI unter Einstellungen)
-# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
+# Simulierte Unwetterwarnung für Tests (alternativ in der Web-UI unter Einstellungen → Ruhezustand)
+# ALARM_MONITOR_DWD_WARNINGS_MOCK=true
+
+# Letzten Einsatz im Ruhezustand anzeigen (Standard: true)
+# ALARM_MONITOR_SHOW_LAST_ALARM=true
+
+# Mindest-DWD-Warnstufe für Anzeige im Ruhezustand (1–4, Standard: 3)
+# ALARM_MONITOR_WARNINGS_MIN_LEVEL=3
 
 # OpenRouteService für Navigation (optional)
-# ALARM_DASHBOARD_ORS_API_KEY=your-ors-api-key-here
+# ALARM_MONITOR_ORS_API_KEY=your-ors-api-key-here
 ```
 
 ### alarm-messenger Integration (optional)
 
 ```bash
 # Messenger-Server URL und API-Key
-ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
-ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
+ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
+ALARM_MONITOR_MESSENGER_API_KEY=your-messenger-api-key-here
 ```
 
 **Hinweis**: Ohne diese Konfiguration funktioniert das System vollständig, zeigt aber keine Teilnehmerrückmeldungen an.
@@ -546,24 +576,24 @@ ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 
 ```bash
 # Pfad zur Historie-Datei (Standard: instance/alarm_history.json)
-# ALARM_DASHBOARD_HISTORY_FILE=/app/instance/alarm_history.json
+# ALARM_MONITOR_HISTORY_FILE=/app/instance/alarm_history.json
 
 # Pfad zur Einstellungs-Datei (Standard: instance/settings.json)
-# ALARM_DASHBOARD_SETTINGS_FILE=/app/instance/settings.json
+# ALARM_MONITOR_SETTINGS_FILE=/app/instance/settings.json
 
 # Prometheus-Metriken-Endpoint aktivieren (Token erforderlich)
 # Generieren mit: openssl rand -hex 32
-# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
+# ALARM_MONITOR_METRICS_TOKEN=change-me-to-random-metrics-token
 
 # Gunicorn Worker/Thread-Anzahl – Worker auf 1 lassen!
 # Mehrere Worker würden den gemeinsamen In-Process-Zustand (AlarmStore, SSE-Subscriber)
 # aufteilen, was zu verlorenen SSE-Benachrichtigungen führt.
-# ALARM_DASHBOARD_GUNICORN_WORKERS=1
-# ALARM_DASHBOARD_GUNICORN_THREADS=8
+# ALARM_MONITOR_GUNICORN_WORKERS=1
+# ALARM_MONITOR_GUNICORN_THREADS=8
 
 # Version und Release-Link
-# ALARM_DASHBOARD_APP_VERSION=v1.0.0
-# ALARM_DASHBOARD_APP_VERSION_URL=https://github.com/TimUx/alarm-monitor/releases/tag/v1.0.0
+# ALARM_MONITOR_APP_VERSION=v1.0.0
+# ALARM_MONITOR_APP_VERSION_URL=https://github.com/TimUx/alarm-monitor/releases/tag/v1.0.0
 ```
 
 ### Vollständiges Konfigurationsbeispiel
@@ -574,43 +604,43 @@ ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
 # ==============================================
 
 # --- PFLICHTFELDER ---
-ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
-ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
+ALARM_MONITOR_API_KEY=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+ALARM_MONITOR_SETTINGS_PASSWORD=change-me-to-random-settings-password
 
 # --- GRUNDEINSTELLUNGEN ---
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Willingshausen
-ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
-ALARM_DASHBOARD_DEFAULT_LATITUDE=50.9345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.2834
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Willingshausen
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Willingshausen
+ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
+ALARM_MONITOR_DEFAULT_LATITUDE=50.9345
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.2834
+ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwehrhaus Willingshausen
 
 # --- GRUPPENFILTER ---
 # Leer = alle Alarme, oder TME-Codes kommagetrennt
-ALARM_DASHBOARD_GRUPPEN=
+ALARM_MONITOR_GRUPPEN=
 
 # --- KALENDER (optional, kann in Web-UI gesetzt werden) ---
-# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+# ALARM_MONITOR_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
 
 # --- NACHRICHTEN / NTFY (optional, kann in Web-UI gesetzt werden) ---
-# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
-# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
-# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
+# ALARM_MONITOR_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+# ALARM_MONITOR_NTFY_POLL_INTERVAL=60
+# ALARM_MONITOR_MESSAGE_MAX_TTL_HOURS=72
 
 # --- MESSENGER-INTEGRATION (optional) ---
 # Für Teilnehmerrückmeldungen und Push-Benachrichtigungen
-# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.feuerwehr-beispiel.de
-# ALARM_DASHBOARD_MESSENGER_API_KEY=messenger-api-key-hier
+# ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.feuerwehr-beispiel.de
+# ALARM_MONITOR_MESSENGER_API_KEY=messenger-api-key-hier
 
 # --- NAVIGATION (optional) ---
 # OpenRouteService API-Key für Routenplanung
-# ALARM_DASHBOARD_ORS_API_KEY=ors-api-key-hier
+# ALARM_MONITOR_ORS_API_KEY=ors-api-key-hier
 
 # --- METRIKEN (optional) ---
 # Prometheus-kompatiblen /api/metrics Endpunkt aktivieren
-# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
+# ALARM_MONITOR_METRICS_TOKEN=change-me-to-random-metrics-token
 
 # --- VERSION ---
-ALARM_DASHBOARD_APP_VERSION=v1.0.0
+ALARM_MONITOR_APP_VERSION=v1.0.0
 ```
 
 ---
@@ -665,11 +695,19 @@ Dedizierte Seite für Routenplanung:
 
 #### Einstellungs-Ansicht (`/settings`)
 Webbasierte Konfigurationsoberfläche:
+
+**Allgemein**
 - **Feuerwehr-Name**: Anpassung des angezeigten Namens
-- **Standortkonfiguration**: Eingabe von Breitengrad, Längengrad und Standortname
 - **Gruppenfilter**: Konfiguration der TME-Codes (kommagetrennt)
-- **Kalender-URLs**: iCal-URLs für die Terminanzeige im Ruhezustand
+
+**Ruhezustand**
+- **Standortkonfiguration**: Breitengrad, Längengrad und Standortname
+- **Letzten Einsatz anzeigen**: Standard- oder alternatives Idle-Layout
+- **Mindest-Warnstufe**: Ab welcher DWD-Stufe (1–4) Warnungen angezeigt werden
 - **Unwetter-Simulation**: Testmodus für simulierte DWD-Warnungen
+- **Kalender-URLs**: iCal-URLs für die Terminanzeige
+
+**Nachrichten & Logo**
 - **ntfy.sh-Integration**: Topic-URL, Abfrage-Intervall und Nachrichten-TTL
 - **Logo-Upload**: Individuelles Feuerwehr-Logo hochladen (PNG/JPEG/WebP/SVG)
 - **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
@@ -838,7 +876,7 @@ X-API-Key: <ihr-api-key>
 GET /api/route?start_lat=50.9&start_lon=9.2&end_lat=51.0&end_lon=9.3
 
 # Gibt die ORS-Routing-Antwort zurück
-# 503 wenn ALARM_DASHBOARD_ORS_API_KEY nicht konfiguriert
+# 503 wenn ALARM_MONITOR_ORS_API_KEY nicht konfiguriert
 ```
 
 #### Historie abrufen
@@ -866,6 +904,8 @@ GET /api/settings
   "default_location_name": "Feuerwache Willingshausen",
   "activation_groups": "WIL26,WIL41",
   "calendar_urls": "https://calendar.google.com/...\nhttps://nextcloud.example.com/...",
+  "show_last_alarm": true,
+  "warnings_min_level": 3,
   "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/meine-fw",
   "ntfy_poll_interval": 60,
@@ -887,6 +927,9 @@ X-CSRF-Token: <csrf-token>
   "default_location_name": "Hauptwache",
   "activation_groups": "MST10,MST20",
   "calendar_urls": "https://calendar.google.com/...",
+  "show_last_alarm": true,
+  "warnings_min_level": 3,
+  "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/meine-fw",
   "ntfy_poll_interval": 60,
   "message_default_ttl_minutes": 60
@@ -930,7 +973,7 @@ GET /api/metrics
 X-Metrics-Token: <metrics-token>
 
 # Gibt Prometheus-kompatibles Text-Format zurück
-# 404 wenn ALARM_DASHBOARD_METRICS_TOKEN nicht konfiguriert
+# 404 wenn ALARM_MONITOR_METRICS_TOKEN nicht konfiguriert
 # Verfügbare Metriken: alarm_dashboard_alarms_received_total,
 #   alarm_dashboard_alarms_stored_total, alarm_dashboard_geocode_errors_total,
 #   alarm_dashboard_weather_errors_total, alarm_dashboard_sse_active_connections,
@@ -1067,7 +1110,7 @@ cd alarm-messenger
 
 # Konfiguration
 cp .env.example .env
-nano .env  # ALARM_DASHBOARD_MESSENGER_API_KEY setzen (identisch mit alarm-messenger API-Key)
+nano .env  # ALARM_MONITOR_MESSENGER_API_KEY setzen (identisch mit alarm-messenger API-Key)
 
 # Starten
 docker compose up -d
@@ -1077,8 +1120,8 @@ docker compose up -d
 
 ```bash
 # In alarm-monitor .env hinzufügen:
-ALARM_DASHBOARD_MESSENGER_SERVER_URL=http://alarm-messenger:3000
-ALARM_DASHBOARD_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
+ALARM_MONITOR_MESSENGER_SERVER_URL=http://alarm-messenger:3000
+ALARM_MONITOR_MESSENGER_API_KEY=<api-secret-key-vom-messenger>
 ```
 
 #### Konfiguration alarm-mail
@@ -1163,7 +1206,7 @@ alarm-monitor/
 │   ├── settings.json
 │   └── custom_logo.*            # Hochgeladenes Wappen
 ├── .env.example
-├── compose.yaml                 # Service: alarm-dashboard
+├── compose.yaml                 # Service: alarm-monitor
 └── README.md
 ```
 
@@ -1187,7 +1230,7 @@ pytest
 
 # Test-Alarm senden
 curl -X POST http://localhost:8000/api/alarm \
-  -H "X-API-Key: $(grep ALARM_DASHBOARD_API_KEY .env | cut -d= -f2)" \
+  -H "X-API-Key: $(grep ALARM_MONITOR_API_KEY .env | cut -d= -f2)" \
   -H "Content-Type: application/json" \
   -d '{
     "incident_number": "TEST-001",

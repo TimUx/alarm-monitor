@@ -162,14 +162,14 @@ Fügen Sie die folgenden Umgebungsvariablen zu Ihrer `.env`-Datei hinzu:
 
 ```bash
 # Alarm-Messenger Server-URL (erforderlich)
-ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
 
 # Alarm-Messenger API-Key (erforderlich)
-ALARM_DASHBOARD_MESSENGER_API_KEY=your-secret-api-key-here
+ALARM_MONITOR_MESSENGER_API_KEY=your-secret-api-key-here
 ```
 
 **Wichtig**: 
-- Der `ALARM_DASHBOARD_MESSENGER_API_KEY` muss **identisch** mit dem `API_SECRET_KEY` im alarm-messenger sein
+- Der `ALARM_MONITOR_MESSENGER_API_KEY` muss **identisch** mit dem `API_SECRET_KEY` im alarm-messenger sein
 - Nach Änderungen Container neu starten: `docker compose restart`
 
 ### alarm-mail konfigurieren
@@ -186,7 +186,7 @@ ALARM_MAIL_MESSENGER_API_KEY=<derselbe-api-key>
 
 **Verschiedene Hosts**: Verwenden Sie IP-Adressen oder Domainnamen:
 ```bash
-ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
+ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
 ALARM_MAIL_MESSENGER_URL=https://messenger.example.com
 ```
 
@@ -433,8 +433,8 @@ CSS:
 Um die Integration zu deaktivieren, entfernen oder kommentieren Sie die Umgebungsvariablen:
 
 ```bash
-# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
-# ALARM_DASHBOARD_MESSENGER_API_KEY=your-secret-api-key-here
+# ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
+# ALARM_MONITOR_MESSENGER_API_KEY=your-secret-api-key-here
 ```
 
 ## Testen
@@ -460,7 +460,7 @@ Der Teilnehmerabruf erfolgt durch den **alarm-monitor**. Logs prüfen:
 docker compose logs -f
 
 # alarm-monitor (systemd)
-sudo journalctl -u alarm-dashboard -f
+sudo journalctl -u alarm-monitor -f
 ```
 
 Bei erfolgreicher Teilnehmerabfrage sehen Sie eine Meldung wie:

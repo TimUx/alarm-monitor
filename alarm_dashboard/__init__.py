@@ -1,4 +1,4 @@
-"""Alarm Dashboard package."""
+"""Alarm Monitor package."""
 
 from .app import create_app
 

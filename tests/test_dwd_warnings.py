@@ -119,6 +119,37 @@ def test_warnings_cache_returns_filtered_warnings() -> None:
     assert len(result["items"]) == 1
 
 
+def test_warnings_cache_respects_min_level() -> None:
+    from datetime import datetime, timezone
+
+    lat, lon = 50.55, 9.0
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    payload = _sample_payload(lat, lon, level=2)
+    payload["time"] = now_ms
+    payload["warnings"][0]["start"] = now_ms - 60_000
+    payload["warnings"][0]["end"] = now_ms + 3_600_000
+    cache = WarningsCache(ttl_minutes=10)
+    cache._cache = {
+        "url": "http://dwd.test/warnings.json",
+        "data": payload,
+        "fetched_at": datetime.now(timezone.utc),
+        "fetching": False,
+    }
+
+    severe_only = cache.get_warnings_for_coordinates(
+        "http://dwd.test/warnings.json", lat, lon, min_level=3
+    )
+    lower_threshold = cache.get_warnings_for_coordinates(
+        "http://dwd.test/warnings.json", lat, lon, min_level=2
+    )
+
+    assert severe_only is not None
+    assert severe_only["active"] is False
+    assert lower_threshold is not None
+    assert lower_threshold["active"] is True
+    assert lower_threshold["items"][0]["level"] == 2
+
+
 def test_warnings_cache_miss_triggers_background_fetch() -> None:
     cache = WarningsCache(ttl_minutes=10)
     mock_executor = MagicMock()

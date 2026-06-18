@@ -340,6 +340,7 @@ def test_get_settings_returns_defaults(client) -> None:
     assert "default_location_name" in data
     assert "activation_groups" in data
     assert data.get("show_last_alarm") is True
+    assert data.get("warnings_min_level") == 3
 
 
 def test_post_settings_show_last_alarm(client) -> None:
@@ -358,12 +359,57 @@ def test_post_settings_show_last_alarm(client) -> None:
     assert get_response.get_json()["show_last_alarm"] is False
 
 
+def test_post_settings_warnings_min_level(client) -> None:
+    """POST /api/settings should persist warnings_min_level."""
+    response = client.post(
+        "/api/settings",
+        json={"warnings_min_level": 2},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
+    )
+    assert response.status_code == 200
+
+    get_response = client.get("/api/settings")
+    assert get_response.get_json()["warnings_min_level"] == 2
+
+
+def test_post_settings_rejects_invalid_warnings_min_level(client) -> None:
+    response = client.post(
+        "/api/settings",
+        json={"warnings_min_level": 9},
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": generate_csrf_token(SETTINGS_PASSWORD),
+        },
+    )
+    assert response.status_code == 400
+
+
 def test_get_alarm_idle_includes_show_last_alarm(client, flask_app) -> None:
     """GET /api/alarm in idle mode should include show_last_alarm from settings."""
     settings_store = flask_app.config["SETTINGS_STORE"]
     settings_store.update({"show_last_alarm": False})
 
     response = client.get("/api/alarm")
+    assert response.status_code == 200
+    assert response.get_json()["show_last_alarm"] is False
+
+
+def test_get_settings_uses_config_default_for_show_last_alarm(tmp_path: Path) -> None:
+    """GET /api/settings should fall back to config.show_last_alarm when not stored."""
+    cfg = AppConfig(
+        api_key=API_KEY,
+        settings_password=SETTINGS_PASSWORD,
+        history_file=str(tmp_path / "history.json"),
+        settings_file=str(tmp_path / "settings.json"),
+        messages_file=str(tmp_path / "messages.json"),
+        show_last_alarm=False,
+    )
+    application = app_module.create_app(cfg)
+    response = application.test_client().get("/api/settings")
+
     assert response.status_code == 200
     assert response.get_json()["show_last_alarm"] is False
 
@@ -642,21 +688,21 @@ def test_sse_subscriber_removed_on_generator_close(flask_app) -> None:
 def test_metrics_endpoint_requires_token(client) -> None:
     """GET /api/metrics without token should return 404 if unconfigured."""
     import os
-    original = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN")
+    original = os.environ.get("ALARM_MONITOR_METRICS_TOKEN")
     try:
-        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+        os.environ.pop("ALARM_MONITOR_METRICS_TOKEN", None)
         response = client.get("/api/metrics")
         assert response.status_code == 404
     finally:
         if original is not None:
-            os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = original
+            os.environ["ALARM_MONITOR_METRICS_TOKEN"] = original
 
 
 def test_metrics_endpoint_returns_prometheus_format(client) -> None:
     """GET /api/metrics with valid token should return Prometheus plain text."""
     import os
     token = "test-metrics-token-123"
-    os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = token
+    os.environ["ALARM_MONITOR_METRICS_TOKEN"] = token
     try:
         response = client.get(
             "/api/metrics",
@@ -667,7 +713,7 @@ def test_metrics_endpoint_returns_prometheus_format(client) -> None:
         assert b"alarm_dashboard_sse_active_connections" in response.data
         assert b"alarm_dashboard_history_size" in response.data
     finally:
-        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+        os.environ.pop("ALARM_MONITOR_METRICS_TOKEN", None)
 
 
 # ---------------------------------------------------------------------------
@@ -760,7 +806,7 @@ def test_api_metrics_unauthorized(client) -> None:
     """GET /api/metrics with wrong token should return 401."""
     import os
     token = "correct-token-abc"
-    os.environ["ALARM_DASHBOARD_METRICS_TOKEN"] = token
+    os.environ["ALARM_MONITOR_METRICS_TOKEN"] = token
     try:
         response = client.get(
             "/api/metrics",
@@ -768,7 +814,7 @@ def test_api_metrics_unauthorized(client) -> None:
         )
         assert response.status_code == 401
     finally:
-        os.environ.pop("ALARM_DASHBOARD_METRICS_TOKEN", None)
+        os.environ.pop("ALARM_MONITOR_METRICS_TOKEN", None)
 
 
 def test_post_alarm_unauthorized(client) -> None:

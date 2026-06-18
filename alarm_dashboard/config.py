@@ -1,6 +1,6 @@
 """Application configuration utilities.
 
-This module centralises configuration handling for the alarm dashboard
+This module centralises configuration handling for the alarm monitor
 application. Configuration is primarily sourced from environment
 variables so deployments can inject secrets (such as API keys)
 without committing them to the repository.
@@ -39,6 +39,8 @@ class AppConfig:
         "gemeinde_warnings_v2.json"
     )
     dwd_warnings_mock: bool = False
+    show_last_alarm: bool = True
+    warnings_min_level: int = 3
     default_latitude: Optional[float] = None
     default_longitude: Optional[float] = None
     default_location_name: Optional[str] = None
@@ -61,7 +63,8 @@ class MissingConfiguration(RuntimeError):
     """Raised when a required environment variable is missing."""
 
 
-ENV_PREFIX = "ALARM_DASHBOARD_"
+ENV_PREFIX = "ALARM_MONITOR_"
+LEGACY_ENV_PREFIX = "ALARM_DASHBOARD_"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +79,8 @@ def _get_env(name: str, default: Optional[str] = None, required: bool = False) -
     """Fetch an environment variable with optional default and validation."""
 
     value = os.environ.get(f"{ENV_PREFIX}{name}")
+    if value is None:
+        value = os.environ.get(f"{LEGACY_ENV_PREFIX}{name}")
     if value is None:
         if required and default is None:
             raise MissingConfiguration(
@@ -93,7 +98,7 @@ def load_config() -> AppConfig:
     if not api_key:
         LOGGER.warning(
             "API_KEY not set. The /api/alarm endpoint will reject all requests. "
-            "Set ALARM_DASHBOARD_API_KEY to enable API-based alarm reception."
+            "Set ALARM_MONITOR_API_KEY to enable API-based alarm reception."
         )
     elif api_key == "change-me-to-random-api-key":
         LOGGER.critical(
@@ -145,6 +150,19 @@ def load_config() -> AppConfig:
     )
     dwd_warnings_mock_raw = (_get_env("DWD_WARNINGS_MOCK", default="false") or "false").lower()
     dwd_warnings_mock = dwd_warnings_mock_raw in ("1", "true", "yes", "on")
+    show_last_alarm_raw = (_get_env("SHOW_LAST_ALARM", default="true") or "true").lower()
+    show_last_alarm = show_last_alarm_raw in ("1", "true", "yes", "on")
+    warnings_min_level_raw = _get_env("WARNINGS_MIN_LEVEL", default="3") or "3"
+    try:
+        warnings_min_level = int(warnings_min_level_raw)
+    except ValueError as exc:
+        raise MissingConfiguration(
+            "WARNINGS_MIN_LEVEL must be an integer between 1 and 4"
+        ) from exc
+    if warnings_min_level not in (1, 2, 3, 4):
+        raise MissingConfiguration(
+            "WARNINGS_MIN_LEVEL must be between 1 and 4"
+        )
     default_latitude_raw = _get_env("DEFAULT_LATITUDE") or None
     default_longitude_raw = _get_env("DEFAULT_LONGITUDE") or None
     default_location_name = _get_env("DEFAULT_LOCATION_NAME") or None
@@ -193,7 +211,7 @@ def load_config() -> AppConfig:
     settings_password = _get_env("SETTINGS_PASSWORD") or None
     if not settings_password:
         LOGGER.critical(
-            "ALARM_DASHBOARD_SETTINGS_PASSWORD is not set — settings page is unprotected!"
+            "ALARM_MONITOR_SETTINGS_PASSWORD is not set — settings page is unprotected!"
         )
 
     # Calendar URLs (newline or comma-separated iCal URLs)
@@ -238,12 +256,12 @@ def load_config() -> AppConfig:
     if not app_version_url:
         if app_version and app_version != default_version:
             app_version_url = (
-                "https://github.com/feuerwehr-willingshausen/alarm-dashboard/"
+                "https://github.com/TimUx/alarm-monitor/"
                 f"releases/tag/{app_version}"
             )
         else:
             app_version_url = (
-                "https://github.com/feuerwehr-willingshausen/alarm-dashboard/"
+                "https://github.com/TimUx/alarm-monitor/"
                 "releases"
             )
 
@@ -257,6 +275,8 @@ def load_config() -> AppConfig:
         weather_params=weather_params,
         dwd_warnings_url=dwd_warnings_url,
         dwd_warnings_mock=dwd_warnings_mock,
+        show_last_alarm=show_last_alarm,
+        warnings_min_level=warnings_min_level,
         default_latitude=default_latitude_float,
         default_longitude=default_longitude_float,
         default_location_name=default_location_name,
@@ -278,6 +298,8 @@ def load_config() -> AppConfig:
 
 __all__ = [
     "AppConfig",
+    "ENV_PREFIX",
+    "LEGACY_ENV_PREFIX",
     "MissingConfiguration",
     "load_config",
 ]

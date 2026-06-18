@@ -386,8 +386,9 @@ def example():
 Wenn Sie UI-Änderungen vornehmen:
 1. Screenshots automatisch erstellen: `python scripts/capture_screenshots.py`
 2. Oder manuell speichern in `docs/screenshots/`
-3. Benennung: `<ansicht>-<light|dark>.png` (z.B. `dashboard-alarm-light.png`, `history-dark.png`)
+3. Benennung: `<ansicht>-<light|dark>.png` (z.B. `dashboard-idle-no-last-alarm-dark.png`, `settings-light.png`)
 4. Referenzen in `README.md` und `docs/SCREENSHOTS.md` aktualisieren
+5. Bei Idle-Layout-Änderungen alle Varianten erfassen (Standard, Kalender, ohne letzten Einsatz)
 
 **Farbmodi:**
 - Dashboard/Mobile Alarm = Light, Idle/Unwetter = Dark

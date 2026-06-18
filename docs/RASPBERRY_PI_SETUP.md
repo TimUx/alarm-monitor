@@ -200,20 +200,20 @@ Inhalt (Werte anpassen — siehe auch `.env.example` im Repository):
 
 ```env
 # Pflichtfelder
-ALARM_DASHBOARD_API_KEY=<openssl rand -hex 32>
-ALARM_DASHBOARD_SETTINGS_PASSWORD=<openssl rand -hex 16>
+ALARM_MONITOR_API_KEY=<openssl rand -hex 32>
+ALARM_MONITOR_SETTINGS_PASSWORD=<openssl rand -hex 16>
 
 # Anzeige (optional)
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwache Musterstadt
 
 # OpenRouteService für Routenplanung (optional)
-# ALARM_DASHBOARD_ORS_API_KEY=dein-openrouteservice-key
+# ALARM_MONITOR_ORS_API_KEY=dein-openrouteservice-key
 
 # Prometheus-Metriken (optional)
-# ALARM_DASHBOARD_METRICS_TOKEN=<openssl rand -hex 32>
+# ALARM_MONITOR_METRICS_TOKEN=<openssl rand -hex 32>
 ```
 
 #### alarm-mail `.env`
@@ -231,8 +231,8 @@ ALARM_MAIL_IMAP_USER=alarm@feuerwehr.example.com
 ALARM_MAIL_IMAP_PASSWORD=imap-passwort
 
 # alarm-monitor Endpunkt (Docker-Service-Name als Hostname)
-ALARM_MAIL_MONITOR_URL=http://alarm-dashboard:8000
-ALARM_MAIL_MONITOR_API_KEY=<derselbe-key-wie-ALARM_DASHBOARD_API_KEY>
+ALARM_MAIL_MONITOR_URL=http://alarm-monitor:8000
+ALARM_MAIL_MONITOR_API_KEY=<derselbe-key-wie-ALARM_MONITOR_API_KEY>
 ```
 
 ### 5.3 docker-compose.yml erstellen
@@ -244,9 +244,9 @@ nano ~/feuerwehr/docker-compose.yml
 ```yaml
 services:
 
-  alarm-dashboard:
+  alarm-monitor:
     image: ghcr.io/timux/alarm-monitor:latest
-    container_name: alarm-dashboard
+    container_name: alarm-monitor
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -272,7 +272,7 @@ services:
     networks:
       - alarm-net
     depends_on:
-      alarm-dashboard:
+      alarm-monitor:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "pgrep", "-f", "alarm-mail"]
@@ -854,7 +854,7 @@ journalctl -u kiosk.service -u kiosk-watchdog.service \
 ```bash
 # Testalarm über die API auslösen (API-Key aus .env verwenden)
 curl -X POST http://localhost:8000/api/alarm \
-    -H "X-API-Key: <ALARM_DASHBOARD_API_KEY>" \
+    -H "X-API-Key: <ALARM_MONITOR_API_KEY>" \
     -H "Content-Type: application/json" \
     -d '{
         "incident_number": "2026-TEST-001",
@@ -956,7 +956,7 @@ In der `docker-compose.yml` können Ressourcenlimits gesetzt werden, um den RPi 
 
 ```yaml
 services:
-  alarm-dashboard:
+  alarm-monitor:
     # ... (bestehende Konfiguration)
     deploy:
       resources:

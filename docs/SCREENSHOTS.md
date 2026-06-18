@@ -33,16 +33,19 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 |-------|-------|-----------|--------------|
 | `dashboard-alarm-light.png` | Light | 1920×1080 | Dashboard – Alarmansicht |
 | `dashboard-messenger-light.png` | Light | 1920×1080 | Dashboard – Teilnehmerrückmeldungen |
-| `dashboard-idle-dark.png` | Dark | 1920×1080 | Dashboard – Ruhezustand |
+| `dashboard-idle-dark.png` | Dark | 1920×1080 | Ruhezustand – letzter Einsatz + Unwetter |
+| `dashboard-idle-calendar-dark.png` | Dark | 1920×1080 | Ruhezustand – letzter Einsatz + Kalender |
+| `dashboard-idle-no-last-alarm-dark.png` | Dark | 1920×1080 | Ruhezustand – Unwetter links, Kalender rechts |
 | `mobile-alarm-light.png` | Light | 390×844 | Mobile – Alarmansicht |
-| `mobile-idle-dark.png` | Dark | 390×844 | Mobile – Ruhezustand |
-| `mobile-unwetter-dark.png` | Dark | 390×844 | Mobile – Unwetterwarnung |
+| `mobile-idle-dark.png` | Dark | 390×844 | Mobile – Ruhezustand (Standardlayout) |
+| `mobile-idle-no-last-alarm-dark.png` | Dark | 390×844 | Mobile – Ruhezustand ohne letzten Einsatz |
+| `mobile-unwetter-dark.png` | Dark | 390×844 | Mobile – Unwetterwarnung (Detail) |
 | `history-light.png` | Light | 1920×1080 | Einsatzhistorie |
 | `history-dark.png` | Dark | 1920×1080 | Einsatzhistorie |
 | `navigation-light.png` | Light | 1920×1080 | Navigationsseite |
 | `navigation-dark.png` | Dark | 1920×1080 | Navigationsseite |
-| `settings-light.png` | Light | 1920×1080 | Einstellungen |
-| `settings-dark.png` | Dark | 1920×1080 | Einstellungen |
+| `settings-light.png` | Light | 1920×1080 | Einstellungen (vollständige Seite) |
+| `settings-dark.png` | Dark | 1920×1080 | Einstellungen (vollständige Seite) |
 
 ---
 
@@ -76,19 +79,49 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 ---
 
-### Dashboard – Ruhezustand (Dark)
+### Dashboard – Ruhezustand mit Unwetter (Dark)
 
 **Datei**: `docs/screenshots/dashboard-idle-dark.png`
+
+**Layout**: Standard mit **„Letzten Einsatz im Ruhezustand anzeigen“** aktiv — letzter Einsatz links, Unwetterwarnung rechts.
 
 **Angezeigte Elemente**:
 - Digitale Uhr und Datum
 - Aktuelles Wetter am Standort
-- Letzter Einsatz
-- Nächste Termine (Kalender)
-- DWD-Unwetterwarnungen (Testmodus)
+- Letzter Einsatz (links)
+- Simulierte DWD-Unwetterwarnung (rechts)
 - Dashboard-Nachrichten
 
-![Dashboard Ruhezustand (Dark)](screenshots/dashboard-idle-dark.png)
+**Voraussetzung**: `ALARM_MONITOR_DWD_WARNINGS_MOCK=true` oder Einstellungen → „Unwetterwarnung simulieren (Test)"
+
+![Dashboard Ruhezustand mit Unwetter (Dark)](screenshots/dashboard-idle-dark.png)
+
+---
+
+### Dashboard – Ruhezustand mit Kalender (Dark)
+
+**Datei**: `docs/screenshots/dashboard-idle-calendar-dark.png`
+
+**Layout**: Standard mit letztem Einsatz links; rechte Seite zeigt **Kalendertermine** (Wechsel-Panel manuell auf Termine gestellt).
+
+**Angezeigte Elemente**:
+- Letzter Einsatz links
+- Nächste Termine aus konfiguriertem iCal-Kalender rechts
+- Uhrzeit, Datum und Wetter im Header
+
+![Dashboard Ruhezustand mit Kalender (Dark)](screenshots/dashboard-idle-calendar-dark.png)
+
+---
+
+### Dashboard – Ruhezustand ohne letzten Einsatz (Dark)
+
+**Datei**: `docs/screenshots/dashboard-idle-no-last-alarm-dark.png`
+
+**Layout**: **„Letzten Einsatz im Ruhezustand anzeigen“** deaktiviert — Unwetterwarnungen dauerhaft links, Kalendertermine rechts (kein automatischer Wechsel).
+
+**Einstellung**: Einstellungen → Ruhezustand → Checkbox deaktivieren, oder `ALARM_MONITOR_SHOW_LAST_ALARM=false`
+
+![Dashboard Ruhezustand ohne letzten Einsatz (Dark)](screenshots/dashboard-idle-no-last-alarm-dark.png)
 
 ---
 
@@ -98,15 +131,19 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 **Datei**: `docs/screenshots/mobile-idle-dark.png`
 
-**Angezeigte Elemente**:
-- Responsive Header mit Feuerwehr-Name und Wappen
-- Digitale Uhr und Datum
-- Aktuelles Wetter und letzter Einsatz
-- DWD-Unwetterwarnungen
-- Nachrichten / Meldungen
-- Feste Bottom-Navigation mit Safe-Area
+**Layout**: Standard — letzter Einsatz und Unwetterwarnungen.
 
 ![Mobile Ruhezustand (Dark)](screenshots/mobile-idle-dark.png)
+
+---
+
+### Mobile – Ruhezustand ohne letzten Einsatz (Dark)
+
+**Datei**: `docs/screenshots/mobile-idle-no-last-alarm-dark.png`
+
+**Layout**: Alternatives Idle-Layout ohne letzten Einsatz.
+
+![Mobile Ruhezustand ohne letzten Einsatz (Dark)](screenshots/mobile-idle-no-last-alarm-dark.png)
 
 ---
 
@@ -120,8 +157,6 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 - Gültigkeitszeitraum und DWD-Warnkarte
 - Testmodus-Badge bei simulierter Warnung
 
-**Voraussetzung**: `ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true` oder Einstellungen → „Unwetterwarnung simulieren (Test)"
-
 ![Mobile Unwetterwarnung (Dark)](screenshots/mobile-unwetter-dark.png)
 
 ---
@@ -130,12 +165,6 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 
 **Datei**: `docs/screenshots/mobile-alarm-light.png`
 
-**Angezeigte Elemente**:
-- Kompakter Alarm-Header mit Stichwort und Diagnose
-- Vollständige Adressinformationen und alarmierte Fahrzeuge
-- „Navigation starten"-Button
-- Interaktive Karte und Wetterdaten am Einsatzort
-
 ![Mobile Alarmansicht (Light)](screenshots/mobile-alarm-light.png)
 
 ---
@@ -143,15 +172,6 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 ## Historie-Ansicht
 
 ### Einsatzhistorie (Light / Dark)
-
-**Dateien**:
-- `docs/screenshots/history-light.png`
-- `docs/screenshots/history-dark.png`
-
-**Angezeigte Elemente**:
-- Tabellarische Übersicht vergangener Einsätze
-- Datum, Stichwort, Ort, Diagnose, alarmierte Fahrzeuge
-- Bottom-Navigation
 
 | Light | Dark |
 |-------|------|
@@ -162,15 +182,6 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 ## Navigations-Ansicht
 
 ### Navigation – Routenplanung (Light / Dark)
-
-**Dateien**:
-- `docs/screenshots/navigation-light.png`
-- `docs/screenshots/navigation-dark.png`
-
-**Angezeigte Elemente**:
-- Interaktive Karte mit Einsatzort-Marker
-- Automatische Übernahme des aktiven Alarms
-- Links zur externen Navigation
 
 | Light | Dark |
 |-------|------|
@@ -186,11 +197,11 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 - `docs/screenshots/settings-light.png`
 - `docs/screenshots/settings-dark.png`
 
-**Angezeigte Elemente**:
-- Feuerwehr-Name und Standortkoordinaten
-- Gruppen-Filter, Kalender-URLs, ntfy.sh-Integration
-- Unwetter-Simulation (Testmodus)
-- Logo-Verwaltung
+**Angezeigte Elemente** (vollständige Seite, `full_page`):
+- **Allgemein**: Einstellungs-Passwort, Feuerwehr-Name, Gruppen-Filter (TME-Codes)
+- **Ruhezustand**: Koordinaten, Standortname, letzter Einsatz, Mindest-Warnstufe (1–4), Unwetter-Simulation, Kalender-URLs
+- **Nachrichten (ntfy.sh)**: Topic-URL, Abfrage-Intervall, Nachrichten-TTL
+- **Feuerwehr-Logo**: Vorschau und Upload
 
 | Light | Dark |
 |-------|------|
@@ -209,40 +220,46 @@ playwright install chromium
 python scripts/capture_screenshots.py
 ```
 
-Das Skript startet einen Testserver, befüllt Beispieldaten und erstellt alle Screenshots in `docs/screenshots/`.
+Das Skript:
+1. Startet einen Testserver mit Beispieldaten
+2. Erstellt Alarm-, Verwaltungs- und Einstellungs-Screenshots
+3. Startet den Server neu für verschiedene **Idle-Layouts** (`show_last_alarm` an/aus)
+4. Speichert alle Dateien in `docs/screenshots/`
 
 ### Manuell
 
 1. **App starten** mit Testdaten und Mock-Warnungen:
 ```bash
-ALARM_DASHBOARD_API_KEY=test-key \
-ALARM_DASHBOARD_SETTINGS_PASSWORD=test-pass \
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Musterstadt \
-ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true \
+ALARM_MONITOR_API_KEY=test-key \
+ALARM_MONITOR_SETTINGS_PASSWORD=test-pass \
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Musterstadt \
+ALARM_MONITOR_DEFAULT_LATITUDE=51.0 \
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.0 \
+ALARM_MONITOR_DWD_WARNINGS_MOCK=true \
 python -m flask --app alarm_dashboard.app:create_app run --port 8000
 ```
 
-2. **Testalarm senden** (siehe README oder `scripts/capture_screenshots.py` für Beispiel-Payloads)
+2. **Idle-Layouts testen** über `/settings`:
+   - Standard: „Letzten Einsatz im Ruhezustand anzeigen“ ✓
+   - Alternativ: Checkbox deaktivieren → Unwetter links, Kalender rechts
+   - Mindest-Warnstufe: Stufe 1–4 wählbar
 
-3. **Auflösung einstellen**:
-   - Desktop: 1920×1080
-   - Mobile: 390×844
+3. **Auflösung**: Desktop 1920×1080, Mobile 390×844
 
-4. **Farbmodus**:
-   - Light: Alarmansichten oder helles System-Theme
-   - Dark: Ruhezustand oder dunkles System-Theme (DevTools → Rendering → `prefers-color-scheme: dark`)
+4. **Farbmodus**: Light für Alarm/Verwaltung, Dark für Ruhezustand oder `prefers-color-scheme: dark`
 
 ### Benennung
 
 Format: `<ansicht>-<light|dark>.png`
 
-Beispiele: `dashboard-alarm-light.png`, `history-dark.png`, `mobile-unwetter-dark.png`
+Beispiele: `dashboard-idle-no-last-alarm-dark.png`, `settings-light.png`
 
 ### Checkliste bei UI-Änderungen
 
 - [ ] `python scripts/capture_screenshots.py` ausgeführt
 - [ ] Beispieldaten verwendet (keine echten Einsatzdaten)
-- [ ] Light- und Dark-Varianten aktualisiert (wo zutreffend)
+- [ ] Alle Idle-Layouts aktualisiert (Standard, Kalender, ohne letzten Einsatz)
+- [ ] Einstellungsseite als `full_page` erfasst
 - [ ] Referenzen in README.md und diesem Guide angepasst
 
 ---

@@ -40,7 +40,7 @@
                                 placeholder="Passwort eingeben"
                                 autocomplete="current-password"
                             >
-                            <small class="form-hint">Passwort zum Speichern der Einstellungen (ALARM_DASHBOARD_SETTINGS_PASSWORD).</small>
+                            <small class="form-hint">Passwort zum Speichern der Einstellungen (ALARM_MONITOR_SETTINGS_PASSWORD).</small>
                         </div>
 
                         <div class="form-group">
@@ -53,6 +53,21 @@
                                 required
                             >
                             <small class="form-hint">Der Name Ihrer Feuerwehr, der in allen Ansichten angezeigt wird.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="activation_groups">Gruppen-Filter (TME-Codes)</label>
+                            <input 
+                                type="text" 
+                                id="activation_groups" 
+                                name="activation_groups" 
+                                placeholder="z.B. WIL26,WIL41,WIL52"
+                            >
+                            <small class="form-hint">Kommagetrennte Liste von TME-Codes. Leer lassen für alle Alarme. Kann alternativ per ALARM_MONITOR_GRUPPEN gesetzt werden.</small>
+                        </div>
+
+                        <div class="form-group form-group--section-header">
+                            <h3 class="settings-subsection-title">Ruhezustand</h3>
                         </div>
 
                         <div class="form-group">
@@ -104,6 +119,22 @@
                             <small class="form-hint">
                                 Wenn deaktiviert, werden Unwetterwarnungen dauerhaft links angezeigt;
                                 rechts erscheinen nur noch Kalendertermine (kein Wechsel).
+                                Kann alternativ per ALARM_MONITOR_SHOW_LAST_ALARM gesetzt werden.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="warnings_min_level">Mindest-Warnstufe für Anzeige</label>
+                            <select id="warnings_min_level" name="warnings_min_level">
+                                <option value="1">Stufe 1 – Wetterwarnung</option>
+                                <option value="2">Stufe 2 – Warnung vor markantem Wetter</option>
+                                <option value="3" selected>Stufe 3 – Unwetterwarnung</option>
+                                <option value="4">Stufe 4 – Warnung vor extremem Unwetter</option>
+                            </select>
+                            <small class="form-hint">
+                                Es werden nur Warnungen ab dieser DWD-Stufe im Ruhezustand angezeigt.
+                                Standard: Stufe 3 (Unwetterwarnung).
+                                Kann alternativ per ALARM_MONITOR_WARNINGS_MIN_LEVEL gesetzt werden.
                             </small>
                         </div>
 
@@ -121,17 +152,6 @@
                                 Zeigt im Ruhezustand eine simulierte DWD-Unwetterwarnung inkl. Warnkarte.
                                 Für Tests – in Produktion deaktiviert lassen.
                             </small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="activation_groups">Gruppen-Filter (TME-Codes)</label>
-                            <input 
-                                type="text" 
-                                id="activation_groups" 
-                                name="activation_groups" 
-                                placeholder="z.B. WIL26,WIL41,WIL52"
-                            >
-                            <small class="form-hint">Kommagetrennte Liste von TME-Codes. Leer lassen für alle Alarme.</small>
                         </div>
 
                         <div class="form-group">
@@ -157,7 +177,7 @@
                                 name="ntfy_topic_url"
                                 placeholder="https://ntfy.sh/meine-feuerwehr-abc123"
                             >
-                            <small class="form-hint">URL eines ntfy.sh Topics für Remote-Nachrichten (z.B. https://ntfy.sh/meine-fw). Leer lassen um zu deaktivieren. Kann alternativ per ALARM_DASHBOARD_NTFY_TOPIC_URL gesetzt werden.</small>
+                            <small class="form-hint">URL eines ntfy.sh Topics für Remote-Nachrichten (z.B. https://ntfy.sh/meine-fw). Leer lassen um zu deaktivieren. Kann alternativ per ALARM_MONITOR_NTFY_TOPIC_URL gesetzt werden.</small>
                         </div>
 
                         <div class="form-group">

@@ -131,70 +131,78 @@ Bearbeiten Sie die Datei mit Ihren Zugangsdaten:
 ```ini
 # API-Key für Alarmempfang (Pflichtfeld)
 # Generieren mit: openssl rand -hex 32
-ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...
+ALARM_MONITOR_API_KEY=a1b2c3d4e5f6...
 
 # Passwort für die Einstellungs-Seite (Pflichtfeld für Web-UI)
 # Generieren mit: openssl rand -hex 16
-ALARM_DASHBOARD_SETTINGS_PASSWORD=change-me-to-random-settings-password
+ALARM_MONITOR_SETTINGS_PASSWORD=change-me-to-random-settings-password
 
 # Gruppenfilter (optional, kommagetrennt – kann auch in der Web-UI gesetzt werden)
-# ALARM_DASHBOARD_GRUPPEN=WIL26,WIL41
+# ALARM_MONITOR_GRUPPEN=WIL26,WIL41
 
 # Anzeigedauer eines Alarms in Minuten
-ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
+ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 # Feuerwehrname für die Anzeige (kann auch in der Web-UI gesetzt werden)
-# ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
+# ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Beispielstadt
 
 # Standardkoordinaten für die Idle-Ansicht (kann auch in der Web-UI gesetzt werden)
-# ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-# ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-# ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
+# ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+# ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+# ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwehrhaus Beispielstadt
 
 # Kalender-Integration (optional, kann auch in der Web-UI gesetzt werden)
-# ALARM_DASHBOARD_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
+# ALARM_MONITOR_CALENDAR_URLS=https://calendar.google.com/calendar/ical/...
 
 # DWD-Unwetterwarnungen (optional, Standard-URL des DWD)
-# ALARM_DASHBOARD_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
+# ALARM_MONITOR_DWD_WARNINGS_URL=https://s3.eu-central-1.amazonaws.com/app-prod-static.warnwetter.de/v16/gemeinde_warnings_v2.json
 
 # Simulierte Unwetterwarnung für Tests (alternativ in der Web-UI)
-# ALARM_DASHBOARD_DWD_WARNINGS_MOCK=true
+# ALARM_MONITOR_DWD_WARNINGS_MOCK=true
+
+# Letzten Einsatz im Ruhezustand anzeigen (alternativ in der Web-UI)
+# ALARM_MONITOR_SHOW_LAST_ALARM=true
+
+# Mindest-DWD-Warnstufe für Anzeige im Ruhezustand (1–4, Standard: 3)
+# ALARM_MONITOR_WARNINGS_MIN_LEVEL=3
 
 # Nachrichten via ntfy.sh (optional, kann auch in der Web-UI gesetzt werden)
-# ALARM_DASHBOARD_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
-# ALARM_DASHBOARD_NTFY_POLL_INTERVAL=60
-# ALARM_DASHBOARD_MESSAGE_MAX_TTL_HOURS=72
+# ALARM_MONITOR_NTFY_TOPIC_URL=https://ntfy.sh/meine-feuerwehr-abc123
+# ALARM_MONITOR_NTFY_POLL_INTERVAL=60
+# ALARM_MONITOR_MESSAGE_MAX_TTL_HOURS=72
 
 # Alarm-Messenger Integration (optional)
-# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
-# ALARM_DASHBOARD_MESSENGER_API_KEY=your-api-key-here
+# ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
+# ALARM_MONITOR_MESSENGER_API_KEY=your-api-key-here
 
 # OpenRouteService für Routenplanung (optional)
-# ALARM_DASHBOARD_ORS_API_KEY=your-ors-api-key-here
+# ALARM_MONITOR_ORS_API_KEY=your-ors-api-key-here
 
 # Prometheus-Metriken-Endpoint aktivieren (optional)
-# ALARM_DASHBOARD_METRICS_TOKEN=change-me-to-random-metrics-token
+# ALARM_MONITOR_METRICS_TOKEN=change-me-to-random-metrics-token
 ```
 
 ### Wichtige Konfigurationsparameter
 
-Alle Umgebungsvariablen verwenden das Präfix `ALARM_DASHBOARD_` (siehe `.env.example`). Kurznamen in Klammern:
+Alle Umgebungsvariablen verwenden das Präfix `ALARM_MONITOR_` (siehe `.env.example`). Kurznamen in Klammern:
 
 | Umgebungsvariable | Beschreibung | Standardwert |
 |-------------------|--------------|--------------|
-| `ALARM_DASHBOARD_API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
-| `ALARM_DASHBOARD_SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (erforderlich) |
-| `ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
-| `ALARM_DASHBOARD_GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
-| `ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME` | Feuerwehr-Name (auch via Web-UI) | — |
-| `ALARM_DASHBOARD_DEFAULT_LATITUDE` / `_LONGITUDE` | Koordinaten für Idle-Wetter | (leer) |
-| `ALARM_DASHBOARD_DWD_WARNINGS_MOCK` | Simulierte Unwetterwarnung für Tests | false |
-| `ALARM_DASHBOARD_NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
-| `ALARM_DASHBOARD_MESSENGER_SERVER_URL` | URL des alarm-messenger Servers | (deaktiviert) |
-| `ALARM_DASHBOARD_ORS_API_KEY` | OpenRouteService-Key für Navigation | (deaktiviert) |
-| `ALARM_DASHBOARD_METRICS_TOKEN` | Token für `/api/metrics` | (deaktiviert) |
-| `ALARM_DASHBOARD_GUNICORN_WORKERS` | Gunicorn-Worker (immer **1**) | 1 |
-| `ALARM_DASHBOARD_GUNICORN_THREADS` | Gunicorn-Threads | 8 |
+| `ALARM_MONITOR_API_KEY` | API-Schlüssel für Alarmempfang | (erforderlich) |
+| `ALARM_MONITOR_SETTINGS_PASSWORD` | Passwort für Einstellungs-Web-UI | (erforderlich) |
+| `ALARM_MONITOR_DISPLAY_DURATION_MINUTES` | Anzeigedauer eines Alarms | 30 |
+| `ALARM_MONITOR_GRUPPEN` | TME-Codes für Alarmfilterung | (alle) |
+| `ALARM_MONITOR_FIRE_DEPARTMENT_NAME` | Feuerwehr-Name (auch via Web-UI) | — |
+| `ALARM_MONITOR_DEFAULT_LATITUDE` / `_LONGITUDE` | Koordinaten für Idle-Wetter | (leer) |
+| `ALARM_MONITOR_DWD_WARNINGS_MOCK` | Simulierte Unwetterwarnung für Tests | false |
+| `ALARM_MONITOR_SHOW_LAST_ALARM` | Letzten Einsatz im Ruhezustand anzeigen | true |
+| `ALARM_MONITOR_WARNINGS_MIN_LEVEL` | Mindest-DWD-Warnstufe für Anzeige (1–4) | 3 |
+| `ALARM_MONITOR_NTFY_TOPIC_URL` | ntfy.sh Topic-URL für Nachrichten | (leer) |
+| `ALARM_MONITOR_MESSENGER_SERVER_URL` | URL des alarm-messenger Servers | (deaktiviert) |
+| `ALARM_MONITOR_ORS_API_KEY` | OpenRouteService-Key für Navigation | (deaktiviert) |
+| `ALARM_MONITOR_METRICS_TOKEN` | Token für `/api/metrics` | (deaktiviert) |
+| `ALARM_MONITOR_GUNICORN_WORKERS` | Gunicorn-Worker (immer **1**) | 1 |
+| `ALARM_MONITOR_GUNICORN_THREADS` | Gunicorn-Threads | 8 |
 
 ---
 
@@ -223,8 +231,9 @@ docker compose up -d
 
 2. **Dashboard**: Öffnen Sie `http://<server-ip>:8000/`
    - Die Standardansicht (Idle) sollte erscheinen
-   - Links: letzter Einsatz; rechts: Unwetterwarnungen und/oder Termine
-   - Optional: In den Einstellungen Koordinaten setzen und Testmodus für Unwetter aktivieren
+   - **Standardlayout**: links letzter Einsatz, rechts Unwetterwarnungen und/oder Termine (Wechsel alle 30 s bei Kalender)
+   - **Alternatives Layout** (`ALARM_MONITOR_SHOW_LAST_ALARM=false`): Unwetter links, Kalender rechts
+   - Optional: Koordinaten, Mindest-Warnstufe und Testmodus für Unwetter in den Einstellungen setzen
 
 3. **Logs prüfen**:
    ```bash
@@ -300,7 +309,7 @@ Inhalt:
 ```ini
 [Unit]
 Description=Alarm Mail Service
-After=network.target alarm-dashboard.service
+After=network.target alarm-monitor.service
 
 [Service]
 Type=simple
@@ -331,14 +340,14 @@ sudo systemctl start alarm-mail
 Erstellen Sie eine Service-Datei:
 
 ```bash
-sudo nano /etc/systemd/system/alarm-dashboard.service
+sudo nano /etc/systemd/system/alarm-monitor.service
 ```
 
 Inhalt:
 
 ```ini
 [Unit]
-Description=Feuerwehr Alarm Dashboard
+Description=Feuerwehr Alarm Monitor
 After=network.target
 
 [Service]
@@ -363,8 +372,8 @@ Service aktivieren:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable alarm-dashboard
-sudo systemctl start alarm-dashboard
+sudo systemctl enable alarm-monitor
+sudo systemctl start alarm-monitor
 ```
 
 ### Kiosk-Modus einrichten (Raspberry Pi)
@@ -378,7 +387,7 @@ mkdir -p ~/.config/autostart
 cat > ~/.config/autostart/kiosk.desktop << EOF
 [Desktop Entry]
 Type=Application
-Name=Alarm Dashboard Kiosk
+Name=Alarm Monitor Kiosk
 Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars http://server-ip:8000
 EOF
 ```
@@ -429,7 +438,7 @@ cd alarm-monitor
 git pull
 source .venv/bin/activate
 pip install -r requirements.txt
-sudo systemctl restart alarm-dashboard
+sudo systemctl restart alarm-monitor
 
 # Docker Installation
 cd alarm-monitor
@@ -442,7 +451,7 @@ docker compose up --build -d
 
 ```bash
 # Native (systemd)
-sudo journalctl -u alarm-dashboard -f
+sudo journalctl -u alarm-monitor -f
 
 # Docker
 docker compose logs -f
@@ -561,7 +570,7 @@ du -h ~/alarm-monitor/instance/alarm_history.json
 **Container-Ressourcen**:
 ```bash
 # CPU/Memory-Nutzung
-docker stats alarm-dashboard --no-stream
+docker stats alarm-monitor --no-stream
 
 # Disk-Nutzung
 docker system df
@@ -624,7 +633,7 @@ free -h
 1. **API-Verbindung prüfen**:
    ```bash
    # alarm-monitor Logs auf Fehler prüfen
-   sudo journalctl -u alarm-dashboard | grep -i "api\|error"
+   sudo journalctl -u alarm-monitor | grep -i "api\|error"
    
    # alarm-mail Service Logs prüfen
    sudo journalctl -u alarm-mail | grep -i "error\|failed"
@@ -633,7 +642,7 @@ free -h
    ```
 
 2. **API-Key verifizieren**: Stellen Sie sicher, dass der API-Key in beiden
-   Services identisch ist (`ALARM_DASHBOARD_API_KEY` im alarm-monitor und
+   Services identisch ist (`ALARM_MONITOR_API_KEY` im alarm-monitor und
    `ALARM_MAIL_MONITOR_API_KEY` im alarm-mail Service).
 
 3. **Netzwerkverbindung testen**: Der alarm-mail Service muss den alarm-monitor
@@ -665,16 +674,18 @@ free -h
 
 #### Unwetterwarnungen fehlen
 
-- Prüfen Sie die Standardkoordinaten in den Einstellungen
+- Prüfen Sie die Standardkoordinaten in den Einstellungen (Abschnitt **Ruhezustand**)
+- Prüfen Sie die **Mindest-Warnstufe** — Standard ist Stufe 3; bei Stufe 4 erscheinen nur extremste Warnungen
 - Stellen Sie sicher, dass die DWD-API und www.dwd.de erreichbar sind
-- Aktuell kann auch einfach keine Unwetterwarnung (Stufe 3/4) vorliegen
-- Für UI-Tests: **Unwetterwarnung simulieren** in den Einstellungen aktivieren
+- Aktuell kann auch einfach keine Warnung der gewählten Stufe vorliegen
+- Für UI-Tests: **Unwetterwarnung simulieren** in den Einstellungen aktivieren (`ALARM_MONITOR_DWD_WARNINGS_MOCK=true`)
+- Screenshots der Idle-Layouts: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)
 
 ### Diagnose-Befehle
 
 ```bash
 # Service-Status prüfen
-sudo systemctl status alarm-dashboard
+sudo systemctl status alarm-monitor
 sudo systemctl status alarm-mail
 
 # Netzwerk-Verbindung testen
@@ -751,7 +762,7 @@ Sicherheit.
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/backup/alarm-dashboard"
+BACKUP_DIR="/backup/alarm-monitor"
 DATE=$(date +%Y%m%d)
 
 mkdir -p $BACKUP_DIR
@@ -766,13 +777,13 @@ cp instance/custom_logo.* $BACKUP_DIR/ 2>/dev/null || true
 
 ```bash
 # Konfiguration wiederherstellen
-cp /backup/alarm-dashboard/.env.YYYYMMDD .env
+cp /backup/alarm-monitor/.env.YYYYMMDD .env
 
 # Historie wiederherstellen
-cp /backup/alarm-dashboard/alarm_history.YYYYMMDD.json instance/alarm_history.json
+cp /backup/alarm-monitor/alarm_history.YYYYMMDD.json instance/alarm_history.json
 
 # Service neu starten
-sudo systemctl restart alarm-dashboard
+sudo systemctl restart alarm-monitor
 ```
 
 ---
@@ -805,8 +816,8 @@ sudo reboot
 **Gunicorn-Threads anpassen** (Worker immer bei **1** lassen!):
 ```bash
 # Mehr gleichzeitige Anfragen über Threads, nicht über Worker
-ALARM_DASHBOARD_GUNICORN_WORKERS=1
-ALARM_DASHBOARD_GUNICORN_THREADS=8   # Standard; bei stärkerer Hardware erhöhbar
+ALARM_MONITOR_GUNICORN_WORKERS=1
+ALARM_MONITOR_GUNICORN_THREADS=8   # Standard; bei stärkerer Hardware erhöhbar
 ```
 
 > **Wichtig:** Mehrere Gunicorn-Worker führen zu getrenntem Alarmzustand und SSE-Caches. Immer 1 Worker verwenden (siehe `Dockerfile` und `compose.yaml`).
@@ -906,7 +917,7 @@ services:
 
 ```bash
 # In alarm-monitor .env:
-ALARM_DASHBOARD_NOMINATIM_URL=http://nominatim:8080/search
+ALARM_MONITOR_NOMINATIM_URL=http://nominatim:8080/search
 ```
 
 **CDN für externe Libraries** (optional):
@@ -973,25 +984,25 @@ performance.timing.loadEventEnd - performance.timing.navigationStart
 
 ```ini
 # API-Key für Alarmempfang (erforderlich)
-ALARM_DASHBOARD_API_KEY=a1b2c3d4e5f6...  # openssl rand -hex 32
+ALARM_MONITOR_API_KEY=a1b2c3d4e5f6...  # openssl rand -hex 32
 
 # Betriebsparameter
-ALARM_DASHBOARD_GRUPPEN=
-ALARM_DASHBOARD_DISPLAY_DURATION_MINUTES=30
+ALARM_MONITOR_GRUPPEN=
+ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 # Anzeige
-ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
-ALARM_DASHBOARD_DEFAULT_LATITUDE=51.2345
-ALARM_DASHBOARD_DEFAULT_LONGITUDE=9.8765
-ALARM_DASHBOARD_DEFAULT_LOCATION_NAME=Feuerwehrhaus Musterstadt
+ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Feuerwehr Musterstadt
+ALARM_MONITOR_DEFAULT_LATITUDE=51.2345
+ALARM_MONITOR_DEFAULT_LONGITUDE=9.8765
+ALARM_MONITOR_DEFAULT_LOCATION_NAME=Feuerwehrhaus Musterstadt
 
 # Alarm-Messenger Integration (optional - für Teilnehmerrückmeldungen)
-# ALARM_DASHBOARD_MESSENGER_SERVER_URL=https://messenger.example.com
-# ALARM_DASHBOARD_MESSENGER_API_KEY=your-messenger-api-key-here
+# ALARM_MONITOR_MESSENGER_SERVER_URL=https://messenger.example.com
+# ALARM_MONITOR_MESSENGER_API_KEY=your-messenger-api-key-here
 
 # Optional
-ALARM_DASHBOARD_ORS_API_KEY=
-ALARM_DASHBOARD_APP_VERSION=v1.0.0
+ALARM_MONITOR_ORS_API_KEY=
+ALARM_MONITOR_APP_VERSION=v1.0.0
 ```
 
 ### Kontakt und Support

@@ -13,13 +13,16 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import Any
 
 from playwright.async_api import async_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "docs" / "screenshots"
+INSTANCE_DIR = ROOT / "instance"
 BASE_URL = os.environ.get("SCREENSHOT_BASE_URL", "http://127.0.0.1:8002")
 API_KEY = os.environ.get("SCREENSHOT_API_KEY", "screenshot-key")
+SETTINGS_PASSWORD = os.environ.get("SCREENSHOT_SETTINGS_PASSWORD", "screenshot-pass")
 
 DESKTOP = {"width": 1920, "height": 1080}
 MOBILE = {"width": 390, "height": 844}
@@ -72,6 +75,23 @@ MOCK_CALENDAR = {
         {"start": "2026-06-12T19:30:00+00:00", "summary": "Dienstbesprechung"},
         {"start": "2026-06-15T09:00:00+00:00", "summary": "Gerätewartung TLF"},
     ],
+}
+
+SCREENSHOT_SETTINGS: dict[str, Any] = {
+    "fire_department_name": "Musterstadt",
+    "activation_groups": ["MST26", "MST41", "MST52"],
+    "default_latitude": 51.0,
+    "default_longitude": 9.0,
+    "default_location_name": "Feuerwache Musterstadt",
+    "show_last_alarm": True,
+    "warnings_min_level": 3,
+    "dwd_warnings_mock": True,
+    "calendar_urls": [
+        "https://calendar.google.com/calendar/ical/example%40group.calendar.google.com/private-abc123/basic.ics",
+    ],
+    "ntfy_topic_url": "https://ntfy.sh/musterstadt-fw",
+    "ntfy_poll_interval": 60,
+    "message_default_ttl_minutes": 60,
 }
 
 ALARM_PAYLOAD = {
@@ -142,9 +162,19 @@ def wait_for_server(timeout: float = 30.0) -> None:
 
 
 def reset_history() -> None:
-    history_path = ROOT / "instance" / "alarm_history.json"
+    history_path = INSTANCE_DIR / "alarm_history.json"
     history_path.parent.mkdir(parents=True, exist_ok=True)
     history_path.write_text('{"alarm": null, "history": []}', encoding="utf-8")
+
+
+def write_settings(overrides: dict[str, Any] | None = None) -> None:
+    """Persist settings for screenshot scenarios."""
+    settings = {**SCREENSHOT_SETTINGS, **(overrides or {})}
+    INSTANCE_DIR.mkdir(parents=True, exist_ok=True)
+    (INSTANCE_DIR / "settings.json").write_text(
+        json.dumps(settings, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def write_idle_history() -> None:
@@ -160,7 +190,7 @@ def write_idle_history() -> None:
         "received_at": "2026-06-04T18:30:00+00:00",
         "coordinates": {"lat": 51.21, "lon": 9.84},
     }
-    history_path = ROOT / "instance" / "alarm_history.json"
+    history_path = INSTANCE_DIR / "alarm_history.json"
     history_path.write_text(
         json.dumps({"alarm": None, "history": [entry]}, ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -173,6 +203,13 @@ def seed_alarm_data() -> None:
         api_post("/api/alarm", alarm)
         time.sleep(0.2)
     api_post("/api/alarm", ALARM_PAYLOAD)
+    api_post("/api/messages", {
+        "text": "Dienstbesprechung morgen 19:00 Uhr!",
+        "ttl_minutes": 1440,
+    })
+
+
+def seed_idle_messages() -> None:
     api_post("/api/messages", {
         "text": "Dienstbesprechung morgen 19:00 Uhr!",
         "ttl_minutes": 1440,
@@ -206,13 +243,43 @@ async def wait_mobile_alarm(page) -> None:
 
 async def wait_mobile_idle(page) -> None:
     await page.wait_for_selector("#mobile-idle-view:not(.hidden)", timeout=20000)
-    await page.wait_for_selector("#mobile-warnings-side:not(.hidden)", timeout=20000)
+
+
+async def force_idle_side_panel(page, *, show_warnings: bool) -> None:
+    """Force the right idle panel to warnings or calendar (default layout)."""
+    await page.evaluate(
+        """(showWarnings) => {
+            if (typeof idleSidePanelShowWarnings !== 'undefined') {
+                idleSidePanelShowWarnings = showWarnings;
+            }
+            if (typeof updateIdleSidePanelVisibility === 'function') {
+                updateIdleSidePanelVisibility();
+            }
+        }""",
+        show_warnings,
+    )
 
 
 async def capture(page, path: Path, *, full_page: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     await page.screenshot(path=str(path), full_page=full_page)
     print(f"  ✓ {path.relative_to(ROOT)}")
+
+
+async def capture_settings(playwright) -> None:
+    browser = await playwright.chromium.launch(args=["--no-sandbox"])
+
+    for theme, suffix in (("light", "light"), ("dark", "dark")):
+        ctx = await browser.new_context(viewport=DESKTOP, color_scheme=theme)
+        page = await ctx.new_page()
+        await setup_routes(page)
+        await page.goto(f"{BASE_URL}/settings")
+        await page.wait_for_selector("#settings-form", timeout=15000)
+        await page.wait_for_timeout(2500)
+        await capture(page, OUT_DIR / f"settings-{suffix}.png", full_page=True)
+        await ctx.close()
+
+    await browser.close()
 
 
 async def capture_alarm_phase(playwright) -> None:
@@ -280,10 +347,6 @@ async def capture_alarm_phase(playwright) -> None:
     await page.wait_for_selector("#history-tbody tr", timeout=15000)
     await page.wait_for_timeout(1500)
     await capture(page, OUT_DIR / "history-light.png")
-
-    await page.goto(f"{BASE_URL}/settings")
-    await page.wait_for_timeout(2000)
-    await capture(page, OUT_DIR / "settings-light.png")
     await ctx.close()
 
     ctx = await browser.new_context(viewport=DESKTOP, color_scheme="dark")
@@ -298,10 +361,6 @@ async def capture_alarm_phase(playwright) -> None:
     await page.wait_for_selector("#history-tbody tr", timeout=15000)
     await page.wait_for_timeout(1500)
     await capture(page, OUT_DIR / "history-dark.png")
-
-    await page.goto(f"{BASE_URL}/settings")
-    await page.wait_for_timeout(2000)
-    await capture(page, OUT_DIR / "settings-dark.png")
     await ctx.close()
 
     ctx = await browser.new_context(
@@ -323,17 +382,24 @@ async def capture_alarm_phase(playwright) -> None:
     await browser.close()
 
 
-async def capture_idle_phase(playwright) -> None:
+async def capture_idle_default(playwright) -> None:
+    """Idle with last alarm left; warnings or calendar on the right."""
     browser = await playwright.chromium.launch(args=["--no-sandbox"])
 
-    ctx = await browser.new_context(viewport=DESKTOP, color_scheme="light")
+    ctx = await browser.new_context(viewport=DESKTOP, color_scheme="dark")
     page = await ctx.new_page()
     await setup_routes(page)
 
     await page.goto(f"{BASE_URL}/")
     await wait_dashboard_idle(page)
-    await page.wait_for_timeout(4000)
+    await page.wait_for_timeout(3500)
+    await force_idle_side_panel(page, show_warnings=True)
+    await page.wait_for_timeout(1500)
     await capture(page, OUT_DIR / "dashboard-idle-dark.png")
+
+    await force_idle_side_panel(page, show_warnings=False)
+    await page.wait_for_timeout(1500)
+    await capture(page, OUT_DIR / "dashboard-idle-calendar-dark.png")
     await ctx.close()
 
     ctx = await browser.new_context(
@@ -341,7 +407,7 @@ async def capture_idle_phase(playwright) -> None:
         device_scale_factor=2,
         is_mobile=True,
         has_touch=True,
-        color_scheme="light",
+        color_scheme="dark",
     )
     page = await ctx.new_page()
     await setup_routes(page, include_calendar=False)
@@ -356,15 +422,48 @@ async def capture_idle_phase(playwright) -> None:
     await browser.close()
 
 
+async def capture_idle_no_last_alarm(playwright) -> None:
+    """Idle without last alarm: warnings left, calendar right."""
+    browser = await playwright.chromium.launch(args=["--no-sandbox"])
+
+    ctx = await browser.new_context(viewport=DESKTOP, color_scheme="dark")
+    page = await ctx.new_page()
+    await setup_routes(page)
+
+    await page.goto(f"{BASE_URL}/")
+    await wait_dashboard_idle(page)
+    await page.wait_for_timeout(4000)
+    await capture(page, OUT_DIR / "dashboard-idle-no-last-alarm-dark.png")
+    await ctx.close()
+
+    ctx = await browser.new_context(
+        viewport=MOBILE,
+        device_scale_factor=2,
+        is_mobile=True,
+        has_touch=True,
+        color_scheme="dark",
+    )
+    page = await ctx.new_page()
+    await setup_routes(page)
+
+    await page.goto(f"{BASE_URL}/mobile")
+    await wait_mobile_idle(page)
+    await page.wait_for_timeout(3500)
+    await capture(page, OUT_DIR / "mobile-idle-no-last-alarm-dark.png", full_page=True)
+    await ctx.close()
+
+    await browser.close()
+
+
 def start_server() -> subprocess.Popen:
     env = os.environ.copy()
     env.update({
-        "ALARM_DASHBOARD_API_KEY": API_KEY,
-        "ALARM_DASHBOARD_SETTINGS_PASSWORD": "screenshot-pass",
-        "ALARM_DASHBOARD_FIRE_DEPARTMENT_NAME": "Musterstadt",
-        "ALARM_DASHBOARD_DEFAULT_LATITUDE": "51.0",
-        "ALARM_DASHBOARD_DEFAULT_LONGITUDE": "9.0",
-        "ALARM_DASHBOARD_DWD_WARNINGS_MOCK": "true",
+        "ALARM_MONITOR_API_KEY": API_KEY,
+        "ALARM_MONITOR_SETTINGS_PASSWORD": SETTINGS_PASSWORD,
+        "ALARM_MONITOR_FIRE_DEPARTMENT_NAME": "Musterstadt",
+        "ALARM_MONITOR_DEFAULT_LATITUDE": "51.0",
+        "ALARM_MONITOR_DEFAULT_LONGITUDE": "9.0",
+        "ALARM_MONITOR_DWD_WARNINGS_MOCK": "true",
         "FLASK_APP": "alarm_dashboard.app:create_app",
     })
     return subprocess.Popen(
@@ -386,31 +485,51 @@ def main() -> None:
     args = parser.parse_args()
 
     async def full_run() -> None:
-        async with async_playwright() as playwright:
-            if not args.no_server:
-                server = start_server()
-                try:
-                    wait_for_server()
-                    seed_alarm_data()
-                    await capture_alarm_phase(playwright)
-                finally:
-                    server.terminate()
-                    server.wait(timeout=5)
-
+        if args.no_server:
+            wait_for_server()
+            write_settings()
+            seed_alarm_data()
+            async with async_playwright() as playwright:
+                await capture_alarm_phase(playwright)
+                await capture_settings(playwright)
                 write_idle_history()
-                server = start_server()
-                try:
-                    wait_for_server()
-                    await capture_idle_phase(playwright)
-                finally:
-                    server.terminate()
-                    server.wait(timeout=5)
-            else:
+                await capture_idle_default(playwright)
+            print("Note: idle variant screenshots need server restarts – run without --no-server")
+            return
+
+        async with async_playwright() as playwright:
+            write_settings()
+            server = start_server()
+            try:
                 wait_for_server()
                 seed_alarm_data()
                 await capture_alarm_phase(playwright)
-                write_idle_history()
-                print("Note: idle screenshots require server restart with --no-server")
+                await capture_settings(playwright)
+            finally:
+                server.terminate()
+                server.wait(timeout=5)
+
+            write_idle_history()
+            write_settings({"show_last_alarm": True})
+            server = start_server()
+            try:
+                wait_for_server()
+                seed_idle_messages()
+                await capture_idle_default(playwright)
+            finally:
+                server.terminate()
+                server.wait(timeout=5)
+
+            write_idle_history()
+            write_settings({"show_last_alarm": False})
+            server = start_server()
+            try:
+                wait_for_server()
+                seed_idle_messages()
+                await capture_idle_no_last_alarm(playwright)
+            finally:
+                server.terminate()
+                server.wait(timeout=5)
 
     asyncio.run(full_run())
     print(f"\nScreenshots saved to {OUT_DIR}")

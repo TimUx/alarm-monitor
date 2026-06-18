@@ -146,11 +146,15 @@ def _build_idle_response(last_alarm: Optional[Dict[str, Any]]) -> Dict[str, Any]
 
             warnings = build_mock_severe_warnings(lat, lon)
         else:
+            min_level = effective_settings.get(
+                "warnings_min_level", config.warnings_min_level
+            )
             warnings = _get_warnings_cache().get_warnings_for_coordinates(
                 config.dwd_warnings_url,
                 lat,
                 lon,
                 executor=_executor,
+                min_level=min_level,
             )
             if warnings is None:
                 from ..bundesland import dwd_map_url, resolve_dwd_region
@@ -441,6 +445,7 @@ def api_get_settings():
         "message_default_ttl_minutes": effective_settings.get("message_default_ttl_minutes", 60),
         "dwd_warnings_mock": effective_settings.get("dwd_warnings_mock", False),
         "show_last_alarm": effective_settings.get("show_last_alarm", True),
+        "warnings_min_level": effective_settings.get("warnings_min_level", 3),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -546,6 +551,15 @@ def api_update_settings():
 
     if "show_last_alarm" in data:
         updates["show_last_alarm"] = bool(data["show_last_alarm"])
+
+    if "warnings_min_level" in data and data["warnings_min_level"] not in (None, ""):
+        try:
+            level = int(data["warnings_min_level"])
+        except (TypeError, ValueError):
+            return jsonify({"error": "warnings_min_level must be an integer"}), 400
+        if level not in (1, 2, 3, 4):
+            return jsonify({"error": "warnings_min_level must be between 1 and 4"}), 400
+        updates["warnings_min_level"] = level
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)
@@ -771,13 +785,13 @@ def api_delete_message(message_id: str):
 def api_metrics():
     """Prometheus-compatible plain text metrics endpoint.
 
-    Requires X-Metrics-Token: <ALARM_DASHBOARD_METRICS_TOKEN> header.
-    Returns 404 if ALARM_DASHBOARD_METRICS_TOKEN is not configured.
+    Requires X-Metrics-Token: <ALARM_MONITOR_METRICS_TOKEN> header.
+    Returns 404 if ALARM_MONITOR_METRICS_TOKEN is not configured.
     """
     import os
     from ..app import _metrics, _metrics_lock
 
-    metrics_token = os.environ.get("ALARM_DASHBOARD_METRICS_TOKEN", "")
+    metrics_token = os.environ.get("ALARM_MONITOR_METRICS_TOKEN", "")
     if not metrics_token:
         return jsonify({"error": "Not found"}), 404
 
