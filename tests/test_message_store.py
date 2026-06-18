@@ -11,8 +11,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from alarm_dashboard.message_store import MessageStore
-from alarm_dashboard.ntfy_client import NtfyPoller
+from alarm_monitor.message_store import MessageStore
+from alarm_monitor.ntfy_client import NtfyPoller
 
 
 # ---------------------------------------------------------------------------
@@ -283,7 +283,7 @@ def test_ntfy_poller_skips_poll_when_no_topic_url():
     poller = NtfyPoller(get_effective_settings=lambda: settings, message_store=store)
 
     # _poll_once should return without calling requests
-    with patch("alarm_dashboard.ntfy_client.requests.get") as mock_get:
+    with patch("alarm_monitor.ntfy_client.requests.get") as mock_get:
         poller._poll_once()
     mock_get.assert_not_called()
     assert store.get_active() == []
@@ -300,7 +300,7 @@ def test_ntfy_poller_applies_default_ttl_when_no_expires_in_event():
     mock_resp.raise_for_status.return_value = None
     mock_resp.text = ntfy_response
 
-    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+    with patch("alarm_monitor.ntfy_client.requests.get", return_value=mock_resp):
         poller._poll_once()
 
     active = store.get_active()
@@ -323,7 +323,7 @@ def test_ntfy_poller_resets_last_poll_time_on_url_change():
     mock_resp.raise_for_status.return_value = None
     mock_resp.text = '{"id":"1","event":"message","message":"Msg A"}\n'
 
-    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+    with patch("alarm_monitor.ntfy_client.requests.get", return_value=mock_resp):
         poller._poll_once()
 
     assert poller._last_topic_url == "https://ntfy.sh/topic-a"
@@ -333,7 +333,7 @@ def test_ntfy_poller_resets_last_poll_time_on_url_change():
     settings["ntfy_topic_url"] = "https://ntfy.sh/topic-b"
     mock_resp.text = '{"id":"2","event":"message","message":"Msg B"}\n'
 
-    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+    with patch("alarm_monitor.ntfy_client.requests.get", return_value=mock_resp):
         poller._poll_once()
 
     # Should have reset and used the new URL
@@ -352,7 +352,7 @@ def test_ntfy_poller_deletes_message_on_message_delete_event():
         '{"event":"message_delete","sequence_id":"abc"}\n'
     )
 
-    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+    with patch("alarm_monitor.ntfy_client.requests.get", return_value=mock_resp):
         poller._poll_once()
 
     assert store.get_active() == []
@@ -370,7 +370,7 @@ def test_ntfy_poller_deletes_message_on_deleted_flag_event():
         '{"id":"abc","event":"message","deleted":true}\n'
     )
 
-    with patch("alarm_dashboard.ntfy_client.requests.get", return_value=mock_resp):
+    with patch("alarm_monitor.ntfy_client.requests.get", return_value=mock_resp):
         poller._poll_once()
 
     assert store.get_active() == []

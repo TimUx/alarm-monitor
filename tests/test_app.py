@@ -13,9 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
-from alarm_dashboard.config import AppConfig
-from alarm_dashboard import app as app_module
-from alarm_dashboard.app import generate_csrf_token
+from alarm_monitor.config import AppConfig
+from alarm_monitor import app as app_module
+from alarm_monitor.app import generate_csrf_token
 
 
 API_KEY = "test-secret-key"
@@ -26,10 +26,10 @@ SETTINGS_PASSWORD = "test-settings-password"
 def mock_network_calls():
     """Prevent real network calls by patching geocode and weather helpers."""
     with (
-        patch("alarm_dashboard.geocode.geocode_location", return_value=None),
-        patch("alarm_dashboard.weather.fetch_weather", return_value=None),
+        patch("alarm_monitor.geocode.geocode_location", return_value=None),
+        patch("alarm_monitor.weather.fetch_weather", return_value=None),
         patch(
-            "alarm_dashboard.warnings_cache.WarningsCache.get_warnings_for_coordinates",
+            "alarm_monitor.warnings_cache.WarningsCache.get_warnings_for_coordinates",
             return_value=None,
         ),
     ):
@@ -709,9 +709,9 @@ def test_metrics_endpoint_returns_prometheus_format(client) -> None:
             headers={"X-Metrics-Token": token},
         )
         assert response.status_code == 200
-        assert b"alarm_dashboard_alarms_received_total" in response.data
-        assert b"alarm_dashboard_sse_active_connections" in response.data
-        assert b"alarm_dashboard_history_size" in response.data
+        assert b"alarm_monitor_alarms_received_total" in response.data
+        assert b"alarm_monitor_sse_active_connections" in response.data
+        assert b"alarm_monitor_history_size" in response.data
     finally:
         os.environ.pop("ALARM_MONITOR_METRICS_TOKEN", None)
 
@@ -1180,7 +1180,7 @@ def test_get_settings_returns_ntfy_fields(client) -> None:
 
 def test_post_settings_saves_ntfy_topic_url(client, flask_app) -> None:
     """POST /api/settings should persist ntfy_topic_url."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     response = client.post(
@@ -1202,7 +1202,7 @@ def test_post_settings_saves_ntfy_topic_url(client, flask_app) -> None:
 
 def test_post_settings_saves_ntfy_poll_interval(client, flask_app) -> None:
     """POST /api/settings should persist ntfy_poll_interval."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     response = client.post(
@@ -1223,7 +1223,7 @@ def test_post_settings_saves_ntfy_poll_interval(client, flask_app) -> None:
 
 def test_post_settings_rejects_invalid_ntfy_poll_interval(client) -> None:
     """POST /api/settings with ntfy_poll_interval < 10 should return 400."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     response = client.post(
@@ -1240,7 +1240,7 @@ def test_post_settings_rejects_invalid_ntfy_poll_interval(client) -> None:
 
 def test_post_settings_saves_message_default_ttl(client, flask_app) -> None:
     """POST /api/settings should persist message_default_ttl_minutes."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     response = client.post(
@@ -1261,7 +1261,7 @@ def test_post_settings_saves_message_default_ttl(client, flask_app) -> None:
 
 def test_post_settings_rejects_invalid_message_default_ttl(client) -> None:
     """POST /api/settings with message_default_ttl_minutes < 1 should return 400."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     response = client.post(
@@ -1278,7 +1278,7 @@ def test_post_settings_rejects_invalid_message_default_ttl(client) -> None:
 
 def test_post_settings_clears_ntfy_topic_url_when_empty(client, flask_app) -> None:
     """POST /api/settings with empty ntfy_topic_url should set it to None."""
-    from alarm_dashboard.app import generate_csrf_token
+    from alarm_monitor.app import generate_csrf_token
     csrf = generate_csrf_token(SETTINGS_PASSWORD)
 
     # First set a URL

@@ -210,7 +210,7 @@ curl -X POST http://server-ip:8000/api/messages \
 
 ### Wie ändere ich die Farben des Dashboards?
 
-Bearbeiten Sie die CSS-Variablen in `alarm_dashboard/static/css/dashboard.css`:
+Bearbeiten Sie die CSS-Variablen in `alarm_monitor/static/css/dashboard.css`:
 ```css
 :root {
   --accent: #e74c3c;      /* Hauptfarbe */
@@ -598,9 +598,9 @@ Für OpenAPI/Swagger-Dokumentation: Geplant für zukünftige Versionen.
 ### Kann ich eigene Widgets hinzufügen?
 
 Ja! Das Dashboard ist modular aufgebaut:
-1. Template bearbeiten: `alarm_dashboard/templates/dashboard.html`
-2. CSS anpassen: `alarm_dashboard/static/css/dashboard.css`
-3. JavaScript erweitern: `alarm_dashboard/static/js/dashboard.js`
+1. Template bearbeiten: `alarm_monitor/templates/dashboard.html`
+2. CSS anpassen: `alarm_monitor/static/css/dashboard.css`
+3. JavaScript erweitern: `alarm_monitor/static/js/dashboard.js`
 
 Beispiel: Eigenes Widget für Hydranten-Standorte.
 

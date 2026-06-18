@@ -1,4 +1,4 @@
-"""Main Flask application exposing the alarm dashboard."""
+"""Main Flask application for the Alarm Monitor."""
 
 from __future__ import annotations
 

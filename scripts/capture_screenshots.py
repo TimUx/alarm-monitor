@@ -464,7 +464,7 @@ def start_server() -> subprocess.Popen:
         "ALARM_MONITOR_DEFAULT_LATITUDE": "51.0",
         "ALARM_MONITOR_DEFAULT_LONGITUDE": "9.0",
         "ALARM_MONITOR_DWD_WARNINGS_MOCK": "true",
-        "FLASK_APP": "alarm_dashboard.app:create_app",
+        "FLASK_APP": "alarm_monitor.app:create_app",
     })
     return subprocess.Popen(
         [sys.executable, "-m", "flask", "run", "--port", "8002", "--host", "127.0.0.1"],

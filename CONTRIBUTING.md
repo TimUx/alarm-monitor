@@ -104,7 +104,7 @@ cp .env.example .env
 
 ```bash
 # Flask Development Server
-export FLASK_APP=alarm_dashboard.app
+export FLASK_APP=alarm_monitor.app
 export FLASK_ENV=development
 flask run --debug --host 0.0.0.0 --port 8000
 
@@ -139,8 +139,8 @@ git checkout -b feature/mein-feature
 
 # 4. Testen
 pytest
-black alarm_dashboard/  # Code formatieren
-flake8 alarm_dashboard/  # Linting
+black alarm_monitor/  # Code formatieren
+flake8 alarm_monitor/  # Linting
 
 # 5. Committen
 git add .
@@ -163,12 +163,12 @@ git push origin feature/mein-feature
 
 **Formatierung**: Verwenden Sie `black`:
 ```bash
-black alarm_dashboard/
+black alarm_monitor/
 ```
 
 **Linting**: Verwenden Sie `flake8`:
 ```bash
-flake8 alarm_dashboard/ --max-line-length=100
+flake8 alarm_monitor/ --max-line-length=100
 ```
 
 **Type-Hints**: Verwenden Sie Type-Hints wo sinnvoll:
@@ -212,7 +212,7 @@ def fetch_weather(latitude: float, longitude: float) -> dict:
 
 **Dateistruktur**:
 ```
-alarm_dashboard/
+alarm_monitor/
 ├── app.py              # Flask-App-Factory
 ├── routes/             # HTTP-Routen (views.py, api.py)
 ├── config.py           # Konfigurationsmanagement
@@ -296,7 +296,7 @@ Wir verwenden **pytest** für Unit-Tests.
 pytest
 
 # Mit Coverage
-pytest --cov=alarm_dashboard
+pytest --cov=alarm_monitor
 
 # Spezifischer Test
 pytest tests/test_storage.py
@@ -315,7 +315,7 @@ pytest -v
 ```python
 # tests/test_storage.py
 import pytest
-from alarm_dashboard.storage import AlarmStore
+from alarm_monitor.storage import AlarmStore
 
 def test_store_alarm_success():
     """Test successful alarm storage"""
@@ -344,7 +344,7 @@ Streben Sie **80%+ Coverage** an für neue Features.
 
 ```bash
 # Coverage-Report generieren
-pytest --cov=alarm_dashboard --cov-report=html
+pytest --cov=alarm_monitor --cov-report=html
 
 # Report öffnen
 open htmlcov/index.html

@@ -43,7 +43,7 @@ jobs:
         pytest --tb=short
     - name: Test with coverage
       run: |
-        pytest --cov=alarm_dashboard --cov-report=term-missing --cov-fail-under=80
+        pytest --cov=alarm_monitor --cov-report=term-missing --cov-fail-under=80
 
   check-deps:
     runs-on: ubuntu-latest

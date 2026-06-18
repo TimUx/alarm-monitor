@@ -236,7 +236,7 @@ ALARM_MONITOR_FIRE_DEPARTMENT_NAME=Musterstadt \
 ALARM_MONITOR_DEFAULT_LATITUDE=51.0 \
 ALARM_MONITOR_DEFAULT_LONGITUDE=9.0 \
 ALARM_MONITOR_DWD_WARNINGS_MOCK=true \
-python -m flask --app alarm_dashboard.app:create_app run --port 8000
+python -m flask --app alarm_monitor.app:create_app run --port 8000
 ```
 
 2. **Idle-Layouts testen** über `/settings`:

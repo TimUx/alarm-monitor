@@ -466,14 +466,14 @@ sudo journalctl -u alarm-monitor -f
 Bei erfolgreicher Teilnehmerabfrage sehen Sie eine Meldung wie:
 
 ```
-INFO:alarm_dashboard.messenger:Retrieved 5 participants for incident 2024-001
+INFO:alarm_monitor.messenger:Retrieved 5 participants for incident 2024-001
 ```
 
 Bei Fehlern wird eine entsprechende Fehlermeldung geloggt:
 
 ```
-WARNING:alarm_dashboard.messenger:No emergency found for incident 2024-001 in messenger
-ERROR:alarm_dashboard.messenger:Failed to fetch participants from messenger: <error details>
+WARNING:alarm_monitor.messenger:No emergency found for incident 2024-001 in messenger
+ERROR:alarm_monitor.messenger:Failed to fetch participants from messenger: <error details>
 ```
 
 ### Manuelle API-Tests

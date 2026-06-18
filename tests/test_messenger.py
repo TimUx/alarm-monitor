@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from alarm_dashboard.messenger import (
+from alarm_monitor.messenger import (
     AlarmMessenger,
     AlarmMessengerConfig,
     create_messenger,
@@ -79,7 +79,7 @@ class TestAlarmMessenger:
         messenger = AlarmMessenger(messenger_config)
         assert messenger.config == messenger_config
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_success(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
@@ -152,7 +152,7 @@ class TestAlarmMessenger:
         )
         assert participants_call[1]["headers"]["X-API-Key"] == "test-api-key-123"
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_not_found(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
@@ -167,7 +167,7 @@ class TestAlarmMessenger:
 
         assert participants is None
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_lookup_401_returns_none(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 401
@@ -179,7 +179,7 @@ class TestAlarmMessenger:
         assert participants is None
         mock_get.assert_called_once()
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_unexpected_response_format(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
@@ -187,7 +187,7 @@ class TestAlarmMessenger:
         mock_get.return_value = lookup_response
 
         messenger = AlarmMessenger(messenger_config)
-        with patch("alarm_dashboard.messenger.LOGGER") as mock_logger:
+        with patch("alarm_monitor.messenger.LOGGER") as mock_logger:
             participants = messenger.get_participants("12345")
 
         assert participants is None
@@ -196,7 +196,7 @@ class TestAlarmMessenger:
             "str",
         )
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_list_response_forward_compatible(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200
@@ -230,7 +230,7 @@ class TestAlarmMessenger:
         assert participants is not None
         assert len(participants) == 1
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_lookup_request_error(self, mock_get, messenger_config):
         mock_get.side_effect = requests.exceptions.RequestException("Network error")
 
@@ -239,7 +239,7 @@ class TestAlarmMessenger:
 
         assert participants is None
 
-    @patch("alarm_dashboard.messenger.requests.get")
+    @patch("alarm_monitor.messenger.requests.get")
     def test_get_participants_request_error(self, mock_get, messenger_config):
         lookup_response = Mock()
         lookup_response.status_code = 200

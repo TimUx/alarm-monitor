@@ -6,7 +6,7 @@ set -euo pipefail
 
 LEAFLET_VERSION="1.9.4"
 BASE_URL="https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist"
-DEST="alarm_dashboard/static/vendor/leaflet"
+DEST="alarm_monitor/static/vendor/leaflet"
 
 mkdir -p "${DEST}/images"
 

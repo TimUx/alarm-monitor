@@ -215,7 +215,7 @@ Alle Umgebungsvariablen verwenden das Präfix `ALARM_MONITOR_` (siehe `.env.exam
 source .venv/bin/activate
 
 # Anwendung starten
-flask --app alarm_dashboard.app run --host 0.0.0.0 --port 8000
+flask --app alarm_monitor.app run --host 0.0.0.0 --port 8000
 ```
 
 ### Erster Start (Docker)
@@ -360,7 +360,7 @@ ExecStart=/home/pi/alarm-monitor/.venv/bin/gunicorn \
     --workers 1 \
     --threads 8 \
     --worker-class gthread \
-    alarm_dashboard.app:create_app()
+    alarm_monitor.app:create_app()
 Restart=always
 RestartSec=10
 
@@ -846,7 +846,7 @@ server {
     server_name alarm-monitor.local;
 
     location /static/ {
-        alias /app/alarm_dashboard/static/;
+        alias /app/alarm_monitor/static/;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -938,13 +938,13 @@ ALARM_MONITOR_NOMINATIM_URL=http://nominatim:8080/search
 ```bash
 # Mit Terser (JavaScript)
 npm install -g terser
-terser alarm_dashboard/static/js/dashboard.js \
-  -o alarm_dashboard/static/js/dashboard.min.js
+terser alarm_monitor/static/js/dashboard.js \
+  -o alarm_monitor/static/js/dashboard.min.js
 
 # Mit cssnano (CSS)
 npm install -g cssnano-cli
-cssnano alarm_dashboard/static/css/dashboard.css \
-  alarm_dashboard/static/css/dashboard.min.css
+cssnano alarm_monitor/static/css/dashboard.css \
+  alarm_monitor/static/css/dashboard.min.css
 ```
 
 ### Monitoring-Overhead reduzieren

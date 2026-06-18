@@ -27,17 +27,15 @@ RUN apt-get update \
 
 COPY --from=builder /opt/venv /opt/venv
 
-COPY alarm_dashboard ./alarm_dashboard
+COPY alarm_monitor ./alarm_monitor
 COPY scripts ./scripts
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 # Download Leaflet vendor assets (JS, CSS, marker images) for offline map rendering
-RUN bash scripts/download-leaflet.sh
-
-# Create instance directory for persistence and set ownership
-RUN mkdir -p /app/instance && chown -R appuser:appuser /app
-
-# Switch to non-root user for security
-USER appuser
+RUN bash scripts/download-leaflet.sh \
+    && chmod +x /docker-entrypoint.sh \
+    && mkdir -p /app/instance \
+    && chown -R appuser:appuser /app
 
 EXPOSE 8000
 
@@ -49,9 +47,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD curl --fail http:
 # to be lost and store reads to be inconsistent across worker processes.
 # Operators may override ALARM_MONITOR_GUNICORN_WORKERS/THREADS if they know what
 # they are doing (e.g. behind a sticky-session load balancer).
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD gunicorn \
     --bind 0.0.0.0:8000 \
     --workers "${ALARM_MONITOR_GUNICORN_WORKERS:-${ALARM_DASHBOARD_GUNICORN_WORKERS:-1}}" \
     --threads "${ALARM_MONITOR_GUNICORN_THREADS:-${ALARM_DASHBOARD_GUNICORN_THREADS:-8}}" \
     --worker-class gthread \
-    "alarm_dashboard.app:create_app()"
+    "alarm_monitor.app:create_app()"

@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from alarm_dashboard.storage import AlarmStore
+from alarm_monitor.storage import AlarmStore
 
 
 def test_alarm_store_persists_and_restores_history(tmp_path):

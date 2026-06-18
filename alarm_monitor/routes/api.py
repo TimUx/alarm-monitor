@@ -813,17 +813,17 @@ def api_metrics():
         ("weather_errors", "Total weather fetch errors", "counter"),
     ]
     for key, help_text, mtype in metric_defs:
-        lines.append(f"# HELP alarm_dashboard_{key}_total {help_text}")
-        lines.append(f"# TYPE alarm_dashboard_{key}_total {mtype}")
-        lines.append(f"alarm_dashboard_{key}_total {m.get(key, 0)}")
+        lines.append(f"# HELP alarm_monitor_{key}_total {help_text}")
+        lines.append(f"# TYPE alarm_monitor_{key}_total {mtype}")
+        lines.append(f"alarm_monitor_{key}_total {m.get(key, 0)}")
 
-    lines.append("# HELP alarm_dashboard_sse_active_connections Current SSE connections")
-    lines.append("# TYPE alarm_dashboard_sse_active_connections gauge")
-    lines.append(f"alarm_dashboard_sse_active_connections {len(subscribers)}")
+    lines.append("# HELP alarm_monitor_sse_active_connections Current SSE connections")
+    lines.append("# TYPE alarm_monitor_sse_active_connections gauge")
+    lines.append(f"alarm_monitor_sse_active_connections {len(subscribers)}")
 
-    lines.append("# HELP alarm_dashboard_history_size Total alarm history entries")
-    lines.append("# TYPE alarm_dashboard_history_size gauge")
-    lines.append(f"alarm_dashboard_history_size {store.history_count()}")
+    lines.append("# HELP alarm_monitor_history_size Total alarm history entries")
+    lines.append("# TYPE alarm_monitor_history_size gauge")
+    lines.append(f"alarm_monitor_history_size {store.history_count()}")
 
     text = "\n".join(lines) + "\n"
     return text, 200, {"Content-Type": "text/plain; version=0.0.4; charset=utf-8"}

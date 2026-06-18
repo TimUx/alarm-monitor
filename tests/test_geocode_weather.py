@@ -10,8 +10,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
-from alarm_dashboard.geocode import geocode_location, GeocodingError
-from alarm_dashboard.weather import fetch_weather, WeatherServiceError
+from alarm_monitor.geocode import geocode_location, GeocodingError
+from alarm_monitor.weather import fetch_weather, WeatherServiceError
 
 
 class _MockResponse:
@@ -64,7 +64,7 @@ def test_geocode_location_raises_on_error_status() -> None:
 
 def test_geocode_location_uses_thread_local_session_when_no_session_given() -> None:
     """geocode_location should create a thread-local session when none is provided."""
-    from alarm_dashboard.geocode import _get_session
+    from alarm_monitor.geocode import _get_session
     session = _get_session()
     assert session is not None
     # Calling again should return the same session for this thread
@@ -138,7 +138,7 @@ def test_fetch_weather_returns_none_when_no_current_weather() -> None:
 
 def test_fetch_weather_uses_thread_local_session_when_no_session_given() -> None:
     """fetch_weather should create a thread-local session when none is provided."""
-    from alarm_dashboard.weather import _get_session
+    from alarm_monitor.weather import _get_session
     session = _get_session()
     assert session is not None
     assert _get_session() is session

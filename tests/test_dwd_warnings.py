@@ -8,13 +8,13 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from alarm_dashboard.bundesland import resolve_dwd_region
-from alarm_dashboard.dwd_warnings import (
+from alarm_monitor.bundesland import resolve_dwd_region
+from alarm_monitor.dwd_warnings import (
     SEVERE_WARNING_MIN_LEVEL,
     build_mock_severe_warnings,
     warnings_for_location,
 )
-from alarm_dashboard.warnings_cache import WarningsCache
+from alarm_monitor.warnings_cache import WarningsCache
 
 
 def _sample_polygon(lon: float, lat: float) -> dict:
@@ -180,7 +180,7 @@ def test_fetch_warnings_payload_decompresses_gzip() -> None:
     import gzip
     import json
 
-    from alarm_dashboard.dwd_warnings import fetch_warnings_payload
+    from alarm_monitor.dwd_warnings import fetch_warnings_payload
 
     payload = {"warnings": []}
     body = gzip.compress(json.dumps(payload).encode("utf-8"))

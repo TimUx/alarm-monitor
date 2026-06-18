@@ -373,10 +373,10 @@ openssl rand -hex 32  # API-Key generieren
 nano .env             # Konfiguration anpassen
 
 # Anwendung starten
-flask --app alarm_dashboard.app run --host 0.0.0.0 --port 8000
+flask --app alarm_monitor.app run --host 0.0.0.0 --port 8000
 
 # Oder mit Gunicorn für Produktion
-gunicorn --bind 0.0.0.0:8000 --workers 1 --threads 8 'alarm_dashboard.app:create_app()'
+gunicorn --bind 0.0.0.0:8000 --workers 1 --threads 8 'alarm_monitor.app:create_app()'
 ```
 
 ### Systemd-Service (Autostart)
@@ -402,7 +402,7 @@ ExecStart=/home/pi/alarm-monitor/.venv/bin/gunicorn \
     --workers 1 \
     --worker-class gthread \
     --threads 8 \
-    'alarm_dashboard.app:create_app()'
+    'alarm_monitor.app:create_app()'
 Restart=always
 RestartSec=10
 
@@ -974,10 +974,10 @@ X-Metrics-Token: <metrics-token>
 
 # Gibt Prometheus-kompatibles Text-Format zurück
 # 404 wenn ALARM_MONITOR_METRICS_TOKEN nicht konfiguriert
-# Verfügbare Metriken: alarm_dashboard_alarms_received_total,
-#   alarm_dashboard_alarms_stored_total, alarm_dashboard_geocode_errors_total,
-#   alarm_dashboard_weather_errors_total, alarm_dashboard_sse_active_connections,
-#   alarm_dashboard_history_size
+# Verfügbare Metriken: alarm_monitor_alarms_received_total,
+#   alarm_monitor_alarms_stored_total, alarm_monitor_geocode_errors_total,
+#   alarm_monitor_weather_errors_total, alarm_monitor_sse_active_connections,
+#   alarm_monitor_history_size
 ```
 
 #### Health-Check
@@ -1004,7 +1004,7 @@ Farben sind als CSS-Variablen definiert und können einfach angepasst werden:
 
 ```bash
 # Datei bearbeiten
-nano alarm_dashboard/static/css/dashboard.css
+nano alarm_monitor/static/css/dashboard.css
 ```
 
 Relevante CSS-Variablen:
@@ -1180,7 +1180,7 @@ Weitere Details siehe [docs/MESSENGER_INTEGRATION.md](docs/MESSENGER_INTEGRATION
 
 ```
 alarm-monitor/
-├── alarm_dashboard/              # Hauptanwendung
+├── alarm_monitor/              # Hauptanwendung
 │   ├── app.py                   # Flask-App-Factory
 │   ├── config.py                # Konfiguration
 │   ├── routes/                  # HTTP-Routen (views.py, api.py)
@@ -1221,7 +1221,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # Entwicklungsserver starten
-export FLASK_APP=alarm_dashboard.app
+export FLASK_APP=alarm_monitor.app
 export FLASK_ENV=development
 flask run --debug --host 0.0.0.0 --port 8000
 
@@ -1248,14 +1248,14 @@ curl -X POST http://localhost:8000/api/alarm \
 
 ```bash
 # Code-Formatierung
-black alarm_dashboard/
+black alarm_monitor/
 
 # Linting
-flake8 alarm_dashboard/
-pylint alarm_dashboard/
+flake8 alarm_monitor/
+pylint alarm_monitor/
 
 # Type-Checking
-mypy alarm_dashboard/
+mypy alarm_monitor/
 ```
 
 ### Beitragen

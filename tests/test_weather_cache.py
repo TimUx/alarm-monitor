@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pytest
 
-from alarm_dashboard.weather_cache import WeatherCache
+from alarm_monitor.weather_cache import WeatherCache
 
 
 _SAMPLE_WEATHER = {"weathercode": 0, "temperature": 20.0, "windspeed": 5.0, "winddirection": 180.0}
@@ -30,7 +30,7 @@ def test_cache_hit_returns_cached_data() -> None:
         "fetching": False,
     }
 
-    with patch("alarm_dashboard.weather.fetch_weather") as mock_fetch:
+    with patch("alarm_monitor.weather.fetch_weather") as mock_fetch:
         result = cache.get_weather("http://weather", "params", 50.0, 9.0)
 
     assert result == _SAMPLE_WEATHER
