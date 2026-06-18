@@ -69,6 +69,10 @@ def test_warnings_for_location_returns_active_severe_warning() -> None:
     assert result["active"] is True
     assert result["bundesland"]["code"] == "hes"
     assert result["map_url"].endswith("warnungen_gemeinde_map_hes.png")
+    assert len(result["map_legend"]) == 5
+    assert result["map_legend"][0]["color"] == "#fff700"
+    assert result["map_legend"][0]["label"] == "Wetterwarnung"
+    assert result["map_legend"][4]["label"] == "Hitze/UV"
     assert len(result["items"]) == 1
     assert result["items"][0]["headline"].startswith("Amtliche UNWETTERWARNUNG")
     assert result["items"][0]["level"] == 3

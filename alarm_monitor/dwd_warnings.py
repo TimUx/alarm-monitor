@@ -15,6 +15,7 @@ from .bundesland import (
     WARNING_LEVEL_LABELS,
     dwd_map_url,
     resolve_dwd_region,
+    warning_map_legend,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -169,6 +170,7 @@ def warnings_for_location(
         if region
         else None,
         "map_url": dwd_map_url(region_code) if region_code else None,
+        "map_legend": warning_map_legend(),
         "items": [],
     }
 
@@ -223,6 +225,7 @@ def build_mock_severe_warnings(lat: float, lon: float) -> Dict[str, Any]:
             "name": region_name,
         },
         "map_url": dwd_map_url(region_code),
+        "map_legend": warning_map_legend(),
         "items": [
             {
                 "headline": "Amtliche UNWETTERWARNUNG vor STURMBÖEN",

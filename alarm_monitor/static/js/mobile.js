@@ -738,6 +738,39 @@ function appendMobileLastAlarmContent(container, info) {
     }
 }
 
+function appendMobileWarningsMapLegend(mapWrap, legend) {
+    if (!mapWrap || !Array.isArray(legend) || legend.length === 0) {
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'mobile-warnings-map-legend';
+    list.setAttribute('aria-label', 'DWD Warnstufen-Legende');
+
+    legend.forEach((entry) => {
+        const item = document.createElement('li');
+        item.className = 'mobile-warnings-map-legend-item';
+
+        const swatch = document.createElement('span');
+        swatch.className = 'mobile-warnings-map-legend-swatch';
+        swatch.style.backgroundColor = entry.color || '#ccc';
+        swatch.setAttribute('aria-hidden', 'true');
+
+        const label = document.createElement('span');
+        label.className = 'mobile-warnings-map-legend-label';
+        label.textContent = entry.label || '';
+        if (entry.label) {
+            item.title = entry.label;
+        }
+
+        item.appendChild(swatch);
+        item.appendChild(label);
+        list.appendChild(item);
+    });
+
+    mapWrap.appendChild(list);
+}
+
 function appendMobileActiveWarningsContent(container, warnings) {
     const regionName = warnings?.bundesland?.name;
     const layout = document.createElement('div');
@@ -791,13 +824,17 @@ function appendMobileActiveWarningsContent(container, warnings) {
     if (warnings.map_url) {
         const mapWrap = document.createElement('div');
         mapWrap.className = 'mobile-warnings-map';
+        const mapFrame = document.createElement('div');
+        mapFrame.className = 'mobile-warnings-map-frame';
         const mapImg = document.createElement('img');
         mapImg.src = warnings.map_url;
         mapImg.alt = regionName
             ? `DWD Warnkarte ${regionName}`
             : 'DWD Warnkarte';
         mapImg.loading = 'lazy';
-        mapWrap.appendChild(mapImg);
+        mapFrame.appendChild(mapImg);
+        mapWrap.appendChild(mapFrame);
+        appendMobileWarningsMapLegend(mapWrap, warnings.map_legend);
         layout.appendChild(mapWrap);
     }
 
