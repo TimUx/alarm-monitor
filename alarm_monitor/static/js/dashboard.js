@@ -508,26 +508,13 @@ function fitHeadlineToContainer(element) {
     }
 }
 
-let keywordResizeScheduled = false;
-
 function requestKeywordResize() {
-    if (!keywordHeadingEl) {
-        return;
-    }
-
-    if (keywordResizeScheduled) {
-        return;
-    }
-
-    keywordResizeScheduled = true;
-    window.requestAnimationFrame(() => {
-        keywordResizeScheduled = false;
-        fitHeadlineToContainer(keywordHeadingEl);
-    });
+    requestAlarmViewFit();
 }
 
 const alarmView = document.getElementById('alarm-view');
 const idleView = document.getElementById('idle-view');
+const appMainEl = document.querySelector('.app-main');
 const mapPanel = document.getElementById('map-panel');
 const mapColumn = document.getElementById('map-column');
 const mapCanvas = document.getElementById('map-canvas');
@@ -545,9 +532,7 @@ const idleWarningsSideEl = document.getElementById('idle-warnings-side');
 const idleMessagesEl = document.getElementById('idle-messages');
 const idleMessagesListEl = document.getElementById('idle-messages-list');
 const keywordHeadingEl = document.getElementById('keyword');
-const keywordSecondaryEl = document.getElementById('keyword-secondary');
-const alarmMetaSeparatorEl = document.getElementById('alarm-meta-separator');
-const remarkEl = document.getElementById('remark');
+const alarmDetailsListEl = document.getElementById('alarm-details-list');
 const locationTownEl = document.getElementById('location-town');
 const locationVillageEl = document.getElementById('location-village');
 const locationStreetEl = document.getElementById('location-street');
@@ -555,8 +540,8 @@ const locationAdditionalEl = document.getElementById('location-additional');
 
 let navigationTarget = null;
 let leafletMapInstance = null;
-let leafletMarkerInstance = null;
-let leafletMarkerLabel = null;
+let leafletIncidentMarker = null;
+let leafletStationMarker = null;
 let alarmExpiryTimer = null;
 let idleCalendarEventsCache = [];
 let idleCalendarRenderScheduled = false;
@@ -570,6 +555,196 @@ let currentDashboardMode = null;
 const IDLE_CALENDAR_MAX_ROWS = 6;
 const IDLE_CALENDAR_MIN_COLUMN_WIDTH = 320;
 const IDLE_SIDE_ROTATION_MS = 30000;
+const IDLE_FIT_MIN_SCALE = 0.35;
+const IDLE_FIT_HEADER_BLEND = 0.28;
+const IDLE_FIT_OVERFLOW_TOLERANCE = 2;
+
+let idleViewFitScheduled = false;
+
+function applyIdleFitScales(contentScale, options = {}) {
+    if (!idleView) {
+        return;
+    }
+
+    const clampedContent = Math.max(IDLE_FIT_MIN_SCALE, Math.min(1, contentScale));
+    const derivedHeader = 1 - (1 - clampedContent) * IDLE_FIT_HEADER_BLEND;
+    const headerScale = options.forceHeaderScale != null
+        ? Math.max(IDLE_FIT_MIN_SCALE, Math.min(1, options.forceHeaderScale))
+        : derivedHeader;
+
+    idleView.style.setProperty('--idle-fit', clampedContent.toFixed(4));
+    idleView.style.setProperty('--idle-header-fit', headerScale.toFixed(4));
+}
+
+function measureIdleViewOverflow() {
+    if (!idleView) {
+        return 0;
+    }
+
+    return idleView.scrollHeight - idleView.clientHeight;
+}
+
+function idleViewContentFits() {
+    return measureIdleViewOverflow() <= IDLE_FIT_OVERFLOW_TOLERANCE;
+}
+
+function fitIdleView() {
+    if (!idleView || idleView.classList.contains('hidden') || !document.body.classList.contains('mode-idle')) {
+        return;
+    }
+
+    applyIdleFitScales(1);
+
+    if (idleViewContentFits()) {
+        return;
+    }
+
+    let low = IDLE_FIT_MIN_SCALE;
+    let high = 1;
+    let best = IDLE_FIT_MIN_SCALE;
+
+    for (let iteration = 0; iteration < 14; iteration += 1) {
+        const candidate = (low + high) / 2;
+        applyIdleFitScales(candidate);
+        if (idleViewContentFits()) {
+            best = candidate;
+            low = candidate;
+        } else {
+            high = candidate;
+        }
+    }
+
+    applyIdleFitScales(best);
+
+    if (!idleViewContentFits()) {
+        applyIdleFitScales(best, { forceHeaderScale: best });
+    }
+}
+
+function requestIdleViewFit() {
+    if (!idleView) {
+        return;
+    }
+
+    if (idleViewFitScheduled) {
+        return;
+    }
+
+    idleViewFitScheduled = true;
+    window.requestAnimationFrame(() => {
+        idleViewFitScheduled = false;
+        fitIdleView();
+    });
+}
+
+const ALARM_FIT_MIN_SCALE = 0.35;
+const ALARM_FIT_HEADER_BLEND = 0.28;
+
+let alarmViewFitScheduled = false;
+
+function resetAlarmHeadlineFitState() {
+    if (!keywordHeadingEl) {
+        return;
+    }
+
+    keywordHeadingEl.style.fontSize = '';
+    delete keywordHeadingEl.dataset.maxFontSize;
+    delete keywordHeadingEl.dataset.minFontSize;
+}
+
+function applyAlarmFitScales(contentScale, options = {}) {
+    if (!alarmView) {
+        return;
+    }
+
+    const clampedContent = Math.max(ALARM_FIT_MIN_SCALE, Math.min(1, contentScale));
+    const derivedHeader = 1 - (1 - clampedContent) * ALARM_FIT_HEADER_BLEND;
+    const headerScale = options.forceHeaderScale != null
+        ? Math.max(ALARM_FIT_MIN_SCALE, Math.min(1, options.forceHeaderScale))
+        : derivedHeader;
+
+    alarmView.style.setProperty('--alarm-fit', clampedContent.toFixed(4));
+    alarmView.style.setProperty('--alarm-header-fit', headerScale.toFixed(4));
+}
+
+function applyAlarmFitWithHeadline(contentScale, options = {}) {
+    applyAlarmFitScales(contentScale, options);
+    resetAlarmHeadlineFitState();
+    fitHeadlineToContainer(keywordHeadingEl);
+    layoutAlarmInfoGrids();
+}
+
+function measureAlarmViewOverflow() {
+    if (!alarmView) {
+        return 0;
+    }
+
+    return alarmView.scrollHeight - alarmView.clientHeight;
+}
+
+function alarmViewContentFits() {
+    return measureAlarmViewOverflow() <= IDLE_FIT_OVERFLOW_TOLERANCE;
+}
+
+function invalidateAlarmMapSize() {
+    if (leafletMapInstance && typeof leafletMapInstance.invalidateSize === 'function') {
+        window.requestAnimationFrame(() => {
+            leafletMapInstance.invalidateSize();
+        });
+    }
+}
+
+function fitAlarmView() {
+    if (!alarmView || alarmView.classList.contains('hidden') || !document.body.classList.contains('mode-alarm')) {
+        return;
+    }
+
+    applyAlarmFitWithHeadline(1);
+
+    if (alarmViewContentFits()) {
+        invalidateAlarmMapSize();
+        return;
+    }
+
+    let low = ALARM_FIT_MIN_SCALE;
+    let high = 1;
+    let best = ALARM_FIT_MIN_SCALE;
+
+    for (let iteration = 0; iteration < 14; iteration += 1) {
+        const candidate = (low + high) / 2;
+        applyAlarmFitWithHeadline(candidate);
+        if (alarmViewContentFits()) {
+            best = candidate;
+            low = candidate;
+        } else {
+            high = candidate;
+        }
+    }
+
+    applyAlarmFitWithHeadline(best);
+
+    if (!alarmViewContentFits()) {
+        applyAlarmFitWithHeadline(best, { forceHeaderScale: best });
+    }
+
+    invalidateAlarmMapSize();
+}
+
+function requestAlarmViewFit() {
+    if (!alarmView) {
+        return;
+    }
+
+    if (alarmViewFitScheduled) {
+        return;
+    }
+
+    alarmViewFitScheduled = true;
+    window.requestAnimationFrame(() => {
+        alarmViewFitScheduled = false;
+        fitAlarmView();
+    });
+}
 
 function scheduleAlarmExpiry(payload) {
     clearAlarmExpiryTimer();
@@ -779,8 +954,10 @@ function setMode(mode) {
             }
         }
         updateIdleSidePanelVisibility();
+        requestIdleViewFit();
     } else {
         stopIdleSidePanelRotation();
+        requestAlarmViewFit();
     }
 }
 
@@ -868,6 +1045,7 @@ function updateIdleHeaderWeather(weather) {
 
     if (!weather) {
         idleHeaderWeatherEl.classList.add('hidden');
+        requestIdleViewFit();
         return;
     }
 
@@ -908,6 +1086,7 @@ function updateIdleHeaderWeather(weather) {
 
     idleHeaderWeatherEl.appendChild(chips);
     idleHeaderWeatherEl.classList.remove('hidden');
+    requestIdleViewFit();
 }
 
 function updateIdleCalendar(calendarData) {
@@ -938,6 +1117,7 @@ function requestIdleCalendarRender() {
 
 function handleIdleCalendarWindowResize() {
     requestIdleCalendarRender();
+    requestIdleViewFit();
 }
 
 function calculateIdleCalendarColumns() {
@@ -967,6 +1147,7 @@ function renderIdleCalendar() {
         empty.textContent = 'Keine Termine verfügbar';
         idleCalendarEl.appendChild(empty);
         updateIdleSidePanelVisibility();
+        requestIdleViewFit();
         return;
     }
 
@@ -1004,6 +1185,7 @@ function renderIdleCalendar() {
 
     idleCalendarEl.appendChild(list);
     updateIdleSidePanelVisibility();
+    requestIdleViewFit();
 }
 
 async function fetchCalendarEvents() {
@@ -1060,6 +1242,7 @@ function updateIdleMessages(messages) {
     if (!messages || messages.length === 0) {
         idleMessagesEl.classList.add('hidden');
         idleMessagesListEl.innerHTML = '';
+        requestIdleViewFit();
         return;
     }
 
@@ -1087,6 +1270,7 @@ function updateIdleMessages(messages) {
     });
 
     idleMessagesEl.classList.remove('hidden');
+    requestIdleViewFit();
 }
 
 function updateIdleClock() {
@@ -1129,6 +1313,60 @@ function formatTimestamp(value) {
     return value;
 }
 
+function layoutDynamicInfoGrid(container) {
+    if (!container) {
+        return;
+    }
+
+    const count = container.children.length;
+    if (count <= 1) {
+        container.style.setProperty('--info-grid-cols', '1');
+        return;
+    }
+
+    const width = container.clientWidth;
+    if (width <= 0) {
+        return;
+    }
+
+    const style = window.getComputedStyle(container);
+    const columnGap = Number.parseFloat(style.columnGap) || 0;
+    const minColWidth = 7.5 * Number.parseFloat(style.fontSize || '16');
+    const maxColsByWidth = Math.max(1, Math.floor((width + columnGap) / (minColWidth + columnGap)));
+    const maxCols = Math.min(count, maxColsByWidth);
+
+    const card = container.closest('.meta-card');
+    const heading = card ? card.querySelector(':scope > h3') : null;
+    const cardStyle = card ? window.getComputedStyle(card) : null;
+    const paddingY = cardStyle
+        ? Number.parseFloat(cardStyle.paddingTop) + Number.parseFloat(cardStyle.paddingBottom)
+        : 0;
+    const cardGap = cardStyle ? Number.parseFloat(cardStyle.gap) || 0 : 0;
+    const headingHeight = heading ? heading.offsetHeight : 0;
+    const availableHeight = card && card.clientHeight > 0
+        ? card.clientHeight - paddingY - headingHeight - cardGap
+        : Number.POSITIVE_INFINITY;
+
+    let chosenCols = maxCols;
+    if (Number.isFinite(availableHeight)) {
+        chosenCols = maxCols;
+        for (let cols = 1; cols <= maxCols; cols += 1) {
+            container.style.setProperty('--info-grid-cols', String(cols));
+            if (container.scrollHeight <= availableHeight + 4) {
+                chosenCols = cols;
+                break;
+            }
+        }
+    }
+
+    container.style.setProperty('--info-grid-cols', String(chosenCols));
+}
+
+function layoutAlarmInfoGrids() {
+    layoutDynamicInfoGrid(alarmDetailsListEl);
+    layoutDynamicInfoGrid(document.getElementById('groups'));
+}
+
 function updateGroups(groups) {
     const groupsEl = document.getElementById('groups');
     if (!groupsEl) {
@@ -1141,6 +1379,7 @@ function updateGroups(groups) {
         const empty = document.createElement('li');
         empty.textContent = '-';
         groupsEl.appendChild(empty);
+        layoutDynamicInfoGrid(groupsEl);
         return;
     }
 
@@ -1159,6 +1398,61 @@ function updateGroups(groups) {
         emptyFallback.textContent = '-';
         groupsEl.appendChild(emptyFallback);
     }
+
+    layoutDynamicInfoGrid(groupsEl);
+}
+
+function appendAlarmDetailRow(container, label, value) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    row.appendChild(dt);
+    row.appendChild(dd);
+    container.appendChild(row);
+}
+
+function updateAlarmDetails(alarm) {
+    if (!alarmDetailsListEl) {
+        return;
+    }
+
+    alarmDetailsListEl.innerHTML = '';
+
+    if (!alarm) {
+        appendAlarmDetailRow(alarmDetailsListEl, 'Info', 'Keine Zusatzinformationen');
+        layoutDynamicInfoGrid(alarmDetailsListEl);
+        return;
+    }
+
+    const keyword = (alarm.keyword || alarm.subject || '').trim();
+    const rows = [];
+
+    if (alarm.keyword_secondary) {
+        rows.push(['Zusatzstichwort', alarm.keyword_secondary]);
+    }
+    if (alarm.remark) {
+        rows.push(['Hinweis', alarm.remark]);
+    }
+    if (alarm.diagnosis) {
+        rows.push(['Diagnose', alarm.diagnosis]);
+    }
+    if (alarm.subject && alarm.subject.trim() && alarm.subject.trim() !== keyword) {
+        rows.push(['Betreff', alarm.subject]);
+    }
+
+    if (rows.length === 0) {
+        appendAlarmDetailRow(alarmDetailsListEl, 'Info', 'Keine Zusatzinformationen');
+        layoutDynamicInfoGrid(alarmDetailsListEl);
+        return;
+    }
+
+    rows.forEach(([label, value]) => {
+        appendAlarmDetailRow(alarmDetailsListEl, label, value);
+    });
+
+    layoutDynamicInfoGrid(alarmDetailsListEl);
 }
 
 function updateLocationDetails(details) {
@@ -1242,6 +1536,39 @@ function appendIdleLastAlarmContent(container, info) {
     }
 }
 
+function appendWarningsMapLegend(mapWrap, legend) {
+    if (!mapWrap || !Array.isArray(legend) || legend.length === 0) {
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'idle-warnings-map-legend';
+    list.setAttribute('aria-label', 'DWD Warnstufen-Legende');
+
+    legend.forEach((entry) => {
+        const item = document.createElement('li');
+        item.className = 'idle-warnings-map-legend-item';
+
+        const swatch = document.createElement('span');
+        swatch.className = 'idle-warnings-map-legend-swatch';
+        swatch.style.backgroundColor = entry.color || '#ccc';
+        swatch.setAttribute('aria-hidden', 'true');
+
+        const label = document.createElement('span');
+        label.className = 'idle-warnings-map-legend-label';
+        label.textContent = entry.label || '';
+        if (entry.label) {
+            item.title = entry.label;
+        }
+
+        item.appendChild(swatch);
+        item.appendChild(label);
+        list.appendChild(item);
+    });
+
+    mapWrap.appendChild(list);
+}
+
 function appendIdleActiveWarningsContent(container, warnings) {
     const regionName = warnings?.bundesland?.name;
     const layout = document.createElement('div');
@@ -1299,17 +1626,27 @@ function appendIdleActiveWarningsContent(container, warnings) {
     if (warnings.map_url) {
         const mapWrap = document.createElement('div');
         mapWrap.className = 'idle-warnings-map';
+        const mapFrame = document.createElement('div');
+        mapFrame.className = 'idle-warnings-map-frame';
         const mapImg = document.createElement('img');
         mapImg.src = warnings.map_url;
         mapImg.alt = regionName
             ? `DWD Warnkarte ${regionName}`
             : 'DWD Warnkarte';
         mapImg.loading = 'lazy';
-        mapWrap.appendChild(mapImg);
+        mapImg.addEventListener('load', requestIdleViewFit);
+        mapImg.addEventListener('error', requestIdleViewFit);
+        mapFrame.appendChild(mapImg);
+        mapWrap.appendChild(mapFrame);
+        appendWarningsMapLegend(mapWrap, warnings.map_legend);
         layout.appendChild(mapWrap);
+        if (mapImg.complete) {
+            requestIdleViewFit();
+        }
     }
 
     container.appendChild(layout);
+    requestIdleViewFit();
 }
 
 function stopIdleSidePanelRotation() {
@@ -1340,6 +1677,7 @@ function updateIdleSidePanelVisibility() {
         if (idleCalendarConfigured) {
             requestIdleCalendarRender();
         }
+        requestIdleViewFit();
         return;
     }
 
@@ -1357,6 +1695,8 @@ function updateIdleSidePanelVisibility() {
     if (!showWarnings && idleCalendarConfigured) {
         requestIdleCalendarRender();
     }
+
+    requestIdleViewFit();
 }
 
 function renderIdleWarningsPanel(container, warnings) {
@@ -1383,12 +1723,14 @@ function renderIdleWarningsPanel(container, warnings) {
         const status = document.createElement('p');
         status.textContent = 'Aktuell liegt keine Unwetterwarnung vor.';
         container.appendChild(status);
+        requestIdleViewFit();
         return;
     }
 
     const empty = document.createElement('p');
     empty.textContent = 'Keine Warnungsdaten verfügbar.';
     container.appendChild(empty);
+    requestIdleViewFit();
 }
 
 function updateIdleWarningsSide(warnings) {
@@ -1402,6 +1744,7 @@ function updateIdleLastAlarm(info) {
 
     idleLastAlarmEl.innerHTML = '';
     appendIdleLastAlarmContent(idleLastAlarmEl, info);
+    requestIdleViewFit();
 }
 
 function updateIdleMainPanel(lastAlarm, warnings, showLastAlarm) {
@@ -1428,6 +1771,7 @@ function updateIdleMainPanel(lastAlarm, warnings, showLastAlarm) {
 
     updateIdleSidePanelVisibility();
     requestIdleCalendarRender();
+    requestIdleViewFit();
 }
 
 function resolveCoordinates(primary, fallbackLat, fallbackLon) {
@@ -1451,6 +1795,73 @@ function isLeafletAvailable() {
         && typeof window.L.map === 'function';
 }
 
+function getFireStationCoords() {
+    const config = typeof window !== 'undefined' ? window.dashboardConfig : null;
+    if (!config) {
+        return null;
+    }
+
+    const lat = Number(config.default_latitude);
+    const lon = Number(config.default_longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return null;
+    }
+
+    const label = typeof config.default_location_name === 'string'
+        ? config.default_location_name.trim()
+        : '';
+
+    return {
+        lat,
+        lon,
+        label: label || 'Feuerwehr',
+    };
+}
+
+function escapeMapLabel(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function createMapPinIcon(variant, label) {
+    const text = typeof label === 'string' ? label.trim() : '';
+    const labelHtml = text
+        ? `<span class="map-pin__label">${escapeMapLabel(text)}</span>`
+        : '';
+    const iconWidth = text ? 120 : 28;
+    const iconHeight = text ? 54 : 36;
+
+    return window.L.divIcon({
+        className: `map-pin map-pin--${variant}`,
+        html: `<div class="map-pin__stack">${labelHtml}<span class="map-pin__head"></span></div>`,
+        iconSize: [iconWidth, iconHeight],
+        iconAnchor: [iconWidth / 2, iconHeight],
+        popupAnchor: [0, -iconHeight + 6],
+    });
+}
+
+function clearMapMarkers() {
+    if (leafletMapInstance && leafletIncidentMarker) {
+        leafletMapInstance.removeLayer(leafletIncidentMarker);
+    }
+    if (leafletMapInstance && leafletStationMarker) {
+        leafletMapInstance.removeLayer(leafletStationMarker);
+    }
+    leafletIncidentMarker = null;
+    leafletStationMarker = null;
+}
+
+function destroyLeafletMap() {
+    clearMapMarkers();
+    if (leafletMapInstance) {
+        leafletMapInstance.remove();
+        leafletMapInstance = null;
+    }
+}
+
 function showMapPlaceholder(message) {
     if (!mapPanel) {
         return;
@@ -1468,17 +1879,13 @@ function showMapPlaceholder(message) {
         mapCanvas.textContent = message;
         mapCanvas.classList.add('map-canvas--message');
         mapCanvas.removeAttribute('aria-hidden');
-
-        if (leafletMapInstance) {
-            leafletMapInstance.remove();
-            leafletMapInstance = null;
-            leafletMarkerInstance = null;
-            leafletMarkerLabel = null;
-        }
+        destroyLeafletMap();
     }
+
+    requestAlarmViewFit();
 }
 
-function ensureLeafletMap(lat, lon) {
+function ensureLeafletMapReady() {
     if (!mapCanvas || !isLeafletAvailable()) {
         return null;
     }
@@ -1495,62 +1902,68 @@ function ensureLeafletMap(lat, lon) {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
             maxZoom: 19,
         }).addTo(leafletMapInstance);
-
-        leafletMapInstance.setView([lat, lon], MAP_DEFAULT_ZOOM);
-    } else {
-        const currentZoom = leafletMapInstance.getZoom();
-        const targetZoom = Number.isFinite(currentZoom) ? currentZoom : MAP_DEFAULT_ZOOM;
-        leafletMapInstance.setView([lat, lon], targetZoom);
-    }
-
-    if (!leafletMarkerInstance) {
-        leafletMarkerInstance = window.L.marker([lat, lon], {
-            keyboard: false,
-        }).addTo(leafletMapInstance);
-    } else {
-        leafletMarkerInstance.setLatLng([lat, lon]);
     }
 
     mapCanvas.classList.remove('map-canvas--message');
     return leafletMapInstance;
 }
 
-function updateMarkerLabel(label) {
-    if (!leafletMarkerInstance) {
-        leafletMarkerLabel = null;
+function fitMapToAlarmMarkers(incidentLat, incidentLon) {
+    if (!leafletMapInstance) {
         return;
     }
 
-    const text = typeof label === 'string' ? label.trim() : '';
+    const station = getFireStationCoords();
+    const incidentPoint = window.L.latLng(incidentLat, incidentLon);
+    const points = [incidentPoint];
 
-    if (!text) {
-        if (leafletMarkerInstance.getPopup()) {
-            leafletMarkerInstance.unbindPopup();
+    if (station) {
+        const sameLocation = Math.abs(station.lat - incidentLat) < 0.0001
+            && Math.abs(station.lon - incidentLon) < 0.0001;
+        if (!sameLocation) {
+            points.push(window.L.latLng(station.lat, station.lon));
         }
-        leafletMarkerLabel = null;
+    }
+
+    if (points.length > 1) {
+        const bounds = window.L.latLngBounds(points);
+        leafletMapInstance.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
         return;
     }
 
-    if (!leafletMarkerInstance.getPopup()) {
-        leafletMarkerInstance.bindPopup(text, {
-            closeButton: false,
-        });
-    } else if (leafletMarkerLabel !== text) {
-        leafletMarkerInstance.getPopup().setContent(text);
-    }
-
-    leafletMarkerLabel = text;
+    leafletMapInstance.setView([incidentLat, incidentLon], MAP_DEFAULT_ZOOM);
 }
 
 function showLeafletMap(lat, lon, locationLabel) {
-    const mapInstance = ensureLeafletMap(lat, lon);
+    const mapInstance = ensureLeafletMapReady();
 
     if (!mapInstance) {
         showMapPlaceholder('Kartendienst derzeit nicht verfügbar. Bitte Zugriff auf OpenStreetMap prüfen.');
         return;
     }
 
-    updateMarkerLabel(locationLabel);
+    clearMapMarkers();
+
+    leafletIncidentMarker = window.L.marker([lat, lon], {
+        keyboard: false,
+        icon: createMapPinIcon('incident', 'Einsatzort'),
+        title: 'Einsatzort',
+    }).addTo(mapInstance);
+
+    const station = getFireStationCoords();
+    if (station) {
+        const sameLocation = Math.abs(station.lat - lat) < 0.0001
+            && Math.abs(station.lon - lon) < 0.0001;
+        if (!sameLocation) {
+            leafletStationMarker = window.L.marker([station.lat, station.lon], {
+                keyboard: false,
+                icon: createMapPinIcon('station', station.label),
+                title: station.label,
+            }).addTo(mapInstance);
+        }
+    }
+
+    fitMapToAlarmMarkers(lat, lon);
 
     if (mapCanvas) {
         mapCanvas.classList.remove('map-canvas--message');
@@ -1561,6 +1974,8 @@ function showLeafletMap(lat, lon, locationLabel) {
 
     requestAnimationFrame(() => {
         mapInstance.invalidateSize();
+        fitMapToAlarmMarkers(lat, lon);
+        requestAlarmViewFit();
     });
 }
 
@@ -1596,6 +2011,7 @@ function updateMap(coordinates, location) {
     }
 
     showLeafletMap(latNum, lonNum, location);
+    requestAlarmViewFit();
 }
 
 /**
@@ -1630,23 +2046,11 @@ function updateDashboard(data) {
                 : 'Aktive Alarmierung';
             timestampEl.classList.remove('hidden');
         }
-        const village = alarm.location_details?.village;
         const keywordText = alarm.keyword || alarm.subject || '-';
-        const separator = keywordText.includes(' – ') ? ' – ' : ' - ';
         if (keywordHeadingEl) {
-            keywordHeadingEl.textContent = village ? `${keywordText}${separator}${village}` : keywordText;
+            keywordHeadingEl.textContent = keywordText;
         }
-        if (keywordSecondaryEl) {
-            keywordSecondaryEl.textContent = alarm.keyword_secondary || '';
-            keywordSecondaryEl.classList.toggle('hidden', !alarm.keyword_secondary);
-        }
-        if (remarkEl) {
-            remarkEl.textContent = alarm.remark || '';
-            remarkEl.classList.toggle('hidden', !alarm.remark);
-        }
-        if (alarmMetaSeparatorEl) {
-            alarmMetaSeparatorEl.classList.toggle('hidden', !alarm.keyword_secondary || !alarm.remark);
-        }
+        updateAlarmDetails(alarm);
         updateGroups(alarm.aao_groups || alarm.groups);
         updateLocationDetails(alarm.location_details || {});
         if (alarmTimeEl) {
@@ -1669,6 +2073,7 @@ function updateDashboard(data) {
         if (alarm.incident_number) {
             startParticipantsPolling(alarm.incident_number);
         }
+        requestAlarmViewFit();
     } else {
         clearActiveAlarmCache();
         clearAlarmExpiryTimer();
@@ -1687,17 +2092,7 @@ function updateDashboard(data) {
         updateIdleMainPanel(data.last_alarm, data.warnings, data.show_last_alarm);
         fetchCalendarEvents().then(updateIdleCalendar);
         fetchMessages().then(updateIdleMessages);
-        if (keywordSecondaryEl) {
-            keywordSecondaryEl.textContent = '';
-            keywordSecondaryEl.classList.add('hidden');
-        }
-        if (remarkEl) {
-            remarkEl.textContent = '';
-            remarkEl.classList.add('hidden');
-        }
-        if (alarmMetaSeparatorEl) {
-            alarmMetaSeparatorEl.classList.add('hidden');
-        }
+        updateAlarmDetails(null);
         if (mapPanel) {
             mapPanel.classList.add('hidden');
         }
@@ -1717,6 +2112,7 @@ function updateDashboard(data) {
         stopParticipantsPolling();
         hideParticipantsColumn();
         updateParticipantsDisplay(null);
+        requestIdleViewFit();
     }
 
     requestKeywordResize();
@@ -1730,11 +2126,40 @@ if (keywordHeadingEl) {
 if (idleCalendarEl && typeof window.ResizeObserver === 'function') {
     const idleCalendarResizeObserver = new window.ResizeObserver(() => {
         requestIdleCalendarRender();
+        requestIdleViewFit();
     });
     idleCalendarResizeObserver.observe(idleCalendarEl);
 } else {
     window.addEventListener('resize', handleIdleCalendarWindowResize);
 }
+
+if (typeof window.ResizeObserver === 'function') {
+    const dashboardViewFitObserver = new window.ResizeObserver(() => {
+        requestIdleViewFit();
+        requestAlarmViewFit();
+    });
+    if (appMainEl) {
+        dashboardViewFitObserver.observe(appMainEl);
+    }
+    if (idleView) {
+        dashboardViewFitObserver.observe(idleView);
+    }
+    if (alarmView) {
+        dashboardViewFitObserver.observe(alarmView);
+    }
+} else {
+    window.addEventListener('resize', () => {
+        requestIdleViewFit();
+        requestAlarmViewFit();
+    });
+}
+
+window.addEventListener('resize', () => {
+    requestIdleViewFit();
+    requestAlarmViewFit();
+});
+requestIdleViewFit();
+requestAlarmViewFit();
 
 async function poll() {
     try {
@@ -1932,11 +2357,13 @@ function updateParticipantsDisplay(participants) {
     
     if (!participants || participants.length === 0) {
         participantsList.innerHTML = '<p class="participants-message">Warte auf Rückmeldungen...</p>';
+        requestAlarmViewFit();
         return;
     }
     
     const html = participants.map(renderParticipant).join('');
     participantsList.innerHTML = html;
+    requestAlarmViewFit();
 }
 
 function showParticipantsColumn() {
@@ -1946,6 +2373,7 @@ function showParticipantsColumn() {
     if (alarmLayout) {
         alarmLayout.classList.add('has-participants');
     }
+    requestAlarmViewFit();
 }
 
 function hideParticipantsColumn() {
@@ -1955,6 +2383,7 @@ function hideParticipantsColumn() {
     if (alarmLayout) {
         alarmLayout.classList.remove('has-participants');
     }
+    requestAlarmViewFit();
 }
 
 function stopParticipantsPolling() {

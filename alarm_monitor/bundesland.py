@@ -49,6 +49,20 @@ WARNING_LEVEL_LABELS = {
     4: "Warnung vor extremem Unwetter",
 }
 
+# Official DWD map colors (Warnstufen-Farbskala on regional warning maps).
+WARNING_MAP_LEGEND = (
+    {"level": 1, "label": "Wetterwarnung", "color": "#fff700"},
+    {"level": 2, "label": "Markantes Wetter", "color": "#ff8c00"},
+    {"level": 3, "label": "Unwetter", "color": "#e3000f"},
+    {"level": 4, "label": "Extremes Unwetter", "color": "#9400d3"},
+    {"level": "heat", "label": "Hitze/UV", "color": "#b565d9"},
+)
+
+
+def warning_map_legend() -> List[dict]:
+    """Return a copy of the DWD warning map color legend for API/UI use."""
+    return [dict(entry) for entry in WARNING_MAP_LEGEND]
+
 
 def _in_bounds(lat: float, lon: float, bounds: Bounds) -> bool:
     min_lat, max_lat, min_lon, max_lon = bounds
@@ -72,6 +86,8 @@ __all__ = [
     "DWD_REGIONS",
     "DwdRegion",
     "WARNING_LEVEL_LABELS",
+    "WARNING_MAP_LEGEND",
     "dwd_map_url",
     "resolve_dwd_region",
+    "warning_map_legend",
 ]

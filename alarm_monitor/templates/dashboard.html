@@ -36,17 +36,21 @@
                 <div class="alarm-header">
                     <div class="alarm-header-text">
                         <h2 id="keyword" role="alert">-</h2>
-                        <div class="alarm-header-meta">
-                            <p class="alarm-subtitle" id="keyword-secondary"></p>
-                            <span class="alarm-meta-separator hidden" id="alarm-meta-separator" aria-hidden="true">|</span>
-                            <p class="alarm-remark" id="remark"></p>
-                        </div>
                     </div>
                     <time class="alarm-time" id="alarm-time">-</time>
                 </div>
                 <div class="alarm-layout" id="alarm-layout">
                     <div class="alarm-column alarm-column--info">
                         <div class="meta-grid">
+                            <div class="meta-card meta-card--details">
+                                <h3>Zusatzinfos</h3>
+                                <dl class="alarm-details-list" id="alarm-details-list">
+                                    <div>
+                                        <dt>Info</dt>
+                                        <dd>Keine Zusatzinformationen</dd>
+                                    </div>
+                                </dl>
+                            </div>
                             <div class="meta-card meta-card--location">
                                 <h3>Einsatzort</h3>
                                 <dl class="location-details">
@@ -196,6 +200,13 @@
         </nav>
     </div>
     <script src="{{ asset_url('vendor/leaflet/leaflet.js') }}" defer></script>
+    <script>
+        window.dashboardConfig = {
+            default_latitude: {{ default_latitude | tojson }},
+            default_longitude: {{ default_longitude | tojson }},
+            default_location_name: {{ default_location_name | tojson }}
+        };
+    </script>
     <script src="{{ asset_url('js/dashboard.js') }}" defer></script>
 </body>
 </html>
