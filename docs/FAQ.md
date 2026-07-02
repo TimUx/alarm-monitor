@@ -269,6 +269,30 @@ cp ~/alarm-monitor/instance/alarm_history.json ~/backup/
 - Mobile: `http://server-ip:8000/mobile`
 - Kiosk: `http://server-ip:8000/` im Vollbildmodus
 
+### Wie funktioniert die HDMI-CEC Monitor-Steuerung?
+
+Mit HDMI-CEC kann alarm-monitor einen per HDMI angeschlossenen Monitor oder Fernseher automatisch steuern:
+
+1. **Voraussetzungen**
+   - HDMI-Kabel mit CEC-Unterstützung (typisch bei Raspberry Pi → TV/Monitor)
+   - `cec-client` auf dem Host (`cec-utils` auf Debian/RPi, `libcec` auf Fedora/Arch)
+   - Bei Installation über [alarm-system install.sh](https://github.com/TimUx/alarm-system): HDMI-CEC im Installer aktivieren
+
+2. **Konfiguration** – Einstellungen → **HDMI-CEC** (oder Umgebungsvariablen `ALARM_MONITOR_CEC_*`)
+
+3. **Verhalten**
+   - **Alarm** → Monitor einschalten
+   - **Ruhezustand-Dashboard** (auch nach Neustart) → nach konfigurierter Idle-Zeit Standby
+   - **Feste Zeitfenster** (z. B. Übungsdienst) → Monitor bleibt im Fenster eingeschaltet
+
+4. **Test auf dem Host**
+   ```bash
+   echo 'on 0' | cec-client -s -d 1
+   echo 'standby 0' | cec-client -s -d 1
+   ```
+
+Siehe [README – HDMI-CEC](../README.md#hdmi-cec-optional-kann-in-web-ui-konfiguriert-werden).
+
 ### Wie viele Clients kann das System gleichzeitig bedienen?
 
 Ein Raspberry Pi 4 kann problemlos **10–20 Clients** gleichzeitig bedienen. Bei mehr Clients:
@@ -358,6 +382,25 @@ docker compose logs -f
 
 # Netzwerk testen
 curl http://localhost:8000/health
+```
+
+### HDMI-CEC: Monitor reagiert nicht
+
+**Ursachen**:
+1. `cec-client` nicht installiert oder nicht im Container erreichbar
+2. `/dev/cec0` fehlt oder Container hat keinen Device-Zugriff
+3. HDMI-CEC in den Einstellungen deaktiviert
+4. TV/Monitor unterstützt kein CEC oder CEC ist am Gerät deaktiviert
+
+**Lösung**:
+```bash
+# Auf dem Host (nicht im Container):
+which cec-client
+ls -l /dev/cec*
+echo 'pow 0' | cec-client -s -d 1
+
+# In alarm-monitor Einstellungen → HDMI-CEC: Status „cec-client verfügbar“ prüfen
+# Bei alarm-system-Installation: install.sh mit HDMI-CEC erneut ausführen
 ```
 
 ### Alarme werden nicht angezeigt

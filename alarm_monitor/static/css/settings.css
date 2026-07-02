@@ -509,6 +509,81 @@ body {
     }
 }
 
+.hdmi-cec-status {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    border: 1px solid var(--divider);
+    background: var(--surface-muted);
+}
+
+.hdmi-cec-status--ok {
+    border-color: rgba(16, 185, 129, 0.45);
+    color: var(--success);
+}
+
+.hdmi-cec-status--warn {
+    border-color: rgba(239, 68, 68, 0.45);
+    color: var(--error);
+}
+
+.hdmi-cec-schedule-hint {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.hdmi-cec-schedules {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.hdmi-cec-schedule-row {
+    display: grid;
+    grid-template-columns: minmax(7rem, 1fr) 5.5rem 5.5rem minmax(6rem, 1.5fr) auto auto;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid var(--divider);
+    border-radius: 8px;
+    background: var(--surface-muted);
+}
+
+.hdmi-cec-schedule-row select,
+.hdmi-cec-schedule-row input[type="time"],
+.hdmi-cec-schedule-row input[type="text"] {
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.hdmi-cec-schedule-row .form-checkbox {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.hdmi-cec-schedule-remove {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 900px) {
+    .hdmi-cec-schedule-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .hdmi-cec-schedule-row .hdmi-cec-schedule-remove {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
 /* Hide bottom navigation in browser fullscreen mode */
 :fullscreen .bottom-nav,
 :-webkit-full-screen .bottom-nav,

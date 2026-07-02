@@ -5,10 +5,13 @@ Diese Anleitung beschreibt den vollständigen Aufbau eines Feuerwehr-Dashboard-S
 - **Raspberry Pi OS Lite** als minimales Betriebssystem
 - **Docker & Docker Compose** für die Services `alarm-mail` und `alarm-monitor`
 - **kweb** im Kiosk-Modus als Vollbild-Browser auf HDMI
+- **HDMI-CEC** (optional) – Monitor/TV per HDMI ein-/ausschalten
 - **Watchdog** für automatischen Browser-Neustart bei Absturz
 - **Splashscreen** beim Systemstart ("Feuerwehr Dashboard lädt…")
 - **Alarm-Sound** bei neuen Einsatzmeldungen
 - Diverse **Optimierungen** für den ressourcenbeschränkten RPi 3
+
+> **Empfohlen:** Für eine vollautomatische Installation inkl. Kiosk, HDMI-CEC und Docker-Setup nutzen Sie den [alarm-system Installer](https://github.com/TimUx/alarm-system) (`install.sh`). Diese Anleitung beschreibt den manuellen Aufbau Schritt für Schritt.
 
 ---
 
@@ -1077,6 +1080,38 @@ nmcli connection modify "DEIN-WLAN-NAME" \
     connection.autoconnect-priority 10
 ```
 
+### 13.6 HDMI-CEC – Monitor per HDMI steuern (optional)
+
+Wenn der angeschlossene Monitor/TV HDMI-CEC unterstützt, kann **alarm-monitor** ihn automatisch bei Alarm einschalten und nach Idle-Zeit in den Standby versenden.
+
+**Empfohlener Weg:** [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit aktivierter Option **HDMI-CEC** – installiert `cec-utils`, richtet udev-Regeln ein und bindet `/dev/cec0` an den alarm-monitor-Container.
+
+**Manuell:**
+
+```bash
+# Pakete installieren (Raspberry Pi OS / Debian)
+sudo apt install -y cec-utils
+
+# Test
+echo 'pow 0' | cec-client -s -d 1
+echo 'on 0' | cec-client -s -d 1
+```
+
+In **docker-compose.yml** für alarm-monitor (Beispiel):
+
+```yaml
+    devices:
+      - /dev/cec0
+    volumes:
+      - /usr/bin/cec-client:/usr/bin/cec-client:ro
+    environment:
+      - ALARM_MONITOR_CEC_ENABLED=true
+```
+
+Feinabstimmung (Idle-Standby-Zeit, feste Einschaltzeiten z. B. für Übungsdienst) in der Web-UI unter **Einstellungen → HDMI-CEC**.
+
+Siehe [FAQ – HDMI-CEC](FAQ.md#wie-funktioniert-die-hdmi-cec-monitor-steuerung).
+
 ---
 
 ## 14. Fazit
@@ -1110,6 +1145,7 @@ Dieses Setup verwandelt einen **Raspberry Pi 3** in ein vollständig autonomes, 
 │  • kiosk                → X + Browser              │
 │  • kiosk-watchdog       → Überwachung & Neustart   │
 │  • alarm-sound          → Audio bei Alarmen        │
+│  • HDMI-CEC (optional)  → Monitor Wake/Standby     │
 └─────────────────────────────────────────────────────┘
          │                           │
          ▼                           ▼

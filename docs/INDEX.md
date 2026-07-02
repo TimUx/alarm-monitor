@@ -145,6 +145,13 @@ Code-Beiträge, Dokumentation, Bug-Reports
 - [Betriebshandbuch](../Betriebshandbuch.md#konfiguration) – Umgebungsvariablen
 - [FAQ](FAQ.md#wie-funktionieren-die-dwd-unwetterwarnungen) – DWD-Unwetterwarnungen und Testmodus
 
+### HDMI-CEC (Monitor/TV-Steuerung)
+
+- [README.md](../README.md#hdmi-cec-optional-kann-in-web-ui-konfiguriert-werden) – Konfiguration und Steuerungslogik
+- [FAQ](FAQ.md#wie-funktioniert-die-hdmi-cec-monitor-steuerung) – Häufige Fragen
+- [Raspberry Pi Setup](RASPBERRY_PI_SETUP.md) – Kiosk-Display mit CEC
+- [alarm-system install.sh](https://github.com/TimUx/alarm-system) – Host-Pakete und Docker-Setup
+
 ### Fehlerbehebung
 
 - [FAQ](FAQ.md#fehlerbehebung) – Häufige Probleme
@@ -243,6 +250,7 @@ Großartig! Siehe [Contributing Guide](../CONTRIBUTING.md#dokumentation)
 - [Installation](../Betriebshandbuch.md#installation) – Ausführlich
 - [Konfiguration](../README.md#konfiguration) – Environment-Variablen
 - [Raspberry Pi 3 Setup](RASPBERRY_PI_SETUP.md) – Kiosk-Terminal
+- [HDMI-CEC](FAQ.md#wie-funktioniert-die-hdmi-cec-monitor-steuerung) – Monitor per HDMI steuern
 - [Messenger-Setup](MESSENGER_INTEGRATION.md) – Push-Benachrichtigungen
 
 **Für Entwickler**:

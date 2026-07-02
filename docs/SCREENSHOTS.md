@@ -200,6 +200,7 @@ Dieser Guide beschreibt alle Screenshots und Ansichten des Alarm Monitor Systems
 **Angezeigte Elemente** (vollständige Seite, `full_page`):
 - **Allgemein**: Einstellungs-Passwort, Feuerwehr-Name, Gruppen-Filter (TME-Codes)
 - **Ruhezustand**: Koordinaten, Standortname, letzter Einsatz, Mindest-Warnstufe (1–4), Unwetter-Simulation, Kalender-URLs
+- **HDMI-CEC**: Aktivierung, Idle-Standby-Zeit, feste Einschaltzeiten, cec-client-Status
 - **Nachrichten (ntfy.sh)**: Topic-URL, Abfrage-Intervall, Nachrichten-TTL
 - **Feuerwehr-Logo**: Vorschau und Upload
 
