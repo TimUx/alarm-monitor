@@ -230,3 +230,25 @@ def test_load_config_rejects_history_file_outside_allowed_base():
     with _temp_env(ALARM_MONITOR_HISTORY_FILE="/etc/passwd"):
         with pytest.raises(config.MissingConfiguration, match="escapes allowed directory"):
             config.load_config()
+
+
+def test_load_config_reads_hdmi_cec_env_vars():
+    _clear_alarm_env()
+    importlib.reload(config)
+
+    with _temp_env(
+        ALARM_MONITOR_CEC_ENABLED="true",
+        ALARM_MONITOR_CEC_CLIENT_PATH="/opt/bin/cec-client",
+        ALARM_MONITOR_CEC_DEVICE_ADDRESS="0",
+        ALARM_MONITOR_CEC_IDLE_STANDBY_MINUTES="15",
+        ALARM_MONITOR_CEC_WAKE_ON_ALARM="false",
+        ALARM_MONITOR_CEC_STANDBY_ON_IDLE="true",
+    ):
+        app_config = config.load_config()
+
+    assert app_config.cec_enabled is True
+    assert app_config.cec_client_path == "/opt/bin/cec-client"
+    assert app_config.cec_device_address == 0
+    assert app_config.cec_idle_standby_minutes == 15
+    assert app_config.cec_wake_on_alarm is False
+    assert app_config.cec_standby_on_idle is True

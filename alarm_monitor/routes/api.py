@@ -217,6 +217,9 @@ def receive_alarm():
         stored = process_alarm(alarm_data, store, config, _get_effective_settings, _executor)
         if stored:
             _increment_metric("alarms_stored")
+            cec_watcher = current_app.config.get("CEC_WATCHER")
+            if cec_watcher is not None:
+                cec_watcher.handle_alarm_stored()
             with subscribers_lock:
                 for evt in subscribers:
                     evt.set()
@@ -429,7 +432,9 @@ def api_route():
 @api_bp.route("/api/settings", methods=["GET"])
 def api_get_settings():
     """Get current settings."""
+    from ..cec_controller import get_hdmi_cec_settings, is_cec_client_available
     effective_settings = _get_effective_settings()
+    hdmi = get_hdmi_cec_settings(effective_settings)
     groups_str = ",".join(effective_settings.get("activation_groups", []))
     calendar_urls = effective_settings.get("calendar_urls", [])
     calendar_urls_str = "\n".join(calendar_urls) if calendar_urls else ""
@@ -446,6 +451,15 @@ def api_get_settings():
         "dwd_warnings_mock": effective_settings.get("dwd_warnings_mock", False),
         "show_last_alarm": effective_settings.get("show_last_alarm", True),
         "warnings_min_level": effective_settings.get("warnings_min_level", 3),
+        "hdmi_cec_enabled": hdmi["enabled"],
+        "hdmi_cec_client_path": hdmi["client_path"],
+        "hdmi_cec_device_address": hdmi["device_address"],
+        "hdmi_cec_idle_standby_minutes": hdmi["idle_standby_minutes"],
+        "hdmi_cec_wake_on_alarm": hdmi["wake_on_alarm"],
+        "hdmi_cec_standby_on_idle": hdmi["standby_on_idle"],
+        "hdmi_cec_schedules": hdmi["schedules"],
+        "hdmi_cec_linux_device": effective_settings.get("hdmi_cec_linux_device") or "",
+        "hdmi_cec_client_available": is_cec_client_available(hdmi["client_path"]),
     })
     resp.headers["Cache-Control"] = "no-store"
     return resp
@@ -560,6 +574,42 @@ def api_update_settings():
         if level not in (1, 2, 3, 4):
             return jsonify({"error": "warnings_min_level must be between 1 and 4"}), 400
         updates["warnings_min_level"] = level
+
+    if "hdmi_cec_enabled" in data:
+        updates["hdmi_cec_enabled"] = bool(data["hdmi_cec_enabled"])
+
+    if "hdmi_cec_client_path" in data:
+        client_path = str(data["hdmi_cec_client_path"] or "").strip()
+        updates["hdmi_cec_client_path"] = client_path or "/usr/bin/cec-client"
+
+    if "hdmi_cec_device_address" in data and data["hdmi_cec_device_address"] not in (None, ""):
+        try:
+            address = int(data["hdmi_cec_device_address"])
+        except (TypeError, ValueError):
+            return jsonify({"error": "hdmi_cec_device_address must be an integer"}), 400
+        if address < 0 or address > 15:
+            return jsonify({"error": "hdmi_cec_device_address must be between 0 and 15"}), 400
+        updates["hdmi_cec_device_address"] = address
+
+    if "hdmi_cec_idle_standby_minutes" in data and data["hdmi_cec_idle_standby_minutes"] not in (None, ""):
+        try:
+            idle_minutes = int(data["hdmi_cec_idle_standby_minutes"])
+        except (TypeError, ValueError):
+            return jsonify({"error": "hdmi_cec_idle_standby_minutes must be an integer"}), 400
+        if idle_minutes < 1:
+            return jsonify({"error": "hdmi_cec_idle_standby_minutes must be at least 1"}), 400
+        updates["hdmi_cec_idle_standby_minutes"] = idle_minutes
+
+    if "hdmi_cec_wake_on_alarm" in data:
+        updates["hdmi_cec_wake_on_alarm"] = bool(data["hdmi_cec_wake_on_alarm"])
+
+    if "hdmi_cec_standby_on_idle" in data:
+        updates["hdmi_cec_standby_on_idle"] = bool(data["hdmi_cec_standby_on_idle"])
+
+    if "hdmi_cec_schedules" in data:
+        from ..cec_controller import normalize_schedules
+        schedules = normalize_schedules(data["hdmi_cec_schedules"])
+        updates["hdmi_cec_schedules"] = schedules
 
     settings_store.update(updates)
     LOGGER.info("Settings updated: %s", updates)

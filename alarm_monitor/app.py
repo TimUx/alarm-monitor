@@ -20,6 +20,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from .config import AppConfig, load_config
+from .cec_controller import create_cec_display_watcher, get_hdmi_cec_settings, is_cec_client_available
 from .messenger import create_messenger
 from .message_store import MessageStore
 from .ntfy_client import create_ntfy_poller
@@ -99,6 +100,24 @@ def get_effective_settings(settings_store: SettingsStore, config: AppConfig) -> 
         "dwd_warnings_mock": stored.get("dwd_warnings_mock", config.dwd_warnings_mock),
         "show_last_alarm": stored.get("show_last_alarm", config.show_last_alarm),
         "warnings_min_level": stored.get("warnings_min_level", config.warnings_min_level),
+        "hdmi_cec_enabled": stored.get("hdmi_cec_enabled", config.cec_enabled),
+        "hdmi_cec_client_path": stored.get("hdmi_cec_client_path", config.cec_client_path),
+        "hdmi_cec_device_address": stored.get(
+            "hdmi_cec_device_address", config.cec_device_address
+        ),
+        "hdmi_cec_idle_standby_minutes": stored.get(
+            "hdmi_cec_idle_standby_minutes", config.cec_idle_standby_minutes
+        ),
+        "hdmi_cec_wake_on_alarm": stored.get(
+            "hdmi_cec_wake_on_alarm", config.cec_wake_on_alarm
+        ),
+        "hdmi_cec_standby_on_idle": stored.get(
+            "hdmi_cec_standby_on_idle", config.cec_standby_on_idle
+        ),
+        "hdmi_cec_schedules": stored.get("hdmi_cec_schedules", []),
+        "hdmi_cec_linux_device": stored.get(
+            "hdmi_cec_linux_device", config.cec_linux_device
+        ),
     }
 
 
@@ -230,6 +249,25 @@ def create_app(config: Optional[AppConfig] = None) -> Flask:
     )
     ntfy_poller.start()
     app.config["NTFY_POLLER"] = ntfy_poller
+
+    def _get_alarm_payload() -> Optional[Dict[str, Any]]:
+        latest = store.latest()
+        return latest if latest is not None else None
+
+    def _get_display_duration_minutes() -> int:
+        return max(1, config.display_duration_minutes)
+
+    def _get_timezone() -> str:
+        return os.environ.get("TZ", "UTC")
+
+    cec_watcher = create_cec_display_watcher(
+        get_effective_settings=_get_current_settings,
+        get_alarm_payload=_get_alarm_payload,
+        get_display_duration_minutes=_get_display_duration_minutes,
+        get_timezone=_get_timezone,
+    )
+    cec_watcher.start()
+    app.config["CEC_WATCHER"] = cec_watcher
 
     # Register blueprints – all route handlers live in routes/api.py and routes/views.py
     from .routes.api import api_bp

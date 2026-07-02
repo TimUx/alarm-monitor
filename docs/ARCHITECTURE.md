@@ -222,6 +222,13 @@ Jede Komponente kann unabhängig betrieben, skaliert und aktualisiert werden.
         ├─▶ Alarm älter als DISPLAY_DURATION?
         ├─▶ Ja → Wechsel zu Idle-Ansicht
         └─▶ Zeige letzten Alarm kompakt
+
+20. HDMI-CEC (optional, Hintergrund-Thread)
+        ├─▶ Neuer Alarm gespeichert → cec-client `on <adresse>`
+        ├─▶ Ruhezustand-Dashboard aktiv (auch nach Neustart)
+        │       └─▶ Nach `hdmi_cec_idle_standby_minutes` → `standby <adresse>`
+        ├─▶ Festes Zeitfenster aktiv (Settings) → Monitor bleibt an
+        └─▶ Konfiguration: Web-UI oder `ALARM_MONITOR_CEC_*` Env-Vars
 ```
 
 ### 2. Rückmeldungs-Polling (bei alarm-messenger Integration)
@@ -471,14 +478,26 @@ class MessageStore:
 #### `ntfy_client.py` – ntfy.sh Polling
 ```python
 def create_ntfy_poller(
-    topic_url: str,
-    poll_interval: int,
+    get_effective_settings: Callable,
     message_store: MessageStore,
-    default_ttl_minutes: int
-) -> threading.Thread:
+    on_message: Optional[Callable]
+) -> NtfyPoller:
     """
-    Erstellt und startet einen Hintergrund-Thread der das ntfy-Topic
-    regelmäßig abfragt und neue Nachrichten in den MessageStore speichert
+    Hintergrund-Thread: pollt ntfy-Topic, speichert Nachrichten,
+    triggert SSE-Subscriber
+    """
+```
+
+#### `cec_controller.py` – HDMI-CEC Monitor-Steuerung
+```python
+class CecController:
+    def wake(self) -> bool: ...      # cec-client: on <adresse>
+    def standby(self) -> bool: ...   # cec-client: standby <adresse>
+
+class CecDisplayWatcher:
+    """
+    Hintergrund-Thread (30s): prüft Alarm-/Idle-Modus und Zeitfenster,
+    sendet Wake/Standby über CecController
     """
 ```
 
@@ -514,7 +533,22 @@ def create_ntfy_poller(
   "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/...",
   "ntfy_poll_interval": 60,
-  "message_default_ttl_minutes": 60
+  "message_default_ttl_minutes": 60,
+  "hdmi_cec_enabled": true,
+  "hdmi_cec_client_path": "/usr/bin/cec-client",
+  "hdmi_cec_device_address": 0,
+  "hdmi_cec_idle_standby_minutes": 30,
+  "hdmi_cec_wake_on_alarm": true,
+  "hdmi_cec_standby_on_idle": true,
+  "hdmi_cec_schedules": [
+    {
+      "enabled": true,
+      "weekday": 1,
+      "start_time": "18:45",
+      "end_time": "21:30",
+      "label": "Übungsdienst"
+    }
+  ]
 }
 
 // instance/messages.json

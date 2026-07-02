@@ -76,6 +76,13 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 📺 **Historien-Ansicht** – Tabellarische Übersicht aller vergangenen Einsätze
 - 📺 **Navigations-Ansicht** – Routenplanung zum Einsatzort
 
+### HDMI-CEC Monitor-Steuerung (optional)
+- 📺 **Einschalten bei Alarm** – Monitor/TV per HDMI-CEC aufwecken, wenn ein Einsatz eintrifft
+- 📺 **Standby nach Idle** – Nach Anzeige des Ruhezustand-Dashboards (auch nach Neustart) Standby nach konfigurierbarer Zeit
+- 📺 **Feste Einschaltzeiten** – Wöchentliche Zeitfenster (z. B. Übungsdienst Di 18:45–21:30), in denen der Monitor dauerhaft an bleibt
+- 📺 **Web-UI Konfiguration** – Einstellungen → HDMI-CEC (Idle-Zeit, Zeitfenster, Geräteadresse)
+- 📺 **Host-Integration** – `cec-client` vom Host in den Container gemountet (via [alarm-system install.sh](https://github.com/TimUx/alarm-system))
+
 ### Kalender-Integration (optional)
 - 📅 **iCal-Kalender** – Anbindung beliebiger iCal-URLs (Google Calendar, Nextcloud, etc.)
 - 📅 **Terminanzeige** – Nächste Termine werden in der Idle-Ansicht angezeigt
@@ -106,6 +113,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - ⚙️ **Standortkonfiguration** – Einstellung von Standardkoordinaten und Standortnamen
 - ⚙️ **Gruppenfilter** – Konfiguration der TME-Codes direkt in der Oberfläche (allgemeine Einstellungen)
 - ⚙️ **Ruhezustand** – Letzten Einsatz ein-/ausblenden, Mindest-Warnstufe, Standort, Kalender, Unwetter-Testmodus
+- ⚙️ **HDMI-CEC** – Monitor/TV-Steuerung, Idle-Standby-Zeit, feste Einschaltzeiten
 - ⚙️ **ntfy.sh-Einstellungen** – Topic-URL, Abfrage-Intervall und TTL für Nachrichten
 - ⚙️ **Logo-Verwaltung** – Logo hochladen oder Standard-Logo wiederherstellen
 - ⚙️ **Persistente Speicherung** – Einstellungen bleiben über Neustarts hinweg erhalten
@@ -184,7 +192,7 @@ Aktive DWD-Unwetterwarnung mit Warnkarte, optimiert für Smartphones im Hochform
 
 ### Einstellungen (Light / Dark)
 
-Webbasierte Konfigurationsoberfläche mit Abschnitten für **allgemeine Einstellungen** (Feuerwehr-Name, Gruppen-Filter), **Ruhezustand** (Koordinaten, letzter Einsatz, Mindest-Warnstufe, Kalender, Unwetter-Test) und **ntfy.sh** sowie Logo-Upload.
+Webbasierte Konfigurationsoberfläche mit Abschnitten für **allgemeine Einstellungen** (Feuerwehr-Name, Gruppen-Filter), **Ruhezustand** (Koordinaten, letzter Einsatz, Mindest-Warnstufe, Kalender, Unwetter-Test), **HDMI-CEC** (Monitor-Steuerung, Idle-Zeit, Zeitfenster) und **ntfy.sh** sowie Logo-Upload.
 
 | Light | Dark |
 |-------|------|
@@ -469,6 +477,14 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 - **ntfy Abfrage-Intervall**: Wie oft das ntfy-Topic abgefragt wird (in Sekunden)
 - **Nachrichten-TTL**: Standard-Anzeigedauer für ntfy-Nachrichten (in Minuten)
 
+**HDMI-CEC (Monitor/TV):**
+- **HDMI-CEC aktivieren**: Steuerung per `cec-client` ein-/ausschalten
+- **cec-client Pfad**: Pfad zur Binary auf dem Host (Standard: `/usr/bin/cec-client`)
+- **CEC-Geräteadresse**: Zieladresse am HDMI-Bus (0 = Fernseher/Monitor)
+- **Standby nach Idle-Zeit**: Minuten im Ruhezustand-Dashboard, danach Standby (auch nach Neustart)
+- **Bei Alarm einschalten** / **Standby nach Idle**: Einzelne Regeln aktivieren/deaktivieren
+- **Feste Einschaltzeiten**: Wochentag, Start, Ende, Bezeichnung (z. B. Übungsdienst)
+
 **Logo:**
 - Individuelles Feuerwehr-Logo hochladen oder Standard-Logo wiederherstellen
 
@@ -534,6 +550,33 @@ ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 # Maximale TTL für Nachrichten in Stunden (Standard: 72)
 # ALARM_MONITOR_MESSAGE_MAX_TTL_HOURS=72
+```
+
+### HDMI-CEC (optional, kann in Web-UI konfiguriert werden)
+
+Steuert angeschlossene Monitore/TVs per HDMI-CEC. Voraussetzung: `cec-client` auf dem Host und Docker-Zugriff auf `/dev/cec0` (wird vom [alarm-system Installer](https://github.com/TimUx/alarm-system) eingerichtet).
+
+```bash
+# Aktivierung (alternativ in Einstellungen → HDMI-CEC)
+# ALARM_MONITOR_CEC_ENABLED=true
+# ALARM_MONITOR_CEC_CLIENT_PATH=/usr/bin/cec-client
+# ALARM_MONITOR_CEC_DEVICE=/dev/cec0
+# ALARM_MONITOR_CEC_DEVICE_ADDRESS=0
+# ALARM_MONITOR_CEC_IDLE_STANDBY_MINUTES=30
+# ALARM_MONITOR_CEC_WAKE_ON_ALARM=true
+# ALARM_MONITOR_CEC_STANDBY_ON_IDLE=true
+```
+
+**Steuerungslogik:**
+1. **Alarm** → Monitor einschalten (`on 0`)
+2. **Ruhezustand-Dashboard** (auch direkt nach Neustart) → nach Idle-Zeit Standby (`standby 0`)
+3. **Feste Zeitfenster** (Web-UI) → Monitor bleibt während des Fensters eingeschaltet (Ausnahme von Standby)
+
+Manueller Test auf dem Host:
+```bash
+echo 'pow 0' | cec-client -s -d 1      # Status abfragen
+echo 'on 0' | cec-client -s -d 1       # Einschalten
+echo 'standby 0' | cec-client -s -d 1  # Standby
 ```
 
 ### Externe Dienste (optional)
@@ -710,6 +753,13 @@ Webbasierte Konfigurationsoberfläche:
 **Nachrichten & Logo**
 - **ntfy.sh-Integration**: Topic-URL, Abfrage-Intervall und Nachrichten-TTL
 - **Logo-Upload**: Individuelles Feuerwehr-Logo hochladen (PNG/JPEG/WebP/SVG)
+
+**HDMI-CEC**
+- **Aktivierung**, cec-client-Pfad, CEC-Geräteadresse
+- **Idle-Standby-Zeit**, Wake-on-Alarm, Standby-on-Idle
+- **Feste Einschaltzeiten** mit Wochentag, Start/Ende und Bezeichnung
+- **Statusanzeige**: ob `cec-client` auf dem Host verfügbar ist
+
 - **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
 - **Persistente Speicherung**: Einstellungen bleiben über Neustarts erhalten
 
@@ -909,7 +959,15 @@ GET /api/settings
   "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/meine-fw",
   "ntfy_poll_interval": 60,
-  "message_default_ttl_minutes": 60
+  "message_default_ttl_minutes": 60,
+  "hdmi_cec_enabled": false,
+  "hdmi_cec_client_path": "/usr/bin/cec-client",
+  "hdmi_cec_device_address": 0,
+  "hdmi_cec_idle_standby_minutes": 30,
+  "hdmi_cec_wake_on_alarm": true,
+  "hdmi_cec_standby_on_idle": true,
+  "hdmi_cec_schedules": [],
+  "hdmi_cec_client_available": true
 }
 ```
 
@@ -932,7 +990,18 @@ X-CSRF-Token: <csrf-token>
   "dwd_warnings_mock": false,
   "ntfy_topic_url": "https://ntfy.sh/meine-fw",
   "ntfy_poll_interval": 60,
-  "message_default_ttl_minutes": 60
+  "message_default_ttl_minutes": 60,
+  "hdmi_cec_enabled": true,
+  "hdmi_cec_idle_standby_minutes": 45,
+  "hdmi_cec_schedules": [
+    {
+      "enabled": true,
+      "weekday": 1,
+      "start_time": "18:45",
+      "end_time": "21:30",
+      "label": "Übungsdienst"
+    }
+  ]
 }
 
 # Antwort:
@@ -1193,6 +1262,7 @@ alarm-monitor/
 │   ├── calendar_service.py      # iCal-Kalender
 │   ├── messenger.py             # alarm-messenger Integration
 │   ├── ntfy_client.py           # ntfy.sh Polling
+│   ├── cec_controller.py        # HDMI-CEC Monitor-Steuerung
 │   ├── static/                  # CSS, JS, Vendor (Leaflet)
 │   └── templates/               # HTML-Templates
 │       ├── dashboard.html, mobile.html, history.html

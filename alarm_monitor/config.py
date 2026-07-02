@@ -57,6 +57,13 @@ class AppConfig:
     ntfy_poll_interval: int = 60
     messages_file: Optional[str] = None
     message_max_ttl_hours: int = 72
+    cec_enabled: bool = False
+    cec_client_path: str = "/usr/bin/cec-client"
+    cec_linux_device: Optional[str] = None
+    cec_device_address: int = 0
+    cec_idle_standby_minutes: int = 30
+    cec_wake_on_alarm: bool = True
+    cec_standby_on_idle: bool = True
 
 
 class MissingConfiguration(RuntimeError):
@@ -250,6 +257,35 @@ def load_config() -> AppConfig:
     if messages_file:
         _validate_path(messages_file, "MESSAGES_FILE")
 
+    cec_enabled_raw = (_get_env("CEC_ENABLED", default="false") or "false").lower()
+    cec_enabled = cec_enabled_raw in ("1", "true", "yes", "on")
+    cec_client_path = (
+        _get_env("CEC_CLIENT_PATH", default="/usr/bin/cec-client")
+        or "/usr/bin/cec-client"
+    )
+    cec_linux_device = _get_env("CEC_DEVICE") or None
+    cec_device_address = int(_get_env("CEC_DEVICE_ADDRESS", default="0") or "0")
+    if cec_device_address < 0 or cec_device_address > 15:
+        raise MissingConfiguration("CEC_DEVICE_ADDRESS must be between 0 and 15")
+    cec_idle_standby_minutes = int(
+        _get_env("CEC_IDLE_STANDBY_MINUTES", default="30") or "30"
+    )
+    if cec_idle_standby_minutes < 1:
+        raise MissingConfiguration("CEC_IDLE_STANDBY_MINUTES must be at least 1")
+    cec_wake_on_alarm_raw = (_get_env("CEC_WAKE_ON_ALARM", default="true") or "true").lower()
+    cec_wake_on_alarm = cec_wake_on_alarm_raw in ("1", "true", "yes", "on")
+    cec_standby_on_idle_raw = (
+        _get_env("CEC_STANDBY_ON_IDLE", default="true") or "true"
+    ).lower()
+    cec_standby_on_idle = cec_standby_on_idle_raw in ("1", "true", "yes", "on")
+
+    if cec_enabled:
+        LOGGER.info(
+            "HDMI-CEC enabled (client=%s, device address=%s)",
+            cec_client_path,
+            cec_device_address,
+        )
+
     default_version = "dev-main"
     app_version = _get_env("APP_VERSION") or default_version
     app_version_url = _get_env("APP_VERSION_URL") or None
@@ -293,6 +329,13 @@ def load_config() -> AppConfig:
         ntfy_poll_interval=ntfy_poll_interval,
         messages_file=messages_file,
         message_max_ttl_hours=message_max_ttl_hours,
+        cec_enabled=cec_enabled,
+        cec_client_path=cec_client_path,
+        cec_linux_device=cec_linux_device,
+        cec_device_address=cec_device_address,
+        cec_idle_standby_minutes=cec_idle_standby_minutes,
+        cec_wake_on_alarm=cec_wake_on_alarm,
+        cec_standby_on_idle=cec_standby_on_idle,
     )
 
 

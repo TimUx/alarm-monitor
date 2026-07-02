@@ -206,6 +206,117 @@
                             <small class="form-hint">Wie lange ntfy-Nachrichten (ohne eigene Ablaufzeit) angezeigt werden. Standard: 60 Minuten. Gilt auch als Fallback wenn ntfy keine TTL überträgt.</small>
                         </div>
 
+                        <div class="form-group form-group--section-header">
+                            <h3 class="settings-subsection-title">HDMI-CEC (Monitor/TV)</h3>
+                        </div>
+
+                        <div id="hdmi-cec-status" class="hdmi-cec-status" role="status" aria-live="polite"></div>
+
+                        <div class="form-group">
+                            <label class="form-checkbox" for="hdmi_cec_enabled">
+                                <input
+                                    type="checkbox"
+                                    id="hdmi_cec_enabled"
+                                    name="hdmi_cec_enabled"
+                                    value="on"
+                                >
+                                <span>HDMI-CEC Steuerung aktivieren</span>
+                            </label>
+                            <small class="form-hint">
+                                Schaltet den angeschlossenen Monitor/TV per HDMI-CEC ein (bei Alarm)
+                                und nach konfigurierbarer Idle-Zeit in den Standby.
+                                Voraussetzung: <code>cec-client</code> auf dem Host (z.&nbsp;B. via install.sh).
+                            </small>
+                        </div>
+
+                        <div class="hdmi-cec-fields">
+                            <div class="form-group">
+                                <label for="hdmi_cec_client_path">cec-client Pfad</label>
+                                <input
+                                    type="text"
+                                    id="hdmi_cec_client_path"
+                                    name="hdmi_cec_client_path"
+                                    placeholder="/usr/bin/cec-client"
+                                >
+                                <small class="form-hint">
+                                    Pfad zur <code>cec-client</code>-Binary auf dem Host.
+                                    Kann alternativ per <code>ALARM_MONITOR_CEC_CLIENT_PATH</code> gesetzt werden.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="hdmi_cec_device_address">CEC-Geräteadresse</label>
+                                <input
+                                    type="number"
+                                    id="hdmi_cec_device_address"
+                                    name="hdmi_cec_device_address"
+                                    min="0"
+                                    max="15"
+                                    step="1"
+                                    placeholder="0"
+                                >
+                                <small class="form-hint">Standard: 0 (Fernseher/Monitor). Wertebereich 0–15.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="hdmi_cec_idle_standby_minutes">Standby nach Idle-Zeit (Minuten)</label>
+                                <input
+                                    type="number"
+                                    id="hdmi_cec_idle_standby_minutes"
+                                    name="hdmi_cec_idle_standby_minutes"
+                                    min="1"
+                                    step="1"
+                                    placeholder="30"
+                                >
+                                <small class="form-hint">
+                                    Nach Anzeige des Ruhezustand-Dashboards (auch nach Neustart)
+                                    wird diese Zeit abgewartet, bevor der Monitor in den Standby
+                                    geschickt wird. Ausnahme: feste Einschaltzeiten unten.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-checkbox" for="hdmi_cec_wake_on_alarm">
+                                    <input
+                                        type="checkbox"
+                                        id="hdmi_cec_wake_on_alarm"
+                                        name="hdmi_cec_wake_on_alarm"
+                                        value="on"
+                                        checked
+                                    >
+                                    <span>Bei Alarm einschalten</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-checkbox" for="hdmi_cec_standby_on_idle">
+                                    <input
+                                        type="checkbox"
+                                        id="hdmi_cec_standby_on_idle"
+                                        name="hdmi_cec_standby_on_idle"
+                                        value="on"
+                                        checked
+                                    >
+                                    <span>Im Ruhezustand nach Idle-Zeit Standby senden</span>
+                                </label>
+                                <small class="form-hint">
+                                    Während fester Einschaltzeiten (unten) bleibt der Monitor eingeschaltet.
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-group-label">Feste Einschaltzeiten</label>
+                                <small class="form-hint hdmi-cec-schedule-hint">
+                                    Der Monitor bleibt während dieser Zeitfenster dauerhaft eingeschaltet
+                                    (z.&nbsp;B. Übungsdienst). Außerhalb gelten Alarm- und Idle-Regeln.
+                                </small>
+                                <div id="hdmi-cec-schedules" class="hdmi-cec-schedules" aria-live="polite"></div>
+                                <button type="button" class="btn btn-secondary hdmi-cec-add-schedule" id="hdmi-cec-add-schedule">
+                                    Zeitfenster hinzufügen
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Speichern</button>
                             <button type="button" class="btn btn-secondary" id="cancel-btn">Abbrechen</button>

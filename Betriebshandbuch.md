@@ -180,6 +180,12 @@ ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 # Prometheus-Metriken-Endpoint aktivieren (optional)
 # ALARM_MONITOR_METRICS_TOKEN=change-me-to-random-metrics-token
+
+# HDMI-CEC Monitor-Steuerung (optional, siehe Einstellungen → HDMI-CEC)
+# ALARM_MONITOR_CEC_ENABLED=true
+# ALARM_MONITOR_CEC_CLIENT_PATH=/usr/bin/cec-client
+# ALARM_MONITOR_CEC_DEVICE=/dev/cec0
+# ALARM_MONITOR_CEC_IDLE_STANDBY_MINUTES=30
 ```
 
 ### Wichtige Konfigurationsparameter
@@ -201,6 +207,10 @@ Alle Umgebungsvariablen verwenden das Präfix `ALARM_MONITOR_` (siehe `.env.exam
 | `ALARM_MONITOR_MESSENGER_SERVER_URL` | URL des alarm-messenger Servers | (deaktiviert) |
 | `ALARM_MONITOR_ORS_API_KEY` | OpenRouteService-Key für Navigation | (deaktiviert) |
 | `ALARM_MONITOR_METRICS_TOKEN` | Token für `/api/metrics` | (deaktiviert) |
+| `ALARM_MONITOR_CEC_ENABLED` | HDMI-CEC Steuerung aktivieren | false |
+| `ALARM_MONITOR_CEC_CLIENT_PATH` | Pfad zu `cec-client` | `/usr/bin/cec-client` |
+| `ALARM_MONITOR_CEC_DEVICE` | Linux-Gerät (Host) | `/dev/cec0` |
+| `ALARM_MONITOR_CEC_IDLE_STANDBY_MINUTES` | Standby nach Idle (Minuten) | 30 |
 | `ALARM_MONITOR_GUNICORN_WORKERS` | Gunicorn-Worker (immer **1**) | 1 |
 | `ALARM_MONITOR_GUNICORN_THREADS` | Gunicorn-Threads | 8 |
 
@@ -391,6 +401,25 @@ Name=Alarm Monitor Kiosk
 Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars http://server-ip:8000
 EOF
 ```
+
+### HDMI-CEC Monitor-Steuerung (optional)
+
+Für Displays, die per HDMI-CEC ein- und ausgeschaltet werden sollen:
+
+1. **Host-Pakete** – `cec-utils` (Debian/RPi) oder `libcec` (Fedora/Arch) installieren; empfohlen: [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit HDMI-CEC-Option
+2. **Docker** – alarm-monitor-Container benötigt Zugriff auf `/dev/cec0` und `cec-client` vom Host
+3. **Konfiguration** – Einstellungen → HDMI-CEC in der Web-UI:
+   - Idle-Standby-Zeit (Minuten im Ruhezustand bis Standby, gilt auch nach Neustart)
+   - Feste Einschaltzeiten (z. B. Dienstag 18:45–21:30 für Übungsdienst)
+   - Bei Alarm: automatisches Einschalten
+
+Manueller Test:
+```bash
+echo 'on 0' | cec-client -s -d 1
+echo 'standby 0' | cec-client -s -d 1
+```
+
+Siehe [README – HDMI-CEC](README.md#hdmi-cec-optional-kann-in-web-ui-konfiguriert-werden) und [FAQ – HDMI-CEC](docs/FAQ.md#wie-funktioniert-die-hdmi-cec-monitor-steuerung).
 
 ### API-Endpunkte
 

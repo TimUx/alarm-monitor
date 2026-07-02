@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import sys
 
@@ -1313,6 +1313,77 @@ def test_get_settings_reflects_stored_ntfy_fields(client, flask_app) -> None:
     assert data["ntfy_topic_url"] == "https://ntfy.sh/my-fw"
     assert data["ntfy_poll_interval"] == 90
     assert data["message_default_ttl_minutes"] == 45
+
+
+def test_get_settings_returns_hdmi_cec_fields(client) -> None:
+    response = client.get("/api/settings")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "hdmi_cec_enabled" in data
+    assert "hdmi_cec_client_path" in data
+    assert "hdmi_cec_device_address" in data
+    assert "hdmi_cec_idle_standby_minutes" in data
+    assert "hdmi_cec_wake_on_alarm" in data
+    assert "hdmi_cec_standby_on_idle" in data
+    assert "hdmi_cec_schedules" in data
+    assert "hdmi_cec_client_available" in data
+
+
+def test_post_settings_saves_hdmi_cec_fields(client, flask_app) -> None:
+    csrf = generate_csrf_token(SETTINGS_PASSWORD)
+    response = client.post(
+        "/api/settings",
+        json={
+            "fire_department_name": "Test-FW",
+            "hdmi_cec_enabled": True,
+            "hdmi_cec_client_path": "/usr/bin/cec-client",
+            "hdmi_cec_device_address": 0,
+            "hdmi_cec_idle_standby_minutes": 45,
+            "hdmi_cec_wake_on_alarm": True,
+            "hdmi_cec_standby_on_idle": True,
+            "hdmi_cec_schedules": [
+                {
+                    "enabled": True,
+                    "weekday": 1,
+                    "start_time": "18:45",
+                    "end_time": "21:30",
+                    "label": "Übungsdienst",
+                }
+            ],
+        },
+        headers={
+            "X-Settings-Password": SETTINGS_PASSWORD,
+            "X-CSRF-Token": csrf,
+        },
+    )
+    assert response.status_code == 200
+
+    settings_store = flask_app.config["SETTINGS_STORE"]
+    assert settings_store.get("hdmi_cec_enabled") is True
+    assert settings_store.get("hdmi_cec_idle_standby_minutes") == 45
+    schedules = settings_store.get("hdmi_cec_schedules")
+    assert len(schedules) == 1
+    assert schedules[0]["weekday"] == 1
+
+
+def test_post_alarm_triggers_cec_watcher(client, flask_app) -> None:
+    watcher = flask_app.config["CEC_WATCHER"]
+    watcher.handle_alarm_stored = MagicMock()  # type: ignore[method-assign]
+
+    alarm_data = {
+        "incident_number": "CEC-001",
+        "keyword": "F3Y",
+        "location": "Teststraße 1",
+    }
+    response = client.post(
+        "/api/alarm",
+        json=alarm_data,
+        headers={"X-API-Key": API_KEY},
+    )
+    assert response.status_code == 200
+    watcher.handle_alarm_stored.assert_called_once()
+
+
 def test_upload_logo_unsupported_format_returns_415(client) -> None:
     """POST /api/settings/logo with a non-image file should return 415."""
     from io import BytesIO

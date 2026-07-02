@@ -9,6 +9,145 @@
     const messageEl = document.getElementById('message');
     const cancelBtn = document.getElementById('cancel-btn');
     const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+    const hdmiEnabledEl = document.getElementById('hdmi_cec_enabled');
+    const hdmiFieldsWrap = document.querySelector('.hdmi-cec-fields');
+    const hdmiStatusEl = document.getElementById('hdmi-cec-status');
+    const hdmiSchedulesEl = document.getElementById('hdmi-cec-schedules');
+    const hdmiAddScheduleBtn = document.getElementById('hdmi-cec-add-schedule');
+
+    const WEEKDAYS = [
+        { value: 0, label: 'Montag' },
+        { value: 1, label: 'Dienstag' },
+        { value: 2, label: 'Mittwoch' },
+        { value: 3, label: 'Donnerstag' },
+        { value: 4, label: 'Freitag' },
+        { value: 5, label: 'Samstag' },
+        { value: 6, label: 'Sonntag' },
+    ];
+
+    let hdmiSchedules = [];
+
+    function updateHdmiFieldsVisibility() {
+        if (!hdmiFieldsWrap || !hdmiEnabledEl) { return; }
+        hdmiFieldsWrap.style.display = hdmiEnabledEl.checked ? '' : 'none';
+    }
+
+    function updateHdmiStatus(data) {
+        if (!hdmiStatusEl) { return; }
+        const enabled = Boolean(data.hdmi_cec_enabled);
+        const available = Boolean(data.hdmi_cec_client_available);
+        const path = data.hdmi_cec_client_path || '/usr/bin/cec-client';
+
+        if (!enabled) {
+            hdmiStatusEl.textContent = 'HDMI-CEC ist deaktiviert.';
+            hdmiStatusEl.className = 'hdmi-cec-status';
+            return;
+        }
+
+        if (available) {
+            hdmiStatusEl.textContent = 'cec-client verfügbar: ' + path;
+            hdmiStatusEl.className = 'hdmi-cec-status hdmi-cec-status--ok';
+        } else {
+            hdmiStatusEl.textContent =
+                'cec-client nicht gefunden oder nicht ausführbar: ' + path +
+                ' – Paket cec-utils/libcec auf dem Host installieren.';
+            hdmiStatusEl.className = 'hdmi-cec-status hdmi-cec-status--warn';
+        }
+    }
+
+    function createScheduleRow(schedule, index) {
+        const row = document.createElement('div');
+        row.className = 'hdmi-cec-schedule-row';
+        row.dataset.index = String(index);
+
+        const weekdaySelect = document.createElement('select');
+        weekdaySelect.className = 'hdmi-cec-schedule-weekday';
+        WEEKDAYS.forEach((day) => {
+            const option = document.createElement('option');
+            option.value = String(day.value);
+            option.textContent = day.label;
+            if (Number(schedule.weekday) === day.value) {
+                option.selected = true;
+            }
+            weekdaySelect.appendChild(option);
+        });
+
+        const startInput = document.createElement('input');
+        startInput.type = 'time';
+        startInput.className = 'hdmi-cec-schedule-start';
+        startInput.value = schedule.start_time || '18:45';
+        startInput.required = true;
+
+        const endInput = document.createElement('input');
+        endInput.type = 'time';
+        endInput.className = 'hdmi-cec-schedule-end';
+        endInput.value = schedule.end_time || '21:30';
+        endInput.required = true;
+
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'hdmi-cec-schedule-label';
+        labelInput.placeholder = 'z.B. Übungsdienst';
+        labelInput.value = schedule.label || '';
+
+        const enabledLabel = document.createElement('label');
+        enabledLabel.className = 'form-checkbox';
+        const enabledInput = document.createElement('input');
+        enabledInput.type = 'checkbox';
+        enabledInput.className = 'hdmi-cec-schedule-enabled';
+        enabledInput.checked = schedule.enabled !== false;
+        const enabledText = document.createElement('span');
+        enabledText.textContent = 'Aktiv';
+        enabledLabel.appendChild(enabledInput);
+        enabledLabel.appendChild(enabledText);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-secondary hdmi-cec-schedule-remove';
+        removeBtn.textContent = 'Entfernen';
+        removeBtn.addEventListener('click', () => {
+            hdmiSchedules.splice(index, 1);
+            renderHdmiSchedules();
+        });
+
+        row.appendChild(weekdaySelect);
+        row.appendChild(startInput);
+        row.appendChild(endInput);
+        row.appendChild(labelInput);
+        row.appendChild(enabledLabel);
+        row.appendChild(removeBtn);
+        return row;
+    }
+
+    function renderHdmiSchedules() {
+        if (!hdmiSchedulesEl) { return; }
+        hdmiSchedulesEl.innerHTML = '';
+        hdmiSchedules.forEach((schedule, index) => {
+            hdmiSchedulesEl.appendChild(createScheduleRow(schedule, index));
+        });
+    }
+
+    function collectHdmiSchedules() {
+        if (!hdmiSchedulesEl) { return []; }
+        const rows = hdmiSchedulesEl.querySelectorAll('.hdmi-cec-schedule-row');
+        const schedules = [];
+        rows.forEach((row) => {
+            const weekday = row.querySelector('.hdmi-cec-schedule-weekday');
+            const start = row.querySelector('.hdmi-cec-schedule-start');
+            const end = row.querySelector('.hdmi-cec-schedule-end');
+            const label = row.querySelector('.hdmi-cec-schedule-label');
+            const enabled = row.querySelector('.hdmi-cec-schedule-enabled');
+            if (!weekday || !start || !end) { return; }
+            schedules.push({
+                enabled: enabled ? enabled.checked : true,
+                weekday: Number(weekday.value),
+                start_time: start.value,
+                end_time: end.value,
+                label: label ? label.value.trim() : '',
+            });
+        });
+        return schedules;
+    }
 
     // Load current settings on page load
     function loadSettings() {
@@ -45,6 +184,36 @@
                 if (ntfyIntervalEl) { ntfyIntervalEl.value = data.ntfy_poll_interval || ''; }
                 const msgTtlEl = document.getElementById('message_default_ttl_minutes');
                 if (msgTtlEl) { msgTtlEl.value = data.message_default_ttl_minutes || ''; }
+
+                const hdmiEnabled = document.getElementById('hdmi_cec_enabled');
+                if (hdmiEnabled) {
+                    hdmiEnabled.checked = Boolean(data.hdmi_cec_enabled);
+                }
+                const hdmiClientPath = document.getElementById('hdmi_cec_client_path');
+                if (hdmiClientPath) {
+                    hdmiClientPath.value = data.hdmi_cec_client_path || '/usr/bin/cec-client';
+                }
+                const hdmiDeviceAddress = document.getElementById('hdmi_cec_device_address');
+                if (hdmiDeviceAddress) {
+                    hdmiDeviceAddress.value = data.hdmi_cec_device_address ?? 0;
+                }
+                const hdmiIdleMinutes = document.getElementById('hdmi_cec_idle_standby_minutes');
+                if (hdmiIdleMinutes) {
+                    hdmiIdleMinutes.value = data.hdmi_cec_idle_standby_minutes || 30;
+                }
+                const hdmiWakeOnAlarm = document.getElementById('hdmi_cec_wake_on_alarm');
+                if (hdmiWakeOnAlarm) {
+                    hdmiWakeOnAlarm.checked = data.hdmi_cec_wake_on_alarm !== false;
+                }
+                const hdmiStandbyOnIdle = document.getElementById('hdmi_cec_standby_on_idle');
+                if (hdmiStandbyOnIdle) {
+                    hdmiStandbyOnIdle.checked = data.hdmi_cec_standby_on_idle !== false;
+                }
+
+                hdmiSchedules = Array.isArray(data.hdmi_cec_schedules) ? data.hdmi_cec_schedules : [];
+                renderHdmiSchedules();
+                updateHdmiFieldsVisibility();
+                updateHdmiStatus(data);
             })
             .catch(error => {
                 console.error('Error loading settings:', error);
@@ -70,6 +239,13 @@
             dwd_warnings_mock: formData.get('dwd_warnings_mock') === 'on',
             show_last_alarm: formData.get('show_last_alarm') === 'on',
             warnings_min_level: formData.get('warnings_min_level') || '3',
+            hdmi_cec_enabled: formData.get('hdmi_cec_enabled') === 'on',
+            hdmi_cec_client_path: formData.get('hdmi_cec_client_path') || '/usr/bin/cec-client',
+            hdmi_cec_device_address: formData.get('hdmi_cec_device_address') || '0',
+            hdmi_cec_idle_standby_minutes: formData.get('hdmi_cec_idle_standby_minutes') || '30',
+            hdmi_cec_wake_on_alarm: formData.get('hdmi_cec_wake_on_alarm') === 'on',
+            hdmi_cec_standby_on_idle: formData.get('hdmi_cec_standby_on_idle') === 'on',
+            hdmi_cec_schedules: collectHdmiSchedules(),
         };
         const password = formData.get('settings_password') || '';
 
@@ -110,6 +286,25 @@
             if (settings.default_longitude && (lon < -180 || lon > 180)) {
                 showMessage('Längengrad muss zwischen -180 und 180 liegen', 'error', false);
                 return;
+            }
+        }
+
+        if (settings.hdmi_cec_enabled) {
+            const idleMinutes = parseInt(settings.hdmi_cec_idle_standby_minutes, 10);
+            if (isNaN(idleMinutes) || idleMinutes < 1) {
+                showMessage('HDMI Standby Idle-Zeit muss mindestens 1 Minute sein', 'error', false);
+                return;
+            }
+            const deviceAddress = parseInt(settings.hdmi_cec_device_address, 10);
+            if (isNaN(deviceAddress) || deviceAddress < 0 || deviceAddress > 15) {
+                showMessage('HDMI CEC-Geräteadresse muss zwischen 0 und 15 liegen', 'error', false);
+                return;
+            }
+            for (const schedule of settings.hdmi_cec_schedules) {
+                if (!schedule.start_time || !schedule.end_time) {
+                    showMessage('Bitte Start- und Endzeit für alle HDMI-Zeitfenster angeben', 'error', false);
+                    return;
+                }
             }
         }
 
@@ -186,6 +381,21 @@
     // Event listeners
     form.addEventListener('submit', saveSettings);
     cancelBtn.addEventListener('click', cancel);
+    if (hdmiEnabledEl) {
+        hdmiEnabledEl.addEventListener('change', updateHdmiFieldsVisibility);
+    }
+    if (hdmiAddScheduleBtn) {
+        hdmiAddScheduleBtn.addEventListener('click', () => {
+            hdmiSchedules.push({
+                enabled: true,
+                weekday: 1,
+                start_time: '18:45',
+                end_time: '21:30',
+                label: 'Übungsdienst',
+            });
+            renderHdmiSchedules();
+        });
+    }
 
     // Load settings on page load
     loadSettings();
