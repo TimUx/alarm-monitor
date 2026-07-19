@@ -81,7 +81,7 @@ Das System besteht aus drei entkoppelten Komponenten, die zusammen eine vollstä
 - 📺 **Standby nach Idle** – Nach Anzeige des Ruhezustand-Dashboards (auch nach Neustart) Standby nach konfigurierbarer Zeit
 - 📺 **Feste Einschaltzeiten** – Wöchentliche Zeitfenster (z. B. Übungsdienst Di 18:45–21:30), in denen der Monitor dauerhaft an bleibt
 - 📺 **Web-UI Konfiguration** – Einstellungen → HDMI-CEC (Idle-Zeit, Zeitfenster, Geräteadresse)
-- 📺 **Host-Integration** – `cec-client` vom Host in den Container gemountet (via [alarm-system install.sh](https://github.com/TimUx/alarm-system))
+- 📺 **Container-Integration** – `cec-client`/`cec-utils` sind im Docker-Image enthalten; Host braucht nur `/dev/cec0` (via [alarm-system install.sh](https://github.com/TimUx/alarm-system))
 
 ### Kalender-Integration (optional)
 - 📅 **iCal-Kalender** – Anbindung beliebiger iCal-URLs (Google Calendar, Nextcloud, etc.)
@@ -479,7 +479,7 @@ Folgende Einstellungen können direkt über die Web-Oberfläche konfiguriert wer
 
 **HDMI-CEC (Monitor/TV):**
 - **HDMI-CEC aktivieren**: Steuerung per `cec-client` ein-/ausschalten
-- **cec-client Pfad**: Pfad zur Binary auf dem Host (Standard: `/usr/bin/cec-client`)
+- **cec-client Pfad**: Pfad zur Binary im Container (Standard: `/usr/bin/cec-client`)
 - **CEC-Geräteadresse**: Zieladresse am HDMI-Bus (0 = Fernseher/Monitor)
 - **Standby nach Idle-Zeit**: Minuten im Ruhezustand-Dashboard, danach Standby (auch nach Neustart)
 - **Bei Alarm einschalten** / **Standby nach Idle**: Einzelne Regeln aktivieren/deaktivieren
@@ -554,7 +554,7 @@ ALARM_MONITOR_DISPLAY_DURATION_MINUTES=30
 
 ### HDMI-CEC (optional, kann in Web-UI konfiguriert werden)
 
-Steuert angeschlossene Monitore/TVs per HDMI-CEC. Voraussetzung: `cec-client` auf dem Host und Docker-Zugriff auf `/dev/cec0` (wird vom [alarm-system Installer](https://github.com/TimUx/alarm-system) eingerichtet).
+Steuert angeschlossene Monitore/TVs per HDMI-CEC. Voraussetzung: Docker-Zugriff auf `/dev/cec0` (`cec-client` ist im Image enthalten; Einrichtung z. B. über den [alarm-system Installer](https://github.com/TimUx/alarm-system)).
 
 ```bash
 # Aktivierung (alternativ in Einstellungen → HDMI-CEC)
@@ -758,7 +758,7 @@ Webbasierte Konfigurationsoberfläche:
 - **Aktivierung**, cec-client-Pfad, CEC-Geräteadresse
 - **Idle-Standby-Zeit**, Wake-on-Alarm, Standby-on-Idle
 - **Feste Einschaltzeiten** mit Wochentag, Start/Ende und Bezeichnung
-- **Statusanzeige**: ob `cec-client` auf dem Host verfügbar ist
+- **Statusanzeige**: ob `cec-client` im Container verfügbar ist
 
 - **Sofortige Übernahme**: Änderungen werden direkt nach dem Speichern übernommen
 - **Persistente Speicherung**: Einstellungen bleiben über Neustarts erhalten

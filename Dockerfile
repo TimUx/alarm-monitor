@@ -20,8 +20,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# cec-utils provides cec-client + libcec and their shared libraries (ncurses, …)
+# so HDMI-CEC works inside the container without bind-mounting the host binary.
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl \
+    && apt-get install --no-install-recommends -y \
+        curl \
+        cec-utils \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --shell /bin/bash appuser
 

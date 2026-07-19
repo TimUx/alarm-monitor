@@ -225,7 +225,7 @@
                             <small class="form-hint">
                                 Schaltet den angeschlossenen Monitor/TV per HDMI-CEC ein (bei Alarm)
                                 und nach konfigurierbarer Idle-Zeit in den Standby.
-                                Voraussetzung: <code>cec-client</code> auf dem Host (z.&nbsp;B. via install.sh).
+                                Voraussetzung: <code>cec-client</code> im Container (im Image enthalten) und Zugriff auf <code>/dev/cec0</code>.
                             </small>
                         </div>
 
@@ -239,7 +239,7 @@
                                     placeholder="/usr/bin/cec-client"
                                 >
                                 <small class="form-hint">
-                                    Pfad zur <code>cec-client</code>-Binary auf dem Host.
+                                    Pfad zur <code>cec-client</code>-Binary im Container (Standard: <code>/usr/bin/cec-client</code>).
                                     Kann alternativ per <code>ALARM_MONITOR_CEC_CLIENT_PATH</code> gesetzt werden.
                                 </small>
                             </div>

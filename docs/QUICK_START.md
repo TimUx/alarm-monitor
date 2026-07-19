@@ -430,7 +430,7 @@ Ersetzen Sie `SERVER-IP` mit der IP-Adresse Ihres Servers.
 
 Für Kiosk-Displays am Raspberry Pi kann der Monitor/TV per HDMI-CEC automatisch ein- und ausgeschaltet werden:
 
-**Empfohlen:** Installation über den [alarm-system Installer](https://github.com/TimUx/alarm-system) – dort HDMI-CEC im Assistenten aktivieren (installiert `cec-utils`/`libcec`, bindet `/dev/cec0` an alarm-monitor).
+**Empfohlen:** Installation über den [alarm-system Installer](https://github.com/TimUx/alarm-system) – dort HDMI-CEC im Assistenten aktivieren (bindet `/dev/cec0` an alarm-monitor; `cec-client` ist im Image enthalten).
 
 **Konfiguration in alarm-monitor:**
 1. `http://SERVER-IP:8000/settings` öffnen

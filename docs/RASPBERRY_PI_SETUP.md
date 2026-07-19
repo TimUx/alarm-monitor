@@ -1084,7 +1084,7 @@ nmcli connection modify "DEIN-WLAN-NAME" \
 
 Wenn der angeschlossene Monitor/TV HDMI-CEC unterstützt, kann **alarm-monitor** ihn automatisch bei Alarm einschalten und nach Idle-Zeit in den Standby versenden.
 
-**Empfohlener Weg:** [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit aktivierter Option **HDMI-CEC** – installiert `cec-utils`, richtet udev-Regeln ein und bindet `/dev/cec0` an den alarm-monitor-Container.
+**Empfohlener Weg:** [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit aktivierter Option **HDMI-CEC** – richtet udev-Regeln ein und bindet `/dev/cec0` an den alarm-monitor-Container (`cec-client` ist im Image).
 
 **Manuell:**
 
@@ -1097,13 +1097,11 @@ echo 'pow 0' | cec-client -s -d 1
 echo 'on 0' | cec-client -s -d 1
 ```
 
-In **docker-compose.yml** für alarm-monitor (Beispiel):
+In **docker-compose.yml** für alarm-monitor (Beispiel). `cec-client` ist im Image enthalten – die Host-Binary nicht mounten (sonst fehlen oft Shared Libraries wie `libncurses`):
 
 ```yaml
     devices:
       - /dev/cec0
-    volumes:
-      - /usr/bin/cec-client:/usr/bin/cec-client:ro
     environment:
       - ALARM_MONITOR_CEC_ENABLED=true
 ```
