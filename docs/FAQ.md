@@ -275,7 +275,8 @@ Mit HDMI-CEC kann alarm-monitor einen per HDMI angeschlossenen Monitor oder Fern
 
 1. **Voraussetzungen**
    - HDMI-Kabel mit CEC-Unterstützung (typisch bei Raspberry Pi → TV/Monitor)
-   - `cec-client` auf dem Host (`cec-utils` auf Debian/RPi, `libcec` auf Fedora/Arch)
+   - `cec-client` im Container (Paket `cec-utils` ist im Docker-Image enthalten)
+   - Docker-Zugriff auf `/dev/cec0`
    - Bei Installation über [alarm-system install.sh](https://github.com/TimUx/alarm-system): HDMI-CEC im Installer aktivieren
 
 2. **Konfiguration** – Einstellungen → **HDMI-CEC** (oder Umgebungsvariablen `ALARM_MONITOR_CEC_*`)
@@ -387,17 +388,19 @@ curl http://localhost:8000/health
 ### HDMI-CEC: Monitor reagiert nicht
 
 **Ursachen**:
-1. `cec-client` nicht installiert oder nicht im Container erreichbar
+1. Image ohne `cec-utils` / veraltetes Image (Host-Binary nicht in den Container mounten)
 2. `/dev/cec0` fehlt oder Container hat keinen Device-Zugriff
 3. HDMI-CEC in den Einstellungen deaktiviert
 4. TV/Monitor unterstützt kein CEC oder CEC ist am Gerät deaktiviert
 
 **Lösung**:
 ```bash
-# Auf dem Host (nicht im Container):
-which cec-client
+# Device auf dem Host
 ls -l /dev/cec*
-echo 'pow 0' | cec-client -s -d 1
+
+# Im Container (cec-client kommt aus dem Image):
+docker exec -it alarm-monitor bash -lc "ldd /usr/bin/cec-client | grep 'not found'"
+docker exec -it alarm-monitor bash -lc "echo 'pow 0' | /usr/bin/cec-client -s -d 1"
 
 # In alarm-monitor Einstellungen → HDMI-CEC: Status „cec-client verfügbar“ prüfen
 # Bei alarm-system-Installation: install.sh mit HDMI-CEC erneut ausführen

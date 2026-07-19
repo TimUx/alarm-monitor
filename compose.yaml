@@ -16,6 +16,10 @@ services:
       - ALARM_MONITOR_GUNICORN_THREADS=${ALARM_MONITOR_GUNICORN_THREADS:-8}
     volumes:
       - ./instance:/app/instance
+    # HDMI-CEC: pass through the host CEC adapter (cec-client is in the image).
+    # Uncomment when a CEC device is available, e.g. on a Raspberry Pi:
+    # devices:
+    #   - /dev/cec0
     networks:
       - alarm-net
     healthcheck:

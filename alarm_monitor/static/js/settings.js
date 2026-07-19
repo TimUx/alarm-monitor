@@ -50,7 +50,7 @@
         } else {
             hdmiStatusEl.textContent =
                 'cec-client nicht gefunden oder nicht ausführbar: ' + path +
-                ' – Paket cec-utils/libcec auf dem Host installieren.';
+                ' – Image neu bauen (cec-utils ist im Docker-Image enthalten).';
             hdmiStatusEl.className = 'hdmi-cec-status hdmi-cec-status--warn';
         }
     }

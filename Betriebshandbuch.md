@@ -406,8 +406,8 @@ EOF
 
 Für Displays, die per HDMI-CEC ein- und ausgeschaltet werden sollen:
 
-1. **Host-Pakete** – `cec-utils` (Debian/RPi) oder `libcec` (Fedora/Arch) installieren; empfohlen: [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit HDMI-CEC-Option
-2. **Docker** – alarm-monitor-Container benötigt Zugriff auf `/dev/cec0` und `cec-client` vom Host
+1. **Image** – aktuelles alarm-monitor-Image mit eingebautem `cec-utils`/`cec-client`; empfohlen: [alarm-system install.sh](https://github.com/TimUx/alarm-system) mit HDMI-CEC-Option für `/dev/cec0`
+2. **Docker** – alarm-monitor-Container benötigt Zugriff auf `/dev/cec0` (`cec-client`/`cec-utils` sind im Image)
 3. **Konfiguration** – Einstellungen → HDMI-CEC in der Web-UI:
    - Idle-Standby-Zeit (Minuten im Ruhezustand bis Standby, gilt auch nach Neustart)
    - Feste Einschaltzeiten (z. B. Dienstag 18:45–21:30 für Übungsdienst)
