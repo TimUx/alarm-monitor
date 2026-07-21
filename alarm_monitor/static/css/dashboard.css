@@ -926,12 +926,12 @@ body.mode-alarm .app-main {
     align-items: stretch;
     gap: 0.55em;
     flex-shrink: 0;
-    font-size: calc(var(--idle-fit) * clamp(0.9rem, 1.45vh, 1.3rem));
+    font-size: calc(var(--idle-fit) * clamp(1.25rem, 2.4vh, 2rem));
 }
 
 .idle-messages h3 {
     margin: 0;
-    font-size: 1.35em;
+    font-size: 1.25em;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--accent);
@@ -953,7 +953,8 @@ body.mode-alarm .app-main {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.15em;
-    font-size: 1.05em;
+    font-size: 1.15em;
+    line-height: 1.35;
     color: var(--text-primary);
 }
 
@@ -964,7 +965,7 @@ body.mode-alarm .app-main {
 }
 
 .idle-messages-item-ttl {
-    font-size: 0.8em;
+    font-size: 0.75em;
     color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
@@ -1345,19 +1346,19 @@ body.mode-alarm .app-main {
     .idle-messages {
         padding: 0.65em 0.9em;
         gap: 0.5em;
-        font-size: calc(var(--idle-fit) * clamp(0.82rem, 1.35vh, 1.1rem));
+        font-size: calc(var(--idle-fit) * clamp(1.05rem, 2vh, 1.55rem));
     }
 
     .idle-messages h3 {
-        font-size: 1.3em;
+        font-size: 1.2em;
     }
 
     .idle-messages-item {
-        font-size: 1em;
+        font-size: 1.1em;
     }
 
     .idle-messages-item-ttl {
-        font-size: 0.78em;
+        font-size: 0.75em;
     }
 }
 
@@ -1471,18 +1472,19 @@ body.mode-alarm .app-main {
     .idle-messages {
         padding: 0.6em 0.85em;
         gap: 0.45em;
+        font-size: calc(var(--idle-fit) * clamp(0.98rem, 1.9vh, 1.4rem));
     }
 
     .idle-messages h3 {
-        font-size: 1.25em;
+        font-size: 1.15em;
     }
 
     .idle-messages-item {
-        font-size: 0.98em;
+        font-size: 1.08em;
     }
 
     .idle-messages-item-ttl {
-        font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+        font-size: 0.75em;
     }
 }
 
