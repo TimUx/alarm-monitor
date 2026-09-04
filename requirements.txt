@@ -3,4 +3,4 @@ requests>=2.32.3
 gunicorn>=23.0.0
 python-dotenv==1.2.3
 flask-limiter>=3.9.0
-python-json-logger>=3.3.0
+python-json-logger>=4.2.0
