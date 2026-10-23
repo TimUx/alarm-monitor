@@ -100,6 +100,43 @@ cp .env.example .env
 # API-Key generieren und eintragen
 ```
 
+### Runtime-Abhaengigkeiten aktualisieren
+
+Nach Aenderungen an `requirements.txt` auch das vom Docker-Image verwendete
+`requirements.lock` mit Python 3.12 aktualisieren und beide Dateien committen:
+
+```bash
+pip-compile --output-file=requirements.lock requirements.txt
+pip install -r requirements.txt -r requirements.lock
+```
+
+Fuer gezielte Updates transitiver Abhaengigkeiten kann
+`pip-compile --upgrade-package certifi --output-file=requirements.lock requirements.txt`
+verwendet werden. CI testet die gelockten Runtime-Versionen und scannt das
+gebaute Container-Image; der Release-Workflow scannt dessen unveraenderlichen Digest.
+
+### Release-Recovery v1.4.4
+
+Der Release-Build von `v1.4.4` schlug wegen
+`GHSA-6q48-6c7w-9gw2` in `certifi==2026.2.25` fehl. Der Fix benoetigt
+mindestens `certifi==2026.10.19` und einen neuen Commit. `v1.4.4` und sein
+Tag bleiben unveraendert.
+
+Nach Merge des Fix-PRs und ausdruecklicher Release-Freigabe:
+
+1. Gruene Tests, Container-Build und Vulnerability-Scan fuer den Merge-Commit
+   abwarten.
+2. Tags und Releases erneut auf Verfuegbarkeit pruefen. `v1.4.5` ist die
+   vorgesehene naechste Patchversion, sofern weiterhin frei.
+3. Einen neuen Tag und Release auf dem geprueften Merge-Commit veroeffentlichen,
+   nicht auf dem alten `v1.4.4`-Commit.
+4. Den release-getriggerten Workflow **Build and Push alarm-monitor to GHCR**
+   einschliesslich Scan erfolgreich abschliessen lassen und dessen Image-Digest
+   dokumentieren. Ein gruener PR-Build allein ist kein erfolgreicher Release.
+
+Ein erneuter Lauf des alten Releases verwendet weiterhin dessen verwundbares
+Lockfile und ist keine Recovery.
+
 ### Development-Server starten
 
 ```bash
